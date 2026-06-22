@@ -5,6 +5,7 @@ from uuid import uuid4
 from app.core.config import get_settings
 from app.services.detection_service import DetectionRunParams, DetectionService
 from app.services.traffic_analysis_service import traffic_analysis_service
+from app.services.trajectory_service import TrajectoryRunParams, TrajectoryService
 from app.services.tracking_service import TrackingRunParams, TrackingService
 from app.services.video_service import video_registry
 
@@ -16,24 +17,22 @@ class ProcessingService:
     def create_processing_task(
         self,
         video: dict[str, Any],
-        params: DetectionRunParams | TrackingRunParams | None = None,
+        params: DetectionRunParams | TrackingRunParams | TrajectoryRunParams | None = None,
         mode: str = "detection_tracking",
     ) -> dict[str, Any]:
         settings = get_settings()
-        if mode not in {"detection_only", "detection_tracking"}:
-            raise ValueError("mode must be detection_only or detection_tracking")
+        if mode not in {
+            "detection_only",
+            "detection_tracking",
+            "detection_tracking_trajectory",
+        }:
+            raise ValueError(
+                "mode must be detection_only, detection_tracking, "
+                "or detection_tracking_trajectory"
+            )
         run_id = f"run_{uuid4().hex[:12]}"
         now = _utc_now_iso()
-        stage = (
-            "stage_2_yolov8_detection"
-            if mode == "detection_only"
-            else "stage_3_deepsort_tracking"
-        )
-        next_stage = (
-            "stage_3_deepsort_tracking_not_started"
-            if mode == "detection_only"
-            else "stage_4_trajectory_engine_not_started"
-        )
+        stage, next_stage = _stage_for_mode(mode)
         task = {
             "id": uuid4().hex,
             "video_id": video["id"],
@@ -65,7 +64,7 @@ class ProcessingService:
                     run_id=run_id,
                     params=detection_params,
                 )
-            else:
+            elif mode == "detection_tracking":
                 tracking_params = (
                     params if isinstance(params, TrackingRunParams) else None
                 )
@@ -74,6 +73,18 @@ class ProcessingService:
                     video_path=video["file_path"],
                     run_id=run_id,
                     params=tracking_params,
+                )
+            else:
+                trajectory_params = (
+                    params if isinstance(params, TrajectoryRunParams) else None
+                )
+                result = TrajectoryService(
+                    results_dir=settings.results_dir
+                ).run_trajectory(
+                    video_id=video["id"],
+                    video_path=video["file_path"],
+                    run_id=run_id,
+                    params=trajectory_params,
                 )
             task.update(
                 {
@@ -118,6 +129,14 @@ class ProcessingService:
 
 def _utc_now_iso() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat()
+
+
+def _stage_for_mode(mode: str) -> tuple[str, str]:
+    if mode == "detection_only":
+        return "stage_2_yolov8_detection", "stage_3_deepsort_tracking_not_started"
+    if mode == "detection_tracking":
+        return "stage_3_deepsort_tracking", "stage_4_trajectory_engine_not_started"
+    return "stage_4_trajectory_engine", "stage_5_event_engine_not_started"
 
 
 processing_service = ProcessingService()

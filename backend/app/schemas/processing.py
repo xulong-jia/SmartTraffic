@@ -22,6 +22,9 @@ class DetectionProcessRequest(BaseModel):
     deepsort_max_cosine_distance: float | None = None
     tracking_min_confidence: float | None = None
     tracking_target_classes: list[str] | None = None
+    direction_window: int | None = None
+    dwell_speed_threshold: float | None = None
+    max_history_points: int | None = None
 
 
 class ProcessingTaskResponse(BaseModel):
@@ -49,7 +52,12 @@ class DetectionProcessResponse(BaseModel):
     total_detections: int
     total_tracks: int | None = None
     unique_track_ids: int | None = None
+    total_trajectory_points: int | None = None
     per_class_counts: dict[str, int]
     per_class_track_counts: dict[str, int] | None = None
     track_state_counts: dict[str, int] | None = None
+    trajectory_track_state_counts: dict[str, int] | None = None
+    avg_track_length: float | None = None
+    max_track_length: int | None = None
+    avg_speed_px_per_second: float | None = None
     artifacts: dict[str, str]

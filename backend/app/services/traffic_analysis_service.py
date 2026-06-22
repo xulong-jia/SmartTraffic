@@ -120,6 +120,69 @@ class TrafficAnalysisService:
             "limit": limit,
         }
 
+    def read_run_trajectory_points(
+        self,
+        run_id: str,
+        limit: int = 100,
+        track_id: int | None = None,
+    ) -> dict[str, Any]:
+        run_dir = self._run_dir(run_id)
+        metadata = self._load_metadata(run_id)
+        summary_path = run_dir / "trajectory_summary.json"
+        jsonl_path = run_dir / "trajectory_points.jsonl"
+        csv_path = run_dir / "trajectory_points.csv"
+        if (
+            not summary_path.is_file()
+            or not jsonl_path.is_file()
+            or not csv_path.is_file()
+        ):
+            raise KeyError(run_id)
+
+        with summary_path.open(encoding="utf-8") as file:
+            summary = json.load(file)
+
+        frames: list[dict[str, Any]] = []
+        if limit > 0:
+            with jsonl_path.open(encoding="utf-8") as file:
+                for line in file:
+                    stripped = line.strip()
+                    if not stripped:
+                        continue
+                    frame = json.loads(stripped)
+                    if track_id is not None:
+                        frame = dict(frame)
+                        frame["trajectory_points"] = [
+                            point
+                            for point in frame.get("trajectory_points", [])
+                            if _track_id_matches(point.get("track_id"), track_id)
+                        ]
+                    frames.append(frame)
+                    if len(frames) >= limit:
+                        break
+
+        rows: list[dict[str, str]] = []
+        if limit > 0:
+            with csv_path.open(newline="", encoding="utf-8") as file:
+                for row in csv.DictReader(file):
+                    if track_id is not None and not _track_id_matches(
+                        row.get("track_id"),
+                        track_id,
+                    ):
+                        continue
+                    rows.append(row)
+                    if len(rows) >= limit:
+                        break
+
+        return {
+            "run_id": run_id,
+            "video_id": metadata.get("video_id", ""),
+            "summary": summary,
+            "frames": frames,
+            "rows": rows,
+            "limit": limit,
+            "track_id": track_id,
+        }
+
     def clear(self) -> None:
         self._runs.clear()
 
@@ -145,3 +208,10 @@ def _public_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
     if input_video:
         public["input_video"] = Path(str(input_video)).name
     return public
+
+
+def _track_id_matches(value: Any, track_id: int) -> bool:
+    try:
+        return int(value) == track_id
+    except (TypeError, ValueError):
+        return False

@@ -6,6 +6,7 @@ from app.core.config import get_settings
 from app.cv.frame_reader import read_video_metadata
 from app.schemas.processing import DetectionProcessRequest, DetectionProcessResponse
 from app.services.detection_service import DetectionRunParams
+from app.services.trajectory_service import TrajectoryRunParams
 from app.services.tracking_service import TrackingRunParams
 from app.schemas.video import VideoResponse, VideoStatusResponse
 from app.services.processing_service import processing_service
@@ -84,6 +85,36 @@ def process_video(
                 frame_stride=payload.frame_stride,
                 max_frames=payload.max_frames,
                 write_preview=bool(payload.write_preview),
+            )
+        elif payload.mode == "detection_tracking_trajectory":
+            params = TrajectoryRunParams(
+                model_path=payload.model_path,
+                conf_threshold=payload.conf_threshold,
+                iou_threshold=payload.iou_threshold,
+                image_size=payload.image_size,
+                device=payload.device,
+                detector_dry_run=detector_dry_run,
+                tracker_dry_run=payload.tracker_dry_run,
+                frame_stride=payload.frame_stride,
+                max_frames=payload.max_frames,
+                write_preview=payload.write_preview,
+                deepsort_max_age=payload.deepsort_max_age,
+                deepsort_n_init=payload.deepsort_n_init,
+                deepsort_max_iou_distance=payload.deepsort_max_iou_distance,
+                deepsort_max_cosine_distance=payload.deepsort_max_cosine_distance,
+                tracking_min_confidence=payload.tracking_min_confidence,
+                tracking_target_classes=payload.tracking_target_classes,
+                direction_window=(
+                    payload.direction_window
+                    if payload.direction_window is not None
+                    else 2
+                ),
+                dwell_speed_threshold=(
+                    payload.dwell_speed_threshold
+                    if payload.dwell_speed_threshold is not None
+                    else 1.0
+                ),
+                max_history_points=payload.max_history_points,
             )
         else:
             params = TrackingRunParams(
