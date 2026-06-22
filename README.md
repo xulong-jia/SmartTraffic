@@ -1,85 +1,207 @@
 # SmartTraffic 智慧交通事件检测系统
 
-SmartTraffic 是面向交通视频离线分析的智慧交通事件检测系统。当前仓库已完成阶段三：DeepSORT 多目标跟踪接入，支持视频上传、视频元数据读取、YOLOv8 dry-run 检测、可选真实 YOLOv8 推理、DeepSORT/mock tracker 多目标跟踪、检测与跟踪产物写入和基础前端查看。
+## 项目简介
 
-## 项目边界
+SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、FastAPI、React 和本地结果产物管理的智慧交通视频分析项目。
 
-- 当前不实现 Trajectory Engine、Event Engine、Alert Center 真实逻辑、Review Center 真实逻辑、Bad Case Center 真实逻辑或 Evaluation Center 完整评测。
-- YOLOv8 检测适配器只负责模型加载和检测结果格式化，不判断交通事件。
-- DeepSORT/mock tracker 只负责生成 `track_id` 和跟踪结果契约，不计算轨迹特征或事件。
-- 事件结果不作为正式交通执法依据。
-- 模型权重、大视频、本地输出结果和缓存文件不提交到 Git。
+当前项目已完成到阶段三，重点是打通 `detection -> tracking` 工程链路：
+
+```text
+video upload
+-> metadata extraction
+-> YOLOv8 detection
+-> DeepSORT / mock tracking
+-> run artifacts
+-> FastAPI / React display
+```
+
+目前支持视频上传、视频元数据读取、YOLOv8 检测、deterministic dry-run 检测、DeepSORT adapter / mock tracking、多目标跟踪结果导出、`run_id` 结果目录、前端最小工作台和基础 API。
+
+本项目当前不是正式交通执法系统，输出结果不作为正式交通执法依据。模型权重、上传视频和运行结果均作为本地资产管理，不进入 Git。
 
 ## 技术栈
 
-- Backend: FastAPI, Pydantic, OpenCV, pytest
-- CV: YOLOv8 adapter contract, DeepSORT adapter contract, dry-run by default
+- Backend: FastAPI, Pydantic, Uvicorn
+- CV: YOLOv8 / Ultralytics optional, OpenCV, NumPy
+- Tracking: DeepSORT adapter / deterministic mock tracker
 - Frontend: React, TypeScript, Vite
-- Storage: local files for detection and tracking artifacts
+- Test: pytest, Vite build
+- Storage: local videos and run artifacts, Git-ignored
+- Deployment skeleton: Docker Compose / local development
 
-## 当前阶段能力
+## 目录结构
 
-- 视频上传到本地 `local_videos/`
-- 使用 OpenCV 读取 `fps`、`width`、`height`、`total_frames`、`duration_seconds`
-- `YoloDetector` 支持 dry-run 与可选真实 YOLOv8 推理
-- `DetectionService` 可按 `frame_stride`、`max_frames` 处理视频帧
-- `DeepSortTracker` 支持 deterministic mock tracking，真实 DeepSORT 依赖可选
-- `TrackingService` 支持 YOLOv8 detection -> DeepSORT/mock tracking 离线处理
-- 每次处理生成独立 `run_id`
-- 写入 `detections.csv`、`detections.jsonl`、`detection_summary.json`
-- 写入 `tracks.csv`、`tracks.jsonl`、`tracking_summary.json`
-- 可选写入 `tracking_preview.mp4`
-- 前端可上传视频、启动 dry-run 检测与跟踪、查看 run 摘要、帧级检测列表和 tracks 列表
+```text
+backend/        FastAPI 后端、检测、跟踪、处理服务
+frontend/       React + TypeScript 工作台
+docs/           阶段文档、架构说明和 API 文档
+evals/          评测相关目录占位
+samples/        示例资源目录，避免提交大视频
+results/        本地 run 产物目录，真实结果文件不提交
+local_models/   本地模型权重目录，真实权重不提交
+local_videos/   本地上传/测试视频目录，真实视频不提交
+scripts/        项目辅助脚本
+```
 
-## 尚未开始
-
-- Trajectory Engine
-- Event Engine
-- Alert / Review / Bad Case / Evaluation 完整逻辑
-- 正式实时流处理
+`results/traffic_analysis/` 用于保存每次处理的 `run_id` 结果目录。`local_models/`、`local_videos/` 和真实运行结果均被 `.gitignore` 排除，只保留必要的 `.gitkeep`。
 
 ## 本地运行
 
-后端：
+### 后端
 
 ```bash
-cd /Users/jiaxulong/Documents/smarttraffic/backend
+cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-前端：
+健康检查：
 
 ```bash
-cd /Users/jiaxulong/Documents/smarttraffic/frontend
+curl http://localhost:8000/health
+```
+
+### 前端
+
+```bash
+cd frontend
 npm install
 npm run dev
 ```
 
-测试：
+默认访问：
 
-```bash
-cd /Users/jiaxulong/Documents/smarttraffic/backend
-python3 -m pytest tests
+```text
+http://localhost:5173
 ```
 
-## 当前 API
+### Docker Compose
+
+```bash
+docker compose up
+```
+
+当前 Docker Compose 主要用于本地开发骨架，不代表可用于生产环境。
+
+## 环境变量
+
+复制 `.env.example` 为 `.env`：
+
+```bash
+cp .env.example .env
+```
+
+重要环境变量类别：
+
+- `SMARTTRAFFIC_RESULTS_DIR`
+- `SMARTTRAFFIC_LOCAL_VIDEOS_DIR`
+- `SMARTTRAFFIC_LOCAL_MODELS_DIR`
+- `YOLO_MODEL_PATH`
+- `YOLO_DRY_RUN`
+- `YOLO_CONF_THRESHOLD`
+- `YOLO_IOU_THRESHOLD`
+- `YOLO_DEVICE`
+- `DEEPSORT_DRY_RUN`
+
+默认 dry-run 可以不依赖真实模型权重。真实 YOLOv8 推理需要配置本地模型权重路径，例如 `local_models/best.pt`。`.env` 不进入 Git。
+
+## 当前阶段完成内容
+
+### 阶段一：项目骨架与视频管理初始化
+
+- 创建 SmartTraffic 项目结构
+- FastAPI 后端骨架
+- React + Vite 前端骨架
+- 基础 `docs` / `evals` / `scripts` / `results` / `local_models` / `local_videos` 目录
+- `.gitignore` / `.env.example` / Docker Compose / Makefile
+- `GET /health`
+- 基础视频 API 骨架
+- Traffic Analysis run 目录结构
+- pytest / frontend build 基础检查
+- GitHub 远程仓库连接和首次 push
+
+对应提交：
+
+```text
+3de2678 chore: verify stage 1 project initialization
+```
+
+### 阶段二：YOLOv8 检测接入
+
+- `YoloDetector` 封装
+- 支持 dry-run detection
+- 支持 optional Ultralytics YOLOv8 真实推理
+- 视频帧读取与 metadata extraction
+- Detection Service
+- `detections.csv`
+- `detections.jsonl`
+- `detection_summary.json`
+- 可选 `detection_preview.mp4`
+- `POST /api/videos/{video_id}/process` detection_only
+- `GET /api/analysis-runs/{run_id}/detections`
+- 前端最小上传、触发检测、查看检测摘要
+- 阶段二测试和文档
+
+对应提交：
+
+```text
+375ae74 feat: implement stage 2 YOLOv8 detection pipeline
+```
+
+### 阶段三：DeepSORT / mock tracking 多目标跟踪接入
+
+- `DeepSortTracker` adapter
+- deterministic mock tracker
+- optional `deep-sort-realtime` fallback 设计
+- 基于 detections 生成 tracks
+- 稳定 `track_id` contract
+- Tracking Service
+- `tracks.csv`
+- `tracks.jsonl`
+- `tracking_summary.json`
+- 可选 `tracking_preview.mp4`
+- `mode=detection_tracking`
+- `GET /api/analysis-runs/{run_id}/tracks`
+- 前端最小 tracking summary 和 tracks 展示
+- 阶段三测试和文档
+
+对应提交：
+
+```text
+0475fcb feat: implement stage 3 DeepSORT tracking pipeline
+```
+
+## API
+
+当前主要 API：
 
 - `GET /health`
-- `GET /api/config`
 - `POST /api/videos/upload`
 - `GET /api/videos`
 - `GET /api/videos/{video_id}`
 - `POST /api/videos/{video_id}/process`
 - `GET /api/videos/{video_id}/status`
-- `GET /api/analysis-runs`
 - `GET /api/analysis-runs/{run_id}`
-- `GET /api/analysis-runs/{run_id}/detections?limit=100`
-- `GET /api/analysis-runs/{run_id}/tracks?limit=100`
+- `GET /api/analysis-runs/{run_id}/detections`
+- `GET /api/analysis-runs/{run_id}/tracks`
 
-## 阶段三产物
+`POST /api/videos/{video_id}/process` 当前支持：
+
+- `mode=detection_only`
+- `mode=detection_tracking`
+- `detector_dry_run`
+- `tracker_dry_run`
+- `frame_stride`
+- `max_frames`
+- `conf_threshold`
+- `iou_threshold`
+- `write_preview`
+
+## 结果产物
+
+阶段三处理后，默认在本地生成：
 
 ```text
 results/traffic_analysis/<run_id>/
@@ -90,11 +212,87 @@ results/traffic_analysis/<run_id>/
   tracks.csv
   tracks.jsonl
   tracking_summary.json
-  detection_preview.mp4  # only for detection-only preview when requested
-  tracking_preview.mp4   # only for tracking preview when requested
+  detection_preview.mp4   # only when requested
+  tracking_preview.mp4    # only when requested
   keyframes/
 ```
 
-## 数据与安全
+真实运行产物不提交到 Git。
 
-本地视频默认进入 `local_videos/`，分析结果默认进入 `results/traffic_analysis/<run_id>/`。`local_models/`、`local_videos/`、`results/`、缓存目录、模型权重、大视频和运行结果默认被 `.gitignore` 排除。
+## 当前边界
+
+当前尚未实现：
+
+- Trajectory Engine
+- Event Engine
+- 车辆逆行、违停、危险区域闯入、行人进入机动车道、拥堵等事件判断
+- Alert Center 真实逻辑
+- Review Center 真实逻辑
+- Bad Case Center 真实逻辑
+- Evaluation Center 完整评测
+- 正式实时流处理
+- 生产级权限、安全和监控
+
+## 安全与数据策略
+
+- 不提交 `.env`
+- 不提交 API key / token / secret
+- 不提交模型权重
+- 不提交大视频
+- 不提交上传视频
+- 不提交 `results/` 真实运行产物
+- 不提交 `local_models/` 和 `local_videos/` 真实内容
+- `results/traffic_analysis/.gitkeep` 可以保留
+- 模型权重和视频只在本地使用
+- 项目输出不作为正式交通执法依据
+
+## 文档索引
+
+- `docs/api_reference.md`
+- `docs/migration_from_yolov8.md`
+- `docs/stage2_yolov8_detection.md`
+- `docs/stage3_deepsort_tracking.md`
+- `docs/architecture.md`
+- `docs/database_schema.md`
+
+## 自查命令
+
+后端检查：
+
+```bash
+cd backend
+pytest -q
+python -m compileall app
+```
+
+前端检查：
+
+```bash
+cd ../frontend
+npm install
+npm run build
+```
+
+Git 和格式检查：
+
+```bash
+cd ..
+git status --short --branch
+git diff --check
+```
+
+大文件检查：
+
+```bash
+find . -type file -size +50M \
+  -not -path "./.git/*" \
+  -not -path "./frontend/node_modules/*" \
+  -not -path "./backend/.venv/*"
+```
+
+敏感词检查：
+
+```bash
+grep -RIn --exclude-dir=.git --exclude-dir=.venv --exclude-dir=node_modules \
+  -E "OPENAI_API_KEY|api_key|secret|password|token|sk-|ghp_|github_pat_" .
+```
