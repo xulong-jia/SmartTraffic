@@ -4,6 +4,7 @@ from typing import Any
 from app.events.contracts import build_event
 from app.events.dedup import build_event_dedup_key
 from app.events.evidence import build_event_evidence
+from app.events.rule_callbacks import DEFAULT_RULE_CALLBACKS
 from app.events.rule_execution import build_rule_execution
 from app.events.rules import EventRule
 
@@ -32,6 +33,7 @@ class EventEngine:
         self.run_id = run_id
         self.video_id = video_id
         self.record_not_matched = bool(record_not_matched)
+        self.default_rule_callbacks = dict(DEFAULT_RULE_CALLBACKS)
         self.rule_callbacks = dict(rule_callbacks or {})
         self.reset()
 
@@ -149,9 +151,7 @@ class EventEngine:
             self._append_skipped(result, rule, trajectory_point, frame_result, "cooldown")
             return
 
-        callback = self.rule_callbacks.get(rule.rule_id) or self.rule_callbacks.get(
-            rule.event_type
-        )
+        callback = self._rule_callback(rule, zones)
         if callback is None:
             self._append_skipped(
                 result,
@@ -230,6 +230,20 @@ class EventEngine:
             self._last_event_time_by_key[dedup_key] = marker
         self._emitted_event_keys.add(dedup_key)
         self._record_event(event, evidence)
+
+    def _rule_callback(
+        self,
+        rule: EventRule,
+        zones: list[dict[str, Any]] | None,
+    ) -> RuleCallback | None:
+        callback = self.rule_callbacks.get(rule.rule_id) or self.rule_callbacks.get(
+            rule.event_type
+        )
+        if callback is not None:
+            return callback
+        if zones is None:
+            return None
+        return self.default_rule_callbacks.get(rule.event_type)
 
     def _append_skipped(
         self,
