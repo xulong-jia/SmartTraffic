@@ -1,0 +1,1 @@
+"""SmartTraffic FastAPI backend package."""
