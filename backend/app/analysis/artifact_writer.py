@@ -13,6 +13,14 @@ TRAJECTORY_ARTIFACTS = {
     "trajectory_summary": "trajectory_summary.json",
 }
 
+EVENT_ARTIFACTS = {
+    "events": "events.jsonl",
+    "events_jsonl": "events.jsonl",
+    "event_evidence_jsonl": "event_evidence.jsonl",
+    "rule_executions_jsonl": "rule_executions.jsonl",
+    "event_summary": "event_summary.json",
+}
+
 CORE_ARTIFACTS = {
     "detections": "detections.csv",
     "detections_csv": "detections.csv",
@@ -290,6 +298,43 @@ class TrafficArtifactWriter:
             "trajectory_summary": trajectory_summary,
         }
 
+    def write_event_outputs(
+        self,
+        run_id: str,
+        video_id: str,
+        events: list[dict[str, Any]],
+        event_evidence: list[dict[str, Any]],
+        rule_executions: list[dict[str, Any]],
+    ) -> dict[str, Path]:
+        _validate_run_id(run_id)
+        run_dir = self.base_dir / run_id
+        run_dir.mkdir(parents=True, exist_ok=True)
+        events_jsonl = run_dir / "events.jsonl"
+        event_evidence_jsonl = run_dir / "event_evidence.jsonl"
+        rule_executions_jsonl = run_dir / "rule_executions.jsonl"
+        event_summary = run_dir / "event_summary.json"
+
+        _write_jsonl(events, events_jsonl)
+        _write_jsonl(event_evidence, event_evidence_jsonl)
+        _write_jsonl(rule_executions, rule_executions_jsonl)
+        _write_json(
+            build_event_summary(
+                events,
+                rule_executions,
+                run_id=run_id,
+                video_id=video_id,
+            ),
+            event_summary,
+        )
+        self._merge_metadata_artifacts(run_id, EVENT_ARTIFACTS, video_id=video_id)
+        return {
+            "events": events_jsonl,
+            "events_jsonl": events_jsonl,
+            "event_evidence_jsonl": event_evidence_jsonl,
+            "rule_executions_jsonl": rule_executions_jsonl,
+            "event_summary": event_summary,
+        }
+
     def artifact_index(self, run_id: str) -> dict[str, str]:
         _validate_run_id(run_id)
         run_dir = self.base_dir / run_id
@@ -442,6 +487,71 @@ def build_trajectory_summary(
     }
 
 
+def build_event_summary(
+    events: list[dict[str, Any]],
+    rule_executions: list[dict[str, Any]],
+    run_id: str | None = None,
+    video_id: str | None = None,
+) -> dict[str, Any]:
+    per_event_type_counts: dict[str, int] = {}
+    per_severity_counts: dict[str, int] = {}
+    per_status_counts: dict[str, int] = {}
+    unique_track_ids: set[Any] = set()
+    rule_execution_counts: dict[str, int] = {}
+    event_times: list[int] = []
+
+    for event in events:
+        event_type = event.get("event_type")
+        if event_type is not None:
+            event_type_key = str(event_type)
+            per_event_type_counts[event_type_key] = (
+                per_event_type_counts.get(event_type_key, 0) + 1
+            )
+
+        severity = event.get("severity")
+        if severity is not None:
+            severity_key = str(severity)
+            per_severity_counts[severity_key] = (
+                per_severity_counts.get(severity_key, 0) + 1
+            )
+
+        status = event.get("status")
+        if status is not None:
+            status_key = str(status)
+            per_status_counts[status_key] = per_status_counts.get(status_key, 0) + 1
+
+        track_id = event.get("track_id")
+        if track_id is not None:
+            unique_track_ids.add(track_id)
+
+        for time_key in ("start_time_ms", "end_time_ms"):
+            timestamp_ms = event.get(time_key)
+            if timestamp_ms is not None:
+                event_times.append(int(timestamp_ms))
+
+    for rule_execution in rule_executions:
+        status = rule_execution.get("status")
+        if status is None:
+            continue
+        status_key = str(status)
+        rule_execution_counts[status_key] = (
+            rule_execution_counts.get(status_key, 0) + 1
+        )
+
+    return {
+        "run_id": run_id,
+        "video_id": video_id,
+        "total_events": len(events),
+        "per_event_type_counts": dict(sorted(per_event_type_counts.items())),
+        "per_severity_counts": dict(sorted(per_severity_counts.items())),
+        "per_status_counts": dict(sorted(per_status_counts.items())),
+        "unique_track_ids": len(unique_track_ids),
+        "rule_execution_counts": dict(sorted(rule_execution_counts.items())),
+        "first_event_time_ms": min(event_times) if event_times else None,
+        "last_event_time_ms": max(event_times) if event_times else None,
+    }
+
+
 def _flatten_trajectory_point(
     run_id: str,
     video_id: str,
@@ -539,6 +649,15 @@ def _write_json(data: dict[str, Any], output_path: Path) -> Path:
         json.dumps(data, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+    return output_path
+
+
+def _write_jsonl(rows: list[dict[str, Any]], output_path: Path) -> Path:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", encoding="utf-8") as file:
+        for row in rows:
+            file.write(json.dumps(row, ensure_ascii=False))
+            file.write("\n")
     return output_path
 
 
