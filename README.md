@@ -2,20 +2,21 @@
 
 ## 项目简介
 
-SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、FastAPI、React 和本地结果产物管理的智慧交通视频分析项目。
+SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engine、FastAPI、React 和本地结果产物管理的智慧交通视频分析项目。
 
-当前项目已完成到阶段三，重点是打通 `detection -> tracking` 工程链路：
+当前项目已完成到阶段四，重点是打通 `detection -> tracking -> trajectory` 工程链路：
 
 ```text
 video upload
 -> metadata extraction
 -> YOLOv8 detection
 -> DeepSORT / mock tracking
+-> Trajectory Engine
 -> run artifacts
 -> FastAPI / React display
 ```
 
-目前支持视频上传、视频元数据读取、YOLOv8 检测、deterministic dry-run 检测、DeepSORT adapter / mock tracking、多目标跟踪结果导出、`run_id` 结果目录、前端最小工作台和基础 API。
+目前支持视频上传、视频元数据读取、YOLOv8 检测、deterministic dry-run 检测、DeepSORT adapter / mock tracking、多目标跟踪结果导出、Trajectory Engine 轨迹点生成、`run_id` 结果目录、前端最小工作台和基础 API。
 
 本项目当前不是正式交通执法系统，输出结果不作为正式交通执法依据。模型权重、上传视频和运行结果均作为本地资产管理，不进入 Git。
 
@@ -24,6 +25,7 @@ video upload
 - Backend: FastAPI, Pydantic, Uvicorn
 - CV: YOLOv8 / Ultralytics optional, OpenCV, NumPy
 - Tracking: DeepSORT adapter / deterministic mock tracker
+- Trajectory: geometry utilities, trajectory features, TrajectoryEngine
 - Frontend: React, TypeScript, Vite
 - Test: pytest, Vite build
 - Storage: local videos and run artifacts, Git-ignored
@@ -173,6 +175,55 @@ cp .env.example .env
 0475fcb feat: implement stage 3 DeepSORT tracking pipeline
 ```
 
+### 阶段四：Trajectory Engine 轨迹分析
+
+- Geometry 工具：
+  - point in polygon
+  - bbox center / bottom-center
+  - segment intersection
+  - line crossing direction
+  - vector angle
+  - angle difference
+- Trajectory Features：
+  - `speed_px_per_frame`
+  - `speed_px_per_second`
+  - `direction_vector`
+  - `moving_angle`
+  - `dwell_time_ms`
+  - `track_length`
+- TrajectoryEngine：
+  - 内存 track state cache
+  - 单帧 tracks -> trajectory_points
+  - `track_length` / `last_seen` / state summary
+- Trajectory artifacts：
+  - `trajectory_points.csv`
+  - `trajectory_points.jsonl`
+  - `trajectory_summary.json`
+- Trajectory Service：
+  - detection -> tracking -> trajectory pipeline
+  - `mode=detection_tracking_trajectory`
+  - metadata `stage=stage_4_trajectory_engine`
+- API：
+  - `GET /api/analysis-runs/{run_id}/trajectory-points`
+- Frontend：
+  - VideoCenter 支持 `detection_tracking_trajectory`
+  - AnalysisDetail 展示 trajectory summary / rows / frames
+  - 支持 `track_id` filter
+
+`speed_px_per_second` 当前是基于 timestamp 或 fps 的像素级速度估算，不是真实世界 m/s 或 km/h。
+
+对应提交：
+
+```text
+47bd3b4 feat: add trajectory geometry utilities
+b6b4315 feat: add trajectory feature utilities
+ac52c5b feat: add trajectory engine state cache
+23dd0e0 feat: add trajectory artifact writer outputs
+f1f72e8 feat: add trajectory service pipeline
+dffaf02 feat: add trajectory points query api
+1a9dad8 feat: add minimal trajectory frontend view
+```
+
 ## API
 
 当前主要 API：
@@ -186,11 +237,13 @@ cp .env.example .env
 - `GET /api/analysis-runs/{run_id}`
 - `GET /api/analysis-runs/{run_id}/detections`
 - `GET /api/analysis-runs/{run_id}/tracks`
+- `GET /api/analysis-runs/{run_id}/trajectory-points`
 
 `POST /api/videos/{video_id}/process` 当前支持：
 
 - `mode=detection_only`
 - `mode=detection_tracking`
+- `mode=detection_tracking_trajectory`
 - `detector_dry_run`
 - `tracker_dry_run`
 - `frame_stride`
@@ -198,10 +251,13 @@ cp .env.example .env
 - `conf_threshold`
 - `iou_threshold`
 - `write_preview`
+- `direction_window`
+- `dwell_speed_threshold`
+- `max_history_points`
 
 ## 结果产物
 
-阶段三处理后，默认在本地生成：
+阶段四处理后，默认在本地生成：
 
 ```text
 results/traffic_analysis/<run_id>/
@@ -212,6 +268,9 @@ results/traffic_analysis/<run_id>/
   tracks.csv
   tracks.jsonl
   tracking_summary.json
+  trajectory_points.csv
+  trajectory_points.jsonl
+  trajectory_summary.json
   detection_preview.mp4   # only when requested
   tracking_preview.mp4    # only when requested
   keyframes/
@@ -223,7 +282,6 @@ results/traffic_analysis/<run_id>/
 
 当前尚未实现：
 
-- Trajectory Engine
 - Event Engine
 - 车辆逆行、违停、危险区域闯入、行人进入机动车道、拥堵等事件判断
 - Alert Center 真实逻辑
@@ -231,7 +289,10 @@ results/traffic_analysis/<run_id>/
 - Bad Case Center 真实逻辑
 - Evaluation Center 完整评测
 - 正式实时流处理
+- 真实世界速度标定；当前 `speed_px_per_second` 不是 m/s 或 km/h
 - 生产级权限、安全和监控
+
+项目输出不作为正式交通执法依据。
 
 ## 安全与数据策略
 
@@ -252,6 +313,7 @@ results/traffic_analysis/<run_id>/
 - `docs/migration_from_yolov8.md`
 - `docs/stage2_yolov8_detection.md`
 - `docs/stage3_deepsort_tracking.md`
+- `docs/stage4_trajectory_engine.md`
 - `docs/architecture.md`
 - `docs/database_schema.md`
 

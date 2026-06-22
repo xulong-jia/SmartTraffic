@@ -25,7 +25,7 @@ The source project was inspected in read-only mode. No files were modified, move
 | `dataset/train`, `dataset/valid`, `dataset/test` | Dataset splits are outside phase-one initialization and may be large. |
 | `app.py` and `app/streamlit_video_demo.py` | Streamlit demo is not part of the new SmartTraffic architecture. |
 | ByteTrack runtime files under `src/tracking/` and tracking CLIs | SmartTraffic stage three uses a new DeepSORT adapter boundary instead of directly migrating the old ByteTrack runtime. |
-| `src/analytics/*` event/counting runtime | Current phase forbids full Trajectory Engine and Event Engine implementation. |
+| `src/analytics/*` event/counting runtime | Stage four implements a new SmartTraffic trajectory layer instead of migrating the old analytics runtime. Event Engine behavior remains reserved for later phases. |
 | Bad Case and evaluation services/docs as implemented in the old project | SmartTraffic will implement these later under its own Review/Bad Case/Evaluation Center boundaries. |
 | Old README product claims and release history | New README must reflect SmartTraffic scope and phase-one status. |
 | `frontend/dist`, `frontend/node_modules`, `.pytest_cache`, `__pycache__` | Generated caches/build outputs are not migrated. |
@@ -72,10 +72,43 @@ What changed:
 Still not migrated or implemented:
 
 - Old event/counting/ROI analytics runtime.
-- Trajectory feature calculation.
 - Event Engine rules.
 - Alert, Review, Bad Case, and Evaluation Center complete logic.
 
 Boundary difference:
 
 SmartTraffic DeepSORT tracking is responsible for track identity only. It does not calculate speed, direction, dwell time, zone interactions, traffic violations, or alert decisions.
+
+## Stage 4 Trajectory Engine Layer
+
+Stage four is not a direct migration of the old YOLOv8 project's analytics or counting runtime. The old project primarily provided the detection base and video processing experience. SmartTraffic adds Trajectory Engine as a new engineering layer with its own contracts, tests, artifacts, service pipeline, API, and frontend minimum view.
+
+What changed:
+
+- Trajectory Engine depends on stage-three tracks, not directly on raw detection bbox rows.
+- The input contract is `track_id` plus track bbox / center / state over time.
+- `backend/app/trajectory/geometry.py` owns reusable geometry helpers.
+- `backend/app/trajectory/features.py` converts track points into trajectory features.
+- `backend/app/trajectory/engine.py` maintains per-track state and converts frame-level tracks into `trajectory_points`.
+- `backend/app/services/trajectory_service.py` orchestrates detection -> tracking -> trajectory and writes stage-four artifacts.
+- `GET /api/analysis-runs/{run_id}/trajectory-points` exposes trajectory outputs from local artifacts.
+
+Generated trajectory features include:
+
+- `speed_px_per_frame`
+- `speed_px_per_second`
+- `direction_vector`
+- `moving_angle`
+- `track_length`
+- `dwell_time_ms`
+
+Still not migrated or implemented:
+
+- Old event/counting/ROI analytics runtime.
+- Event Engine rules.
+- Traffic event decisions such as reverse driving, illegal parking, intrusion, pedestrian-in-lane, or congestion.
+- Alert, Review, Bad Case, and Evaluation Center complete logic.
+
+Boundary difference:
+
+SmartTraffic Trajectory Engine converts `track_id` + center / bbox history into pixel-level trajectory features. It does not decide traffic events or alerts. `speed_px_per_second` is a pixel-level estimate based on timestamp or fps, not real-world speed in m/s or km/h.

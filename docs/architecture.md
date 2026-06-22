@@ -10,12 +10,30 @@ React frontend
   -> local storage and future database
 ```
 
-Phase one implements only the runnable skeleton:
+The current stage-four runnable path is:
+
+```text
+video upload
+  -> frame reader
+  -> YOLOv8 detector
+  -> DeepSORT / mock tracker
+  -> TrajectoryEngine
+  -> artifact writer
+  -> FastAPI query
+  -> React minimal dashboard
+```
+
+Implemented boundaries:
 
 - `backend/app/api`: HTTP routes.
-- `backend/app/services`: orchestration and in-memory phase-one registries.
-- `backend/app/cv`: YOLOv8 detector adapter, frame reader, video writer, DeepSORT placeholder.
-- `backend/app/analysis`: Traffic Analysis Center run directory and metadata writer.
-- `frontend/src`: Vite/React page and component skeletons.
+- `backend/app/services`: detection, tracking, trajectory orchestration and in-memory processing registry.
+- `backend/app/cv`: frame reader, YOLOv8 detector adapter, video writer, DeepSORT / deterministic mock tracker.
+- `backend/app/trajectory`: geometry utilities, trajectory feature helpers, and `TrajectoryEngine`.
+- `backend/app/analysis`: artifact writer for run directories, metadata, detections, tracks, and trajectory outputs.
+- `frontend/src`: Vite/React pages for video processing and minimal analysis result display.
 
-Future phases should keep YOLOv8, DeepSORT, Trajectory Engine, Event Engine, Review Center, Bad Case Center, and Evaluation Center separate.
+The current Traffic Analysis Center is primarily artifact-based run result query. It reads local files under `results/traffic_analysis/<run_id>/` and exposes detection, tracking, and trajectory outputs through FastAPI. It is not yet a complete database-backed result center.
+
+The current database layer is not a complete production implementation. Local artifacts are the source of truth for trajectory results at this stage.
+
+Event Engine has not started. Alert Center, Review Center, Bad Case Center, and Evaluation Center are still not completed. Future phases should keep YOLOv8, DeepSORT, Trajectory Engine, Event Engine, Review Center, Bad Case Center, and Evaluation Center separate.
