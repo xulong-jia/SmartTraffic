@@ -4,7 +4,8 @@ from fastapi import APIRouter, File, HTTPException, UploadFile, status
 
 from app.core.config import get_settings
 from app.cv.frame_reader import read_video_metadata
-from app.schemas.processing import ProcessingTaskResponse
+from app.schemas.processing import DetectionProcessRequest, DetectionProcessResponse
+from app.services.detection_service import DetectionRunParams
 from app.schemas.video import VideoResponse, VideoStatusResponse
 from app.services.processing_service import processing_service
 from app.services.video_service import video_registry
@@ -58,11 +59,34 @@ def get_video(video_id: str) -> VideoResponse:
     return VideoResponse(**_get_video_or_404(video_id))
 
 
-@router.post("/{video_id}/process", response_model=ProcessingTaskResponse)
-def process_video(video_id: str) -> ProcessingTaskResponse:
+@router.post("/{video_id}/process", response_model=DetectionProcessResponse)
+def process_video(
+    video_id: str,
+    request: DetectionProcessRequest | None = None,
+) -> DetectionProcessResponse:
     video = _get_video_or_404(video_id)
-    task = processing_service.create_processing_task(video)
-    return ProcessingTaskResponse(**task)
+    payload = request or DetectionProcessRequest()
+    try:
+        task = processing_service.create_processing_task(
+            video,
+            DetectionRunParams(
+                model_path=payload.model_path,
+                conf_threshold=payload.conf_threshold,
+                iou_threshold=payload.iou_threshold,
+                image_size=payload.image_size,
+                device=payload.device,
+                dry_run=payload.dry_run,
+                frame_stride=payload.frame_stride,
+                max_frames=payload.max_frames,
+                write_preview=payload.write_preview,
+            ),
+        )
+    except (FileNotFoundError, RuntimeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    return DetectionProcessResponse(**task["result"])
 
 
 @router.get("/{video_id}/status", response_model=VideoStatusResponse)

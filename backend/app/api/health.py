@@ -20,6 +20,7 @@ def config() -> ConfigResponse:
         yolo_model_path=settings.yolo_model_path,
         yolo_confidence_threshold=settings.yolo_confidence_threshold,
         yolo_iou_threshold=settings.yolo_iou_threshold,
+        yolo_image_size=settings.yolo_image_size,
         yolo_device=settings.yolo_device,
         frame_stride=settings.frame_stride,
         dry_run=settings.dry_run,

@@ -33,3 +33,26 @@ The source project was inspected in read-only mode. No files were modified, move
 ## Notes
 
 The migration keeps only reusable contracts and infrastructure. SmartTraffic remains aligned with the final execution manual and avoids carrying over YOLO demo-specific naming, Streamlit UI, ByteTrack-specific runtime, or completed-project claims.
+
+## Stage 2 YOLOv8 Detection Migration
+
+Stage two expands the earlier detector contract into a runnable SmartTraffic detection pipeline.
+
+Migrated or reworked from the old project:
+
+- Lazy YOLO model loading and optional `ultralytics.YOLO` inference were kept, but moved behind `backend/app/cv/yolo_detector.py`.
+- Image/video inference output normalization was rewritten into the SmartTraffic contract: `frame_index`, `timestamp_ms`, `class_name`, `class_id`, `confidence`, `bbox`.
+- OpenCV metadata and frame iteration were adapted into `backend/app/cv/frame_reader.py` with `frame_stride` and `max_frames`.
+- Result writing ideas from the old Video Analysis Center were narrowed to stage-two artifacts: `detections.csv`, `detections.jsonl`, `detection_summary.json`, and `metadata.json`.
+
+Not migrated:
+
+- Streamlit demo UI and old YOLO demo page copy.
+- ByteTrack runtime, tracking CLIs, and tracked video analytics.
+- Old event/counting/ROI analytics runtime.
+- Old Bad Case and Evaluation implementation.
+- Model weights, local videos, generated results, caches, and local outputs.
+
+Boundary difference:
+
+SmartTraffic `YoloDetector` only performs detection and detection-format conversion. It does not create events, run tracking, calculate trajectories, write database rows, or decide alerts. Those responsibilities remain reserved for later SmartTraffic phases.

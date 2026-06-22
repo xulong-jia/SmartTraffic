@@ -2,48 +2,59 @@ from dataclasses import dataclass
 import os
 from pathlib import Path
 
-from app.core.paths import LOCAL_MODELS_DIR, LOCAL_VIDEOS_DIR, RESULTS_DIR
+from app.core.paths import LOCAL_MODELS_DIR, LOCAL_VIDEOS_DIR, PROJECT_DIR, RESULTS_DIR
 
 
-def _float_env(name: str, default: float) -> float:
-    value = os.environ.get(name)
-    if value is None:
-        return default
+def _env(name: str, default: str, *aliases: str) -> str:
+    for key in (name, *aliases):
+        value = os.environ.get(key)
+        if value is not None:
+            return value
+    return default
+
+
+def _float_env(name: str, default: float, *aliases: str) -> float:
+    value = _env(name, str(default), *aliases)
     try:
         return float(value)
     except ValueError:
         return default
 
 
-def _int_env(name: str, default: int) -> int:
-    value = os.environ.get(name)
-    if value is None:
-        return default
+def _int_env(name: str, default: int, *aliases: str) -> int:
+    value = _env(name, str(default), *aliases)
     try:
         return int(value)
     except ValueError:
         return default
 
 
-def _bool_env(name: str, default: bool) -> bool:
-    value = os.environ.get(name)
-    if value is None:
-        return default
+def _bool_env(name: str, default: bool, *aliases: str) -> bool:
+    value = _env(name, "true" if default else "false", *aliases)
     return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _path_env(name: str, default: Path, *aliases: str) -> Path:
+    value = _env(name, str(default.relative_to(PROJECT_DIR)), *aliases)
+    path = Path(value)
+    return path if path.is_absolute() else PROJECT_DIR / path
 
 
 @dataclass(frozen=True)
 class Settings:
-    project_name: str = "SmartTraffic 智慧交通事件检测系统"
-    yolo_model_path: str = "local_models/best.pt"
-    yolo_confidence_threshold: float = 0.25
-    yolo_iou_threshold: float = 0.45
-    yolo_device: str = "cpu"
-    frame_stride: int = 1
-    dry_run: bool = True
+    app_name: str = "SmartTraffic 智慧交通事件检测系统"
+    environment: str = "local"
+    results_dir: Path = RESULTS_DIR
     local_videos_dir: Path = LOCAL_VIDEOS_DIR
-    traffic_results_dir: Path = RESULTS_DIR
     local_models_dir: Path = LOCAL_MODELS_DIR
+    yolo_model_path: str = "local_models/best.pt"
+    yolo_conf_threshold: float = 0.25
+    yolo_iou_threshold: float = 0.45
+    yolo_image_size: int = 640
+    yolo_device: str = "cpu"
+    yolo_dry_run: bool = True
+    video_frame_stride: int = 1
+    detection_max_frames: int | None = None
     cors_allow_origins: list[str] | None = None
     allowed_video_extensions: tuple[str, ...] = (
         ".mp4",
@@ -64,6 +75,26 @@ class Settings:
                 ],
             )
 
+    @property
+    def project_name(self) -> str:
+        return self.app_name
+
+    @property
+    def traffic_results_dir(self) -> Path:
+        return self.results_dir
+
+    @property
+    def yolo_confidence_threshold(self) -> float:
+        return self.yolo_conf_threshold
+
+    @property
+    def frame_stride(self) -> int:
+        return self.video_frame_stride
+
+    @property
+    def dry_run(self) -> bool:
+        return self.yolo_dry_run
+
 
 def get_settings() -> Settings:
     cors = os.environ.get("CORS_ALLOW_ORIGINS", "")
@@ -73,20 +104,20 @@ def get_settings() -> Settings:
         else None
     )
     return Settings(
-        project_name=os.environ.get(
-            "PROJECT_NAME",
-            "SmartTraffic 智慧交通事件检测系统",
-        ),
+        app_name=_env("SMARTTRAFFIC_APP_NAME", "SmartTraffic 智慧交通事件检测系统", "PROJECT_NAME"),
+        environment=_env("SMARTTRAFFIC_ENV", "local"),
+        results_dir=_path_env("SMARTTRAFFIC_RESULTS_DIR", RESULTS_DIR, "TRAFFIC_RESULTS_DIR"),
+        local_videos_dir=_path_env("SMARTTRAFFIC_LOCAL_VIDEOS_DIR", LOCAL_VIDEOS_DIR, "LOCAL_VIDEOS_DIR"),
+        local_models_dir=_path_env("SMARTTRAFFIC_LOCAL_MODELS_DIR", LOCAL_MODELS_DIR, "LOCAL_MODELS_DIR"),
         yolo_model_path=os.environ.get("YOLO_MODEL_PATH", "local_models/best.pt"),
-        yolo_confidence_threshold=_float_env("YOLO_CONFIDENCE_THRESHOLD", 0.25),
+        yolo_conf_threshold=_float_env("YOLO_CONF_THRESHOLD", 0.25, "YOLO_CONFIDENCE_THRESHOLD"),
         yolo_iou_threshold=_float_env("YOLO_IOU_THRESHOLD", 0.45),
+        yolo_image_size=_int_env("YOLO_IMAGE_SIZE", 640),
         yolo_device=os.environ.get("YOLO_DEVICE", "cpu"),
-        frame_stride=_int_env("FRAME_STRIDE", 1),
-        dry_run=_bool_env("SMARTTRAFFIC_DRY_RUN", True),
-        local_videos_dir=Path(os.environ.get("LOCAL_VIDEOS_DIR", str(LOCAL_VIDEOS_DIR))),
-        traffic_results_dir=Path(
-            os.environ.get("TRAFFIC_RESULTS_DIR", str(RESULTS_DIR))
+        yolo_dry_run=_bool_env("YOLO_DRY_RUN", True, "SMARTTRAFFIC_DRY_RUN"),
+        video_frame_stride=_int_env("VIDEO_FRAME_STRIDE", 1, "FRAME_STRIDE"),
+        detection_max_frames=(
+            _int_env("DETECTION_MAX_FRAMES", 0) or None
         ),
-        local_models_dir=Path(os.environ.get("LOCAL_MODELS_DIR", str(LOCAL_MODELS_DIR))),
         cors_allow_origins=cors_allow_origins,
     )

@@ -12,17 +12,52 @@ class YoloDetector:
     def __init__(
         self,
         model_path: str = "",
-        confidence_threshold: float = 0.25,
+        conf_threshold: float | None = None,
+        confidence_threshold: float | None = None,
         iou_threshold: float = 0.45,
+        image_size: int = 640,
         device: str = "cpu",
         dry_run: bool = True,
+        target_classes: set[str] | None = None,
     ) -> None:
         self.model_path = model_path
-        self.confidence_threshold = confidence_threshold
+        self.conf_threshold = (
+            conf_threshold
+            if conf_threshold is not None
+            else confidence_threshold
+            if confidence_threshold is not None
+            else 0.25
+        )
         self.iou_threshold = iou_threshold
+        self.image_size = image_size
         self.device = device
         self.dry_run = dry_run
+        self.target_classes = target_classes or {
+            "car",
+            "bus",
+            "truck",
+            "motorcycle",
+            "bicycle",
+            "person",
+        }
         self._model: Any | None = None
+
+    def is_available(self) -> bool:
+        if self.dry_run:
+            return True
+        return bool(self.model_path) and Path(self.model_path).is_file()
+
+    def get_model_info(self) -> dict[str, Any]:
+        return {
+            "model_path": self.model_path,
+            "device": self.device,
+            "image_size": self.image_size,
+            "conf_threshold": self.conf_threshold,
+            "iou_threshold": self.iou_threshold,
+            "dry_run": self.dry_run,
+            "available": self.is_available(),
+            "loaded": self._model is not None,
+        }
 
     def detect_frame(
         self,
@@ -40,8 +75,9 @@ class YoloDetector:
         model = self._load_model()
         results = model.predict(
             source=frame,
-            conf=self.confidence_threshold,
+            conf=self.conf_threshold,
             iou=self.iou_threshold,
+            imgsz=self.image_size,
             device=self.device,
             verbose=False,
         )
@@ -118,11 +154,14 @@ class YoloDetector:
             if len(coords) < 4:
                 continue
             class_id = int(_to_scalar(cls_value))
+            class_name = _class_name(names, class_id)
+            if class_name not in self.target_classes:
+                continue
             detections.append(
                 self.format_detection(
                     {
                         "class_id": class_id,
-                        "class_name": _class_name(names, class_id),
+                        "class_name": class_name,
                         "confidence": _to_scalar(conf_value),
                         "bbox": coords[:4],
                     }

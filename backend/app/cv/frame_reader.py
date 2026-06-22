@@ -38,13 +38,18 @@ def read_video_metadata(video_path: str | Path) -> dict[str, Any]:
     }
 
 
-def iter_frames(video_path: str | Path, frame_stride: int = 1):
+def iter_frames(
+    video_path: str | Path,
+    frame_stride: int = 1,
+    max_frames: int | None = None,
+):
     if frame_stride <= 0:
         raise ValueError("frame_stride must be greater than 0")
     path = validate_video_path(video_path)
     cv2 = _import_cv2()
     capture = cv2.VideoCapture(str(path))
     frame_index = 0
+    yielded = 0
     try:
         while True:
             ok, frame = capture.read()
@@ -57,6 +62,9 @@ def iter_frames(video_path: str | Path, frame_stride: int = 1):
                     "timestamp_ms": timestamp_ms,
                     "frame": frame,
                 }
+                yielded += 1
+                if max_frames is not None and yielded >= max_frames:
+                    break
             frame_index += 1
     finally:
         capture.release()

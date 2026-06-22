@@ -13,9 +13,15 @@ export async function apiGet<T>(path: string): Promise<T> {
 }
 
 export async function apiPost<T>(path: string, body?: BodyInit): Promise<T> {
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+  const init: RequestInit = {
     method: "POST",
     body
+  };
+  if (body && !(body instanceof FormData)) {
+    init.headers = { "Content-Type": "application/json" };
+  }
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    ...init
   });
   if (!response.ok) {
     throw new Error(`Request failed with status ${response.status}`);

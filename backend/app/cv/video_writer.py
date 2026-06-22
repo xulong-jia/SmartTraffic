@@ -2,6 +2,28 @@ from pathlib import Path
 from typing import Any
 
 
+def draw_detections(frame: Any, detections: list[dict[str, Any]]) -> Any:
+    cv2 = _import_cv2()
+    output = frame.copy()
+    for detection in detections:
+        x1, y1, x2, y2 = [int(round(value)) for value in detection["bbox"]]
+        class_name = str(detection.get("class_name", "object"))
+        confidence = float(detection.get("confidence", 0.0))
+        label = f"{class_name} {confidence:.2f}"
+        cv2.rectangle(output, (x1, y1), (x2, y2), (0, 180, 80), 2)
+        cv2.putText(
+            output,
+            label,
+            (x1, max(12, y1 - 6)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.45,
+            (0, 180, 80),
+            1,
+            cv2.LINE_AA,
+        )
+    return output
+
+
 class AnnotatedVideoWriter:
     """Minimal OpenCV video writer wrapper for future annotated outputs."""
 
