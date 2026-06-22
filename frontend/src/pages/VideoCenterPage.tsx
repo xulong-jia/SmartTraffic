@@ -1,16 +1,22 @@
 import { useEffect, useState } from "react";
 
 import { listVideos, startVideoProcessing, uploadVideo } from "../api/videos";
-import type { DetectionProcessResult, VideoRecord } from "../types";
+import type { DetectionProcessOptions, DetectionProcessResult, VideoRecord } from "../types";
+
+type ProcessMode = NonNullable<DetectionProcessOptions["mode"]>;
 
 export default function VideoCenterPage() {
   const [videos, setVideos] = useState<VideoRecord[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [lastRun, setLastRun] = useState<DetectionProcessResult | null>(null);
+  const [processMode, setProcessMode] = useState<ProcessMode>("detection_tracking");
   const [detectorDryRun, setDetectorDryRun] = useState(true);
   const [trackerDryRun, setTrackerDryRun] = useState(true);
   const [frameStride, setFrameStride] = useState(1);
   const [maxFrames, setMaxFrames] = useState(120);
+  const [directionWindow, setDirectionWindow] = useState(2);
+  const [dwellSpeedThreshold, setDwellSpeedThreshold] = useState(1);
+  const [maxHistoryPoints, setMaxHistoryPoints] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -45,13 +51,21 @@ export default function VideoCenterPage() {
     setLoading(true);
     setError("");
     try {
-      const result = await startVideoProcessing(videoId, {
-        mode: "detection_tracking",
+      const options: DetectionProcessOptions = {
+        mode: processMode,
         detector_dry_run: detectorDryRun,
         tracker_dry_run: trackerDryRun,
         frame_stride: frameStride,
         max_frames: maxFrames
-      });
+      };
+
+      if (processMode === "detection_tracking_trajectory") {
+        options.direction_window = directionWindow;
+        options.dwell_speed_threshold = dwellSpeedThreshold;
+        options.max_history_points = parseOptionalPositiveInteger(maxHistoryPoints);
+      }
+
+      const result = await startVideoProcessing(videoId, options);
       setLastRun(result);
       refreshVideos();
     } catch (currentError) {
@@ -83,15 +97,38 @@ export default function VideoCenterPage() {
         {error ? <p>{error}</p> : null}
         {lastRun ? (
           <div className="summary-strip">
-            <h3>Latest Tracking Run</h3>
+            <h3>Latest Process Run</h3>
             <p>
               <strong>{lastRun.run_id}</strong> · {lastRun.status} ·{" "}
               {lastRun.total_frames_processed} frames · {lastRun.total_detections} detections ·{" "}
               {lastRun.total_tracks ?? 0} tracks
+              {lastRun.total_trajectory_points !== undefined &&
+              lastRun.total_trajectory_points !== null
+                ? ` · ${lastRun.total_trajectory_points} trajectory points`
+                : ""}
+              {lastRun.avg_track_length !== undefined && lastRun.avg_track_length !== null
+                ? ` · avg length ${lastRun.avg_track_length}`
+                : ""}
+              {lastRun.max_track_length !== undefined && lastRun.max_track_length !== null
+                ? ` · max length ${lastRun.max_track_length}`
+                : ""}
             </p>
           </div>
         ) : null}
         <div className="toolbar">
+          <label>
+            Mode
+            <select
+              value={processMode}
+              onChange={(event) => setProcessMode(event.target.value as ProcessMode)}
+            >
+              <option value="detection_only">Detection only</option>
+              <option value="detection_tracking">Detection + Tracking</option>
+              <option value="detection_tracking_trajectory">
+                Detection + Tracking + Trajectory
+              </option>
+            </select>
+          </label>
           <label className="inline-control">
             <input
               checked={detectorDryRun}
@@ -127,6 +164,41 @@ export default function VideoCenterPage() {
             />
           </label>
         </div>
+        {processMode === "detection_tracking_trajectory" ? (
+          <div className="toolbar">
+            <label>
+              Direction window
+              <input
+                min={2}
+                type="number"
+                value={directionWindow}
+                onChange={(event) => setDirectionWindow(Math.max(2, Number(event.target.value)))}
+              />
+            </label>
+            <label>
+              Dwell speed threshold
+              <input
+                min={0}
+                step={0.1}
+                type="number"
+                value={dwellSpeedThreshold}
+                onChange={(event) =>
+                  setDwellSpeedThreshold(Math.max(0, Number(event.target.value)))
+                }
+              />
+            </label>
+            <label>
+              Max history points
+              <input
+                min={1}
+                placeholder="unlimited"
+                type="number"
+                value={maxHistoryPoints}
+                onChange={(event) => setMaxHistoryPoints(event.target.value)}
+              />
+            </label>
+          </div>
+        ) : null}
         {videos.length === 0 ? (
           <p className="muted">暂无视频</p>
         ) : (
@@ -149,7 +221,7 @@ export default function VideoCenterPage() {
                   <td>{video.total_frames}</td>
                   <td>
                     <button disabled={loading} type="button" onClick={() => handleProcess(video.id)}>
-                      Track
+                      Process
                     </button>
                   </td>
                 </tr>
@@ -160,4 +232,17 @@ export default function VideoCenterPage() {
       </section>
     </>
   );
+}
+
+function parseOptionalPositiveInteger(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = Number.parseInt(trimmed, 10);
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+  return Math.max(1, parsed);
 }

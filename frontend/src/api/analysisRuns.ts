@@ -1,5 +1,10 @@
 import { apiGet } from "./client";
-import type { AnalysisRun, AnalysisRunDetections, AnalysisRunTracks } from "../types";
+import type {
+  AnalysisRun,
+  AnalysisRunDetections,
+  AnalysisRunTracks,
+  TrajectoryPointsResponse
+} from "../types";
 
 export function listAnalysisRuns(): Promise<AnalysisRun[]> {
   return apiGet<AnalysisRun[]>("/api/analysis-runs");
@@ -24,5 +29,20 @@ export function getAnalysisRunTracks(
 ): Promise<AnalysisRunTracks> {
   return apiGet<AnalysisRunTracks>(
     `/api/analysis-runs/${encodeURIComponent(runId)}/tracks?limit=${limit}`
+  );
+}
+
+export function getTrajectoryPoints(
+  runId: string,
+  options: { limit?: number; trackId?: number | null } = {}
+): Promise<TrajectoryPointsResponse> {
+  const params = new URLSearchParams();
+  params.set("limit", String(options.limit ?? 100));
+  if (options.trackId !== undefined && options.trackId !== null) {
+    params.set("track_id", String(options.trackId));
+  }
+
+  return apiGet<TrajectoryPointsResponse>(
+    `/api/analysis-runs/${encodeURIComponent(runId)}/trajectory-points?${params.toString()}`
   );
 }

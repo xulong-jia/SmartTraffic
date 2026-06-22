@@ -3,16 +3,41 @@ import { useEffect, useState } from "react";
 import {
   getAnalysisRunDetections,
   getAnalysisRunTracks,
+  getTrajectoryPoints,
   listAnalysisRuns
 } from "../api/analysisRuns";
 import VideoPlayerWithOverlay from "../components/VideoPlayerWithOverlay";
-import type { AnalysisRun, AnalysisRunDetections, AnalysisRunTracks } from "../types";
+import type {
+  AnalysisRun,
+  AnalysisRunDetections,
+  AnalysisRunTracks,
+  TrajectoryFrame,
+  TrajectoryPointRow,
+  TrajectoryPointsResponse
+} from "../types";
+
+const trajectoryColumns: Array<keyof TrajectoryPointRow> = [
+  "frame_index",
+  "timestamp_ms",
+  "track_id",
+  "class_name",
+  "state",
+  "speed_px_per_frame",
+  "speed_px_per_second",
+  "moving_angle",
+  "track_length"
+];
 
 export default function AnalysisDetailPage() {
   const [runs, setRuns] = useState<AnalysisRun[]>([]);
   const [selectedRunId, setSelectedRunId] = useState("");
   const [detections, setDetections] = useState<AnalysisRunDetections | null>(null);
   const [tracks, setTracks] = useState<AnalysisRunTracks | null>(null);
+  const [trajectoryData, setTrajectoryData] = useState<TrajectoryPointsResponse | null>(null);
+  const [trajectoryLoading, setTrajectoryLoading] = useState(false);
+  const [trajectoryError, setTrajectoryError] = useState("");
+  const [trajectoryTrackIdFilter, setTrajectoryTrackIdFilter] = useState("");
+  const [trajectoryLimit, setTrajectoryLimit] = useState(100);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -30,6 +55,7 @@ export default function AnalysisDetailPage() {
     if (!selectedRunId) {
       return;
     }
+    setError("");
     Promise.all([
       getAnalysisRunDetections(selectedRunId, 50),
       getAnalysisRunTracks(selectedRunId, 50)
@@ -39,7 +65,42 @@ export default function AnalysisDetailPage() {
         setTracks(trackingPayload);
       })
       .catch((currentError: Error) => setError(currentError.message));
+    loadTrajectory(selectedRunId);
   }, [selectedRunId]);
+
+  async function loadTrajectory(runId: string) {
+    setTrajectoryLoading(true);
+    setTrajectoryError("");
+    setTrajectoryData(null);
+    try {
+      const payload = await getTrajectoryPoints(runId, {
+        limit: trajectoryLimit,
+        trackId: parseTrackIdFilter(trajectoryTrackIdFilter)
+      });
+      setTrajectoryData(payload);
+    } catch (currentError) {
+      const message =
+        currentError instanceof Error ? currentError.message : "Trajectory request failed";
+      if (message.includes("404")) {
+        setTrajectoryError("当前 run 无轨迹产物，请使用 detection_tracking_trajectory 模式重新处理。");
+      } else {
+        setTrajectoryError(message);
+      }
+    } finally {
+      setTrajectoryLoading(false);
+    }
+  }
+
+  function handleTrajectoryRefresh() {
+    if (!selectedRunId) {
+      return;
+    }
+    if (trajectoryTrackIdFilter.trim() && parseTrackIdFilter(trajectoryTrackIdFilter) === null) {
+      setTrajectoryError("Track ID must be an integer.");
+      return;
+    }
+    loadTrajectory(selectedRunId);
+  }
 
   return (
     <>
@@ -65,6 +126,38 @@ export default function AnalysisDetailPage() {
               </select>
             </label>
             {error ? <p>{error}</p> : null}
+          </section>
+          <section className="panel">
+            <h3>Trajectory Query</h3>
+            <div className="toolbar">
+              <label>
+                Limit
+                <input
+                  max={1000}
+                  min={0}
+                  type="number"
+                  value={trajectoryLimit}
+                  onChange={(event) =>
+                    setTrajectoryLimit(clampInteger(Number(event.target.value), 0, 1000))
+                  }
+                />
+              </label>
+              <label>
+                Track ID
+                <input
+                  placeholder="all"
+                  type="number"
+                  value={trajectoryTrackIdFilter}
+                  onChange={(event) => setTrajectoryTrackIdFilter(event.target.value)}
+                />
+              </label>
+              <button disabled={!selectedRunId || trajectoryLoading} type="button" onClick={handleTrajectoryRefresh}>
+                Apply / Refresh
+              </button>
+            </div>
+            {trajectoryLoading ? <p className="muted">Loading trajectory points...</p> : null}
+            {trajectoryError ? <p>{trajectoryError}</p> : null}
+            {trajectoryData ? <TrajectoryDetail data={trajectoryData} /> : null}
           </section>
           {detections ? (
             <section className="panel">
@@ -128,4 +221,121 @@ export default function AnalysisDetailPage() {
       </div>
     </>
   );
+}
+
+function TrajectoryDetail({ data }: { data: TrajectoryPointsResponse }) {
+  const rowPreview = data.rows.slice(0, 20);
+  const framePreview = data.frames.slice(0, 10);
+  const pointCount = data.frames.reduce(
+    (total, frame) => total + frame.trajectory_points.length,
+    0
+  );
+  const hasFilter = data.track_id !== undefined && data.track_id !== null;
+  const hasNoMatches = hasFilter && data.rows.length === 0 && pointCount === 0;
+
+  return (
+    <>
+      <h3>Trajectory Summary</h3>
+      <p>
+        {formatValue(data.summary.total_frames_processed ?? 0)} frames ·{" "}
+        {formatValue(data.summary.total_trajectory_points ?? 0)} trajectory points ·{" "}
+        {formatValue(data.summary.unique_track_ids ?? 0)} unique IDs · avg length{" "}
+        {formatValue(data.summary.avg_track_length)} · max length{" "}
+        {formatValue(data.summary.max_track_length)} · avg speed{" "}
+        {formatValue(data.summary.avg_speed_px_per_second)}
+      </p>
+      {hasNoMatches ? <p className="muted">没有匹配的 trajectory points</p> : null}
+      <h3>Trajectory Rows</h3>
+      {rowPreview.length === 0 ? (
+        <p className="muted">暂无 trajectory rows</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              {trajectoryColumns.map((column) => (
+                <th key={String(column)}>{column}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rowPreview.map((row, index) => (
+              <tr key={`${row.frame_index}-${row.track_id}-${index}`}>
+                {trajectoryColumns.map((column) => (
+                  <td key={String(column)}>{formatValue(row[column])}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <h3>Trajectory Frames</h3>
+      {framePreview.length === 0 ? (
+        <p className="muted">暂无 trajectory frames</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th>Frame</th>
+              <th>Timestamp</th>
+              <th>Point count</th>
+              <th>Track IDs</th>
+            </tr>
+          </thead>
+          <tbody>
+            {framePreview.map((frame, index) => (
+              <tr key={`${frame.frame_index}-${index}`}>
+                <td>{formatValue(frame.frame_index)}</td>
+                <td>{formatValue(frame.timestamp_ms)}</td>
+                <td>{frame.trajectory_points.length}</td>
+                <td>{formatTrackIds(frame)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </>
+  );
+}
+
+function parseTrackIdFilter(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isInteger(parsed)) {
+    return null;
+  }
+  return parsed;
+}
+
+function clampInteger(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) {
+    return min;
+  }
+  return Math.min(max, Math.max(min, Math.trunc(value)));
+}
+
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+  if (typeof value === "number" && !Number.isFinite(value)) {
+    return "-";
+  }
+  if (Array.isArray(value) || typeof value === "object") {
+    return JSON.stringify(value);
+  }
+  return String(value);
+}
+
+function formatTrackIds(frame: TrajectoryFrame): string {
+  const ids = frame.trajectory_points
+    .map((point) => point.track_id)
+    .filter((trackId): trackId is number => trackId !== undefined && trackId !== null);
+  if (ids.length === 0) {
+    return "-";
+  }
+  return Array.from(new Set(ids)).join(", ");
 }
