@@ -1,9 +1,17 @@
+from collections.abc import Mapping, Sequence
 import json
 import csv
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+
+TRAJECTORY_ARTIFACTS = {
+    "trajectory_points": "trajectory_points.csv",
+    "trajectory_points_csv": "trajectory_points.csv",
+    "trajectory_points_jsonl": "trajectory_points.jsonl",
+    "trajectory_summary": "trajectory_summary.json",
+}
 
 CORE_ARTIFACTS = {
     "detections": "detections.csv",
@@ -16,7 +24,7 @@ CORE_ARTIFACTS = {
     "tracks_jsonl": "tracks.jsonl",
     "tracking_summary": "tracking_summary.json",
     "tracking_preview": "tracking_preview.mp4",
-    "trajectory_points": "trajectory_points.csv",
+    **TRAJECTORY_ARTIFACTS,
     "events": "events.jsonl",
     "alerts": "alerts.jsonl",
     "flow_counts": "flow_counts.json",
@@ -25,6 +33,39 @@ CORE_ARTIFACTS = {
     "annotated_video": "annotated_video.mp4",
     "keyframes": "keyframes",
 }
+
+TRAJECTORY_FIELDNAMES = [
+    "run_id",
+    "video_id",
+    "frame_index",
+    "timestamp_ms",
+    "track_id",
+    "class_id",
+    "class_name",
+    "confidence",
+    "state",
+    "x1",
+    "y1",
+    "x2",
+    "y2",
+    "center_x",
+    "center_y",
+    "bottom_center_x",
+    "bottom_center_y",
+    "speed_px_per_frame",
+    "speed_px_per_second",
+    "direction_x",
+    "direction_y",
+    "moving_angle",
+    "dwell_time_ms",
+    "zone_ids_json",
+    "zone_history_json",
+    "lane_relation_json",
+    "line_crossings_json",
+    "track_length",
+    "last_seen_frame",
+    "last_seen_timestamp_ms",
+]
 
 
 class TrafficArtifactWriter:
@@ -197,6 +238,58 @@ class TrafficArtifactWriter:
             "tracking_summary": tracking_summary,
         }
 
+    def write_trajectory_outputs(
+        self,
+        run_id: str,
+        video_id: str,
+        frame_results: list[dict[str, Any]],
+    ) -> dict[str, Path]:
+        _validate_run_id(run_id)
+        run_dir = self.base_dir / run_id
+        run_dir.mkdir(parents=True, exist_ok=True)
+        trajectory_points_csv = run_dir / "trajectory_points.csv"
+        trajectory_points_jsonl = run_dir / "trajectory_points.jsonl"
+        trajectory_summary = run_dir / "trajectory_summary.json"
+
+        with trajectory_points_csv.open("w", newline="", encoding="utf-8") as file:
+            writer = csv.DictWriter(file, fieldnames=TRAJECTORY_FIELDNAMES)
+            writer.writeheader()
+            for frame_result in frame_results:
+                for trajectory_point in frame_result.get("trajectory_points", []):
+                    writer.writerow(
+                        _flatten_trajectory_point(
+                            run_id=run_id,
+                            video_id=video_id,
+                            frame_result=frame_result,
+                            trajectory_point=trajectory_point,
+                        )
+                    )
+
+        with trajectory_points_jsonl.open("w", encoding="utf-8") as file:
+            for frame_result in frame_results:
+                payload = {
+                    "run_id": run_id,
+                    "video_id": video_id,
+                    "frame_index": frame_result.get("frame_index"),
+                    "timestamp_ms": frame_result.get("timestamp_ms"),
+                    "trajectory_points": frame_result.get("trajectory_points", []),
+                }
+                file.write(json.dumps(payload, ensure_ascii=False))
+                file.write("\n")
+
+        summary = build_trajectory_summary(
+            frame_results,
+            run_id=run_id,
+            video_id=video_id,
+        )
+        _write_json(summary, trajectory_summary)
+        self._merge_metadata_artifacts(run_id, TRAJECTORY_ARTIFACTS, video_id=video_id)
+        return {
+            "trajectory_points_csv": trajectory_points_csv,
+            "trajectory_points_jsonl": trajectory_points_jsonl,
+            "trajectory_summary": trajectory_summary,
+        }
+
     def artifact_index(self, run_id: str) -> dict[str, str]:
         _validate_run_id(run_id)
         run_dir = self.base_dir / run_id
@@ -204,6 +297,32 @@ class TrafficArtifactWriter:
             name: str(relative_path)
             for name, relative_path in CORE_ARTIFACTS.items()
         }
+
+    def _merge_metadata_artifacts(
+        self,
+        run_id: str,
+        artifact_updates: dict[str, str],
+        video_id: str | None = None,
+    ) -> Path:
+        _validate_run_id(run_id)
+        metadata_path = self.base_dir / run_id / "metadata.json"
+        if metadata_path.is_file():
+            with metadata_path.open(encoding="utf-8") as file:
+                metadata = json.load(file)
+        else:
+            metadata = {
+                "run_id": run_id,
+                "created_at": _utc_now_iso(),
+                "artifacts": {},
+            }
+
+        metadata.setdefault("run_id", run_id)
+        if video_id is not None:
+            metadata.setdefault("video_id", video_id)
+        artifacts = dict(metadata.get("artifacts", {}))
+        artifacts.update(artifact_updates)
+        metadata["artifacts"] = artifacts
+        return _write_json(metadata, metadata_path)
 
 
 def build_detection_summary(frame_results: list[dict[str, Any]]) -> dict[str, Any]:
@@ -245,6 +364,173 @@ def build_tracking_summary(frame_results: list[dict[str, Any]]) -> dict[str, Any
         },
         "track_state_counts": track_state_counts,
     }
+
+
+def build_trajectory_summary(
+    frame_results: list[dict[str, Any]],
+    run_id: str | None = None,
+    video_id: str | None = None,
+) -> dict[str, Any]:
+    per_class_track_ids: dict[str, set[Any]] = {}
+    track_state_counts: dict[str, int] = {}
+    unique_track_ids: set[Any] = set()
+    max_track_lengths: dict[Any, int] = {}
+    speeds_px_per_second: list[float] = []
+    zone_counts: dict[str, int] = {}
+    line_crossing_counts: dict[str, int] = {}
+    total_trajectory_points = 0
+
+    for frame_result in frame_results:
+        for trajectory_point in frame_result.get("trajectory_points", []):
+            total_trajectory_points += 1
+            track_id = trajectory_point.get("track_id")
+            class_name = str(trajectory_point.get("class_name", ""))
+            state = str(trajectory_point.get("state", "confirmed"))
+
+            if track_id is not None:
+                unique_track_ids.add(track_id)
+                per_class_track_ids.setdefault(class_name, set()).add(track_id)
+                track_length = trajectory_point.get("track_length")
+                if track_length is not None:
+                    max_track_lengths[track_id] = max(
+                        int(track_length),
+                        max_track_lengths.get(track_id, 0),
+                    )
+
+            track_state_counts[state] = track_state_counts.get(state, 0) + 1
+
+            speed_px_per_second = trajectory_point.get("speed_px_per_second")
+            if speed_px_per_second is not None:
+                speeds_px_per_second.append(float(speed_px_per_second))
+
+            for zone_id in trajectory_point.get("zone_ids", []) or []:
+                zone_key = str(zone_id)
+                zone_counts[zone_key] = zone_counts.get(zone_key, 0) + 1
+
+            for crossing in trajectory_point.get("line_crossings", []) or []:
+                crossing_key = _line_crossing_key(crossing)
+                if crossing_key is None:
+                    continue
+                line_crossing_counts[crossing_key] = (
+                    line_crossing_counts.get(crossing_key, 0) + 1
+                )
+
+    track_lengths = list(max_track_lengths.values())
+    return {
+        "run_id": run_id,
+        "video_id": video_id,
+        "total_frames_processed": len(frame_results),
+        "total_trajectory_points": total_trajectory_points,
+        "unique_track_ids": len(unique_track_ids),
+        "per_class_track_counts": {
+            class_name: len(track_ids)
+            for class_name, track_ids in sorted(per_class_track_ids.items())
+        },
+        "track_state_counts": dict(sorted(track_state_counts.items())),
+        "avg_track_length": (
+            round(sum(track_lengths) / len(track_lengths), 6) if track_lengths else 0.0
+        ),
+        "max_track_length": max(track_lengths) if track_lengths else 0,
+        "speed_unit": "px_per_second",
+        "avg_speed_px_per_second": (
+            round(sum(speeds_px_per_second) / len(speeds_px_per_second), 6)
+            if speeds_px_per_second
+            else None
+        ),
+        "zone_counts": dict(sorted(zone_counts.items())),
+        "line_crossing_counts": dict(sorted(line_crossing_counts.items())),
+    }
+
+
+def _flatten_trajectory_point(
+    run_id: str,
+    video_id: str,
+    frame_result: dict[str, Any],
+    trajectory_point: dict[str, Any],
+) -> dict[str, Any]:
+    x1, y1, x2, y2 = _sequence_values(trajectory_point.get("bbox"), 4)
+    center_x, center_y = _sequence_values(trajectory_point.get("center"), 2)
+    bottom_center_x, bottom_center_y = _sequence_values(
+        trajectory_point.get("bottom_center"),
+        2,
+    )
+    direction_x, direction_y = _sequence_values(
+        trajectory_point.get("direction_vector"),
+        2,
+    )
+    return {
+        "run_id": run_id,
+        "video_id": video_id,
+        "frame_index": _csv_value(frame_result.get("frame_index")),
+        "timestamp_ms": _csv_value(frame_result.get("timestamp_ms")),
+        "track_id": _csv_value(trajectory_point.get("track_id")),
+        "class_id": _csv_value(trajectory_point.get("class_id")),
+        "class_name": _csv_value(trajectory_point.get("class_name")),
+        "confidence": _csv_value(trajectory_point.get("confidence")),
+        "state": _csv_value(trajectory_point.get("state")),
+        "x1": x1,
+        "y1": y1,
+        "x2": x2,
+        "y2": y2,
+        "center_x": center_x,
+        "center_y": center_y,
+        "bottom_center_x": bottom_center_x,
+        "bottom_center_y": bottom_center_y,
+        "speed_px_per_frame": _csv_value(
+            trajectory_point.get("speed_px_per_frame")
+        ),
+        "speed_px_per_second": _csv_value(
+            trajectory_point.get("speed_px_per_second")
+        ),
+        "direction_x": direction_x,
+        "direction_y": direction_y,
+        "moving_angle": _csv_value(trajectory_point.get("moving_angle")),
+        "dwell_time_ms": _csv_value(trajectory_point.get("dwell_time_ms")),
+        "zone_ids_json": _json_csv_value(trajectory_point, "zone_ids"),
+        "zone_history_json": _json_csv_value(trajectory_point, "zone_history"),
+        "lane_relation_json": _json_csv_value(trajectory_point, "lane_relation"),
+        "line_crossings_json": _json_csv_value(trajectory_point, "line_crossings"),
+        "track_length": _csv_value(trajectory_point.get("track_length")),
+        "last_seen_frame": _csv_value(trajectory_point.get("last_seen_frame")),
+        "last_seen_timestamp_ms": _csv_value(
+            trajectory_point.get("last_seen_timestamp_ms")
+        ),
+    }
+
+
+def _sequence_values(value: Any, length: int) -> tuple[Any, ...]:
+    if value is None or isinstance(value, str | bytes):
+        return ("",) * length
+    if not isinstance(value, Sequence) or len(value) < length:
+        return ("",) * length
+    return tuple(_csv_value(value[index]) for index in range(length))
+
+
+def _json_csv_value(payload: Mapping[str, Any], key: str) -> str:
+    if key not in payload or payload[key] is None:
+        return ""
+    return json.dumps(payload[key], ensure_ascii=False, sort_keys=True)
+
+
+def _csv_value(value: Any) -> Any:
+    if value is None:
+        return ""
+    return value
+
+
+def _line_crossing_key(crossing: Any) -> str | None:
+    if isinstance(crossing, Mapping):
+        crossing_id = (
+            crossing.get("line_id")
+            or crossing.get("line_name")
+            or crossing.get("id")
+        )
+        if crossing_id is None:
+            return None
+        return str(crossing_id)
+    if crossing is None:
+        return None
+    return str(crossing)
 
 
 def _write_json(data: dict[str, Any], output_path: Path) -> Path:
