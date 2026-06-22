@@ -6,6 +6,7 @@ from app.core.config import get_settings
 from app.cv.frame_reader import read_video_metadata
 from app.schemas.processing import DetectionProcessRequest, DetectionProcessResponse
 from app.services.detection_service import DetectionRunParams
+from app.services.tracking_service import TrackingRunParams
 from app.schemas.video import VideoResponse, VideoStatusResponse
 from app.services.processing_service import processing_service
 from app.services.video_service import video_registry
@@ -66,20 +67,47 @@ def process_video(
 ) -> DetectionProcessResponse:
     video = _get_video_or_404(video_id)
     payload = request or DetectionProcessRequest()
+    detector_dry_run = (
+        payload.detector_dry_run
+        if payload.detector_dry_run is not None
+        else payload.dry_run
+    )
     try:
-        task = processing_service.create_processing_task(
-            video,
-            DetectionRunParams(
+        if payload.mode == "detection_only":
+            params = DetectionRunParams(
                 model_path=payload.model_path,
                 conf_threshold=payload.conf_threshold,
                 iou_threshold=payload.iou_threshold,
                 image_size=payload.image_size,
                 device=payload.device,
-                dry_run=payload.dry_run,
+                dry_run=detector_dry_run,
+                frame_stride=payload.frame_stride,
+                max_frames=payload.max_frames,
+                write_preview=bool(payload.write_preview),
+            )
+        else:
+            params = TrackingRunParams(
+                model_path=payload.model_path,
+                conf_threshold=payload.conf_threshold,
+                iou_threshold=payload.iou_threshold,
+                image_size=payload.image_size,
+                device=payload.device,
+                detector_dry_run=detector_dry_run,
+                tracker_dry_run=payload.tracker_dry_run,
                 frame_stride=payload.frame_stride,
                 max_frames=payload.max_frames,
                 write_preview=payload.write_preview,
-            ),
+                deepsort_max_age=payload.deepsort_max_age,
+                deepsort_n_init=payload.deepsort_n_init,
+                deepsort_max_iou_distance=payload.deepsort_max_iou_distance,
+                deepsort_max_cosine_distance=payload.deepsort_max_cosine_distance,
+                tracking_min_confidence=payload.tracking_min_confidence,
+                tracking_target_classes=payload.tracking_target_classes,
+            )
+        task = processing_service.create_processing_task(
+            video,
+            params=params,
+            mode=payload.mode,
         )
     except (FileNotFoundError, RuntimeError, ValueError) as exc:
         raise HTTPException(

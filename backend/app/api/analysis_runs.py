@@ -34,3 +34,17 @@ def get_analysis_run_detections(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="analysis run not found",
         ) from exc
+
+
+@router.get("/{run_id}/tracks")
+def get_analysis_run_tracks(
+    run_id: str,
+    limit: int = Query(default=100, ge=0, le=1000),
+) -> dict:
+    try:
+        return traffic_analysis_service.read_run_tracks(run_id, limit=limit)
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="analysis run not found",
+        ) from exc

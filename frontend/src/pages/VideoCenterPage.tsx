@@ -7,6 +7,10 @@ export default function VideoCenterPage() {
   const [videos, setVideos] = useState<VideoRecord[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [lastRun, setLastRun] = useState<DetectionProcessResult | null>(null);
+  const [detectorDryRun, setDetectorDryRun] = useState(true);
+  const [trackerDryRun, setTrackerDryRun] = useState(true);
+  const [frameStride, setFrameStride] = useState(1);
+  const [maxFrames, setMaxFrames] = useState(120);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -42,9 +46,11 @@ export default function VideoCenterPage() {
     setError("");
     try {
       const result = await startVideoProcessing(videoId, {
-        dry_run: true,
-        frame_stride: 1,
-        max_frames: 120
+        mode: "detection_tracking",
+        detector_dry_run: detectorDryRun,
+        tracker_dry_run: trackerDryRun,
+        frame_stride: frameStride,
+        max_frames: maxFrames
       });
       setLastRun(result);
       refreshVideos();
@@ -76,14 +82,51 @@ export default function VideoCenterPage() {
         </div>
         {error ? <p>{error}</p> : null}
         {lastRun ? (
-          <div className="panel">
-            <h3>Latest Detection Run</h3>
+          <div className="summary-strip">
+            <h3>Latest Tracking Run</h3>
             <p>
               <strong>{lastRun.run_id}</strong> · {lastRun.status} ·{" "}
-              {lastRun.total_frames_processed} frames · {lastRun.total_detections} detections
+              {lastRun.total_frames_processed} frames · {lastRun.total_detections} detections ·{" "}
+              {lastRun.total_tracks ?? 0} tracks
             </p>
           </div>
         ) : null}
+        <div className="toolbar">
+          <label className="inline-control">
+            <input
+              checked={detectorDryRun}
+              type="checkbox"
+              onChange={(event) => setDetectorDryRun(event.target.checked)}
+            />
+            Detector dry-run
+          </label>
+          <label className="inline-control">
+            <input
+              checked={trackerDryRun}
+              type="checkbox"
+              onChange={(event) => setTrackerDryRun(event.target.checked)}
+            />
+            Tracker dry-run
+          </label>
+          <label>
+            Stride
+            <input
+              min={1}
+              type="number"
+              value={frameStride}
+              onChange={(event) => setFrameStride(Math.max(1, Number(event.target.value)))}
+            />
+          </label>
+          <label>
+            Max frames
+            <input
+              min={1}
+              type="number"
+              value={maxFrames}
+              onChange={(event) => setMaxFrames(Math.max(1, Number(event.target.value)))}
+            />
+          </label>
+        </div>
         {videos.length === 0 ? (
           <p className="muted">暂无视频</p>
         ) : (
@@ -106,7 +149,7 @@ export default function VideoCenterPage() {
                   <td>{video.total_frames}</td>
                   <td>
                     <button disabled={loading} type="button" onClick={() => handleProcess(video.id)}>
-                      Detect
+                      Track
                     </button>
                   </td>
                 </tr>

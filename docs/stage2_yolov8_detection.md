@@ -46,7 +46,7 @@ Run stage-two detection in dry-run mode:
 ```bash
 curl -X POST http://localhost:8000/api/videos/{video_id}/process \
   -H "Content-Type: application/json" \
-  -d '{"dry_run": true, "frame_stride": 1, "max_frames": 120}'
+  -d '{"mode": "detection_only", "dry_run": true, "frame_stride": 1, "max_frames": 120}'
 ```
 
 Query a run:

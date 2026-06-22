@@ -37,9 +37,9 @@ class TrafficAnalysisService:
             "id": run_id,
             "video_id": metadata.get("video_id", ""),
             "status": "completed",
-            "result_dir": str(self._run_dir(run_id)),
+            "result_dir": f"results/traffic_analysis/{run_id}",
             "artifact_index": metadata.get("artifacts", {}),
-            "metadata": metadata,
+            "metadata": _public_metadata(metadata),
         }
         self._runs[run_id] = run
         return dict(run)
@@ -50,6 +50,44 @@ class TrafficAnalysisService:
         summary_path = run_dir / "detection_summary.json"
         jsonl_path = run_dir / "detections.jsonl"
         csv_path = run_dir / "detections.csv"
+        summary: dict[str, Any] = {}
+        if summary_path.is_file():
+            with summary_path.open(encoding="utf-8") as file:
+                summary = json.load(file)
+
+        frames: list[dict[str, Any]] = []
+        if jsonl_path.is_file():
+            with jsonl_path.open(encoding="utf-8") as file:
+                for line in file:
+                    stripped = line.strip()
+                    if stripped:
+                        frames.append(json.loads(stripped))
+                    if len(frames) >= limit:
+                        break
+
+        rows: list[dict[str, str]] = []
+        if csv_path.is_file():
+            with csv_path.open(newline="", encoding="utf-8") as file:
+                for row in csv.DictReader(file):
+                    rows.append(row)
+                    if len(rows) >= limit:
+                        break
+
+        return {
+            "run_id": run_id,
+            "video_id": metadata.get("video_id", ""),
+            "summary": summary,
+            "frames": frames,
+            "rows": rows,
+            "limit": limit,
+        }
+
+    def read_run_tracks(self, run_id: str, limit: int = 100) -> dict[str, Any]:
+        run_dir = self._run_dir(run_id)
+        metadata = self._load_metadata(run_id)
+        summary_path = run_dir / "tracking_summary.json"
+        jsonl_path = run_dir / "tracks.jsonl"
+        csv_path = run_dir / "tracks.csv"
         summary: dict[str, Any] = {}
         if summary_path.is_file():
             with summary_path.open(encoding="utf-8") as file:
@@ -99,3 +137,11 @@ class TrafficAnalysisService:
 
 
 traffic_analysis_service = TrafficAnalysisService()
+
+
+def _public_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
+    public = dict(metadata)
+    input_video = public.get("input_video")
+    if input_video:
+        public["input_video"] = Path(str(input_video)).name
+    return public

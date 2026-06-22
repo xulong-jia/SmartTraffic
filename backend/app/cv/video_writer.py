@@ -24,6 +24,29 @@ def draw_detections(frame: Any, detections: list[dict[str, Any]]) -> Any:
     return output
 
 
+def draw_tracks(frame: Any, tracks: list[dict[str, Any]]) -> Any:
+    cv2 = _import_cv2()
+    output = frame.copy()
+    for track in tracks:
+        x1, y1, x2, y2 = [int(round(value)) for value in track["bbox"]]
+        track_id = track.get("track_id")
+        class_name = str(track.get("class_name", "object"))
+        confidence = float(track.get("confidence", 0.0))
+        label = f"#{track_id} {class_name} {confidence:.2f}"
+        cv2.rectangle(output, (x1, y1), (x2, y2), (40, 120, 240), 2)
+        cv2.putText(
+            output,
+            label,
+            (x1, max(12, y1 - 6)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.45,
+            (40, 120, 240),
+            1,
+            cv2.LINE_AA,
+        )
+    return output
+
+
 class AnnotatedVideoWriter:
     """Minimal OpenCV video writer wrapper for future annotated outputs."""
 

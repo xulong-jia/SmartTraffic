@@ -4,7 +4,10 @@ from pydantic import BaseModel
 
 
 class DetectionProcessRequest(BaseModel):
+    mode: str = "detection_tracking"
     dry_run: bool | None = None
+    detector_dry_run: bool | None = None
+    tracker_dry_run: bool | None = None
     frame_stride: int | None = None
     max_frames: int | None = None
     conf_threshold: float | None = None
@@ -12,7 +15,13 @@ class DetectionProcessRequest(BaseModel):
     image_size: int | None = None
     device: str | None = None
     model_path: str | None = None
-    write_preview: bool = False
+    write_preview: bool | None = None
+    deepsort_max_age: int | None = None
+    deepsort_n_init: int | None = None
+    deepsort_max_iou_distance: float | None = None
+    deepsort_max_cosine_distance: float | None = None
+    tracking_min_confidence: float | None = None
+    tracking_target_classes: list[str] | None = None
 
 
 class ProcessingTaskResponse(BaseModel):
@@ -38,5 +47,9 @@ class DetectionProcessResponse(BaseModel):
     next_stage: str
     total_frames_processed: int
     total_detections: int
+    total_tracks: int | None = None
+    unique_track_ids: int | None = None
     per_class_counts: dict[str, int]
+    per_class_track_counts: dict[str, int] | None = None
+    track_state_counts: dict[str, int] | None = None
     artifacts: dict[str, str]

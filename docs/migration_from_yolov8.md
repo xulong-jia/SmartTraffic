@@ -24,7 +24,7 @@ The source project was inspected in read-only mode. No files were modified, move
 | `local_weights/`, `local_videos/`, `local_outputs/`, `runs/`, generated `results/` | Large/local artifacts are excluded by policy. |
 | `dataset/train`, `dataset/valid`, `dataset/test` | Dataset splits are outside phase-one initialization and may be large. |
 | `app.py` and `app/streamlit_video_demo.py` | Streamlit demo is not part of the new SmartTraffic architecture. |
-| ByteTrack runtime files under `src/tracking/` and tracking CLIs | Current phase forbids full tracker implementation; only a DeepSORT interface placeholder was created. |
+| ByteTrack runtime files under `src/tracking/` and tracking CLIs | SmartTraffic stage three uses a new DeepSORT adapter boundary instead of directly migrating the old ByteTrack runtime. |
 | `src/analytics/*` event/counting runtime | Current phase forbids full Trajectory Engine and Event Engine implementation. |
 | Bad Case and evaluation services/docs as implemented in the old project | SmartTraffic will implement these later under its own Review/Bad Case/Evaluation Center boundaries. |
 | Old README product claims and release history | New README must reflect SmartTraffic scope and phase-one status. |
@@ -56,3 +56,26 @@ Not migrated:
 Boundary difference:
 
 SmartTraffic `YoloDetector` only performs detection and detection-format conversion. It does not create events, run tracking, calculate trajectories, write database rows, or decide alerts. Those responsibilities remain reserved for later SmartTraffic phases.
+
+## Stage 3 DeepSORT Tracking Layer
+
+Stage three is not a direct migration of the old YOLOv8 project's tracking runtime. It adds a new SmartTraffic tracking layer after the stage-two detector contract.
+
+What changed:
+
+- YOLOv8 still only produces frame-level `detections`.
+- `backend/app/cv/deepsort_tracker.py` now owns the SmartTraffic tracking contract and `track_id` assignment.
+- The default tracker path is deterministic dry-run matching so tests and local development do not need real DeepSORT weights, GPU, network, or ReID embeddings.
+- Real DeepSORT is optional through `deep-sort-realtime` if it is available in the environment.
+- `backend/app/services/tracking_service.py` orchestrates detection -> tracking and writes `tracks.csv`, `tracks.jsonl`, and `tracking_summary.json`.
+
+Still not migrated or implemented:
+
+- Old event/counting/ROI analytics runtime.
+- Trajectory feature calculation.
+- Event Engine rules.
+- Alert, Review, Bad Case, and Evaluation Center complete logic.
+
+Boundary difference:
+
+SmartTraffic DeepSORT tracking is responsible for track identity only. It does not calculate speed, direction, dwell time, zone interactions, traffic violations, or alert decisions.

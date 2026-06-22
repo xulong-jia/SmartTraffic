@@ -13,7 +13,11 @@ export function uploadVideo(file: File): Promise<VideoRecord> {
 
 export function startVideoProcessing(
   videoId: string,
-  options: DetectionProcessOptions = { dry_run: true }
+  options: DetectionProcessOptions = {
+    mode: "detection_tracking",
+    detector_dry_run: true,
+    tracker_dry_run: true
+  }
 ): Promise<DetectionProcessResult> {
   return apiPost<DetectionProcessResult>(
     `/api/videos/${videoId}/process`,

@@ -20,6 +20,10 @@ select {
   font: inherit;
 }
 
+input[type="number"] {
+  width: 96px;
+}
+
 .app-shell {
   display: grid;
   min-height: 100vh;
@@ -124,6 +128,24 @@ nav button.active {
   gap: 10px;
   align-items: center;
   margin-bottom: 16px;
+}
+
+.toolbar label,
+.inline-control {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.summary-strip {
+  border-block: 1px solid #d9e0e7;
+  margin-bottom: 16px;
+  padding: 12px 0;
+}
+
+.summary-strip h3,
+.summary-strip p {
+  margin-bottom: 6px;
 }
 
 table {

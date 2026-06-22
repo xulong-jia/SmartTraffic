@@ -40,6 +40,11 @@ def _path_env(name: str, default: Path, *aliases: str) -> Path:
     return path if path.is_absolute() else PROJECT_DIR / path
 
 
+def _csv_env(name: str, default: tuple[str, ...], *aliases: str) -> tuple[str, ...]:
+    value = _env(name, ",".join(default), *aliases)
+    return tuple(item.strip() for item in value.split(",") if item.strip())
+
+
 @dataclass(frozen=True)
 class Settings:
     app_name: str = "SmartTraffic 智慧交通事件检测系统"
@@ -53,6 +58,21 @@ class Settings:
     yolo_image_size: int = 640
     yolo_device: str = "cpu"
     yolo_dry_run: bool = True
+    deepsort_dry_run: bool = True
+    deepsort_max_age: int = 30
+    deepsort_n_init: int = 1
+    deepsort_max_iou_distance: float = 0.7
+    deepsort_max_cosine_distance: float = 0.2
+    tracking_min_confidence: float = 0.0
+    tracking_target_classes: tuple[str, ...] = (
+        "car",
+        "bus",
+        "truck",
+        "motorcycle",
+        "bicycle",
+        "person",
+    )
+    tracking_write_preview: bool = False
     video_frame_stride: int = 1
     detection_max_frames: int | None = None
     cors_allow_origins: list[str] | None = None
@@ -95,6 +115,10 @@ class Settings:
     def dry_run(self) -> bool:
         return self.yolo_dry_run
 
+    @property
+    def tracker_dry_run(self) -> bool:
+        return self.deepsort_dry_run
+
 
 def get_settings() -> Settings:
     cors = os.environ.get("CORS_ALLOW_ORIGINS", "")
@@ -115,6 +139,17 @@ def get_settings() -> Settings:
         yolo_image_size=_int_env("YOLO_IMAGE_SIZE", 640),
         yolo_device=os.environ.get("YOLO_DEVICE", "cpu"),
         yolo_dry_run=_bool_env("YOLO_DRY_RUN", True, "SMARTTRAFFIC_DRY_RUN"),
+        deepsort_dry_run=_bool_env("DEEPSORT_DRY_RUN", True),
+        deepsort_max_age=_int_env("DEEPSORT_MAX_AGE", 30),
+        deepsort_n_init=_int_env("DEEPSORT_N_INIT", 1),
+        deepsort_max_iou_distance=_float_env("DEEPSORT_MAX_IOU_DISTANCE", 0.7),
+        deepsort_max_cosine_distance=_float_env("DEEPSORT_MAX_COSINE_DISTANCE", 0.2),
+        tracking_min_confidence=_float_env("TRACKING_MIN_CONFIDENCE", 0.0),
+        tracking_target_classes=_csv_env(
+            "TRACKING_TARGET_CLASSES",
+            ("car", "bus", "truck", "motorcycle", "bicycle", "person"),
+        ),
+        tracking_write_preview=_bool_env("TRACKING_WRITE_PREVIEW", False),
         video_frame_stride=_int_env("VIDEO_FRAME_STRIDE", 1, "FRAME_STRIDE"),
         detection_max_frames=(
             _int_env("DETECTION_MAX_FRAMES", 0) or None

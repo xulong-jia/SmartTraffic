@@ -12,6 +12,10 @@ CORE_ARTIFACTS = {
     "detection_summary": "detection_summary.json",
     "detection_preview": "detection_preview.mp4",
     "tracks": "tracks.csv",
+    "tracks_csv": "tracks.csv",
+    "tracks_jsonl": "tracks.jsonl",
+    "tracking_summary": "tracking_summary.json",
+    "tracking_preview": "tracking_preview.mp4",
     "trajectory_points": "trajectory_points.csv",
     "events": "events.jsonl",
     "alerts": "alerts.jsonl",
@@ -123,6 +127,76 @@ class TrafficArtifactWriter:
             "detection_summary": detection_summary,
         }
 
+    def write_tracking_outputs(
+        self,
+        run_id: str,
+        video_id: str,
+        frame_results: list[dict[str, Any]],
+    ) -> dict[str, Path]:
+        _validate_run_id(run_id)
+        run_dir = self.base_dir / run_id
+        run_dir.mkdir(parents=True, exist_ok=True)
+        tracks_csv = run_dir / "tracks.csv"
+        tracks_jsonl = run_dir / "tracks.jsonl"
+        tracking_summary = run_dir / "tracking_summary.json"
+
+        with tracks_csv.open("w", newline="", encoding="utf-8") as file:
+            fieldnames = [
+                "run_id",
+                "video_id",
+                "frame_index",
+                "timestamp_ms",
+                "track_id",
+                "class_id",
+                "class_name",
+                "confidence",
+                "x1",
+                "y1",
+                "x2",
+                "y2",
+                "center_x",
+                "center_y",
+                "state",
+            ]
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writeheader()
+            for frame_result in frame_results:
+                for track in frame_result.get("tracks", []):
+                    x1, y1, x2, y2 = [float(value) for value in track["bbox"]]
+                    center_x, center_y = [float(value) for value in track["center"]]
+                    writer.writerow(
+                        {
+                            "run_id": run_id,
+                            "video_id": video_id,
+                            "frame_index": frame_result["frame_index"],
+                            "timestamp_ms": frame_result.get("timestamp_ms"),
+                            "track_id": track["track_id"],
+                            "class_id": track.get("class_id"),
+                            "class_name": track["class_name"],
+                            "confidence": track["confidence"],
+                            "x1": x1,
+                            "y1": y1,
+                            "x2": x2,
+                            "y2": y2,
+                            "center_x": center_x,
+                            "center_y": center_y,
+                            "state": track.get("state", "confirmed"),
+                        }
+                    )
+
+        with tracks_jsonl.open("w", encoding="utf-8") as file:
+            for frame_result in frame_results:
+                file.write(json.dumps(frame_result, ensure_ascii=False))
+                file.write("\n")
+
+        summary = build_tracking_summary(frame_results)
+        _write_json(summary, tracking_summary)
+        return {
+            "tracks_csv": tracks_csv,
+            "tracks_jsonl": tracks_jsonl,
+            "tracking_summary": tracking_summary,
+        }
+
     def artifact_index(self, run_id: str) -> dict[str, str]:
         _validate_run_id(run_id)
         run_dir = self.base_dir / run_id
@@ -144,6 +218,32 @@ def build_detection_summary(frame_results: list[dict[str, Any]]) -> dict[str, An
         "total_frames_processed": len(frame_results),
         "total_detections": total_detections,
         "per_class_counts": per_class_counts,
+    }
+
+
+def build_tracking_summary(frame_results: list[dict[str, Any]]) -> dict[str, Any]:
+    per_class_track_ids: dict[str, set[int]] = {}
+    track_state_counts: dict[str, int] = {}
+    unique_track_ids: set[int] = set()
+    total_tracks = 0
+    for frame_result in frame_results:
+        for track in frame_result.get("tracks", []):
+            track_id = int(track["track_id"])
+            class_name = str(track["class_name"])
+            state = str(track.get("state", "confirmed"))
+            unique_track_ids.add(track_id)
+            per_class_track_ids.setdefault(class_name, set()).add(track_id)
+            track_state_counts[state] = track_state_counts.get(state, 0) + 1
+            total_tracks += 1
+    return {
+        "total_frames_processed": len(frame_results),
+        "total_tracks": total_tracks,
+        "unique_track_ids": len(unique_track_ids),
+        "per_class_track_counts": {
+            class_name: len(track_ids)
+            for class_name, track_ids in sorted(per_class_track_ids.items())
+        },
+        "track_state_counts": track_state_counts,
     }
 
 
