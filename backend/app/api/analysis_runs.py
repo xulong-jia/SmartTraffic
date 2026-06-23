@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, status
 
+from app.services.alert_service import AlertService
 from app.services.traffic_analysis_service import traffic_analysis_service
 
 
@@ -92,4 +93,48 @@ def get_analysis_run_events(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="event artifacts not found",
+        ) from exc
+
+
+@router.post("/{run_id}/alerts/generate")
+def generate_analysis_run_alerts(run_id: str) -> dict:
+    try:
+        return AlertService().generate_alerts(run_id=run_id)
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="analysis run not found",
+        ) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="event artifacts not found",
+        ) from exc
+
+
+@router.get("/{run_id}/alerts")
+def get_analysis_run_alerts(
+    run_id: str,
+    limit: int = Query(default=100, ge=0, le=1000),
+    alert_status: str | None = Query(default=None, alias="status"),
+    level: str | None = Query(default=None),
+    event_type: str | None = Query(default=None),
+) -> dict:
+    try:
+        return traffic_analysis_service.read_run_alerts(
+            run_id,
+            limit=limit,
+            status=alert_status,
+            level=level,
+            event_type=event_type,
+        )
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="analysis run not found",
+        ) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="alert artifacts not found",
         ) from exc

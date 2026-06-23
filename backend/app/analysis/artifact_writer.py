@@ -21,6 +21,12 @@ EVENT_ARTIFACTS = {
     "event_summary": "event_summary.json",
 }
 
+ALERT_ARTIFACTS = {
+    "alerts": "alerts.jsonl",
+    "alerts_jsonl": "alerts.jsonl",
+    "alert_summary": "alert_summary.json",
+}
+
 CORE_ARTIFACTS = {
     "detections": "detections.csv",
     "detections_csv": "detections.csv",
@@ -335,6 +341,30 @@ class TrafficArtifactWriter:
             "event_summary": event_summary,
         }
 
+    def write_alert_outputs(
+        self,
+        run_id: str,
+        video_id: str,
+        alerts: list[dict[str, Any]],
+    ) -> dict[str, Path]:
+        _validate_run_id(run_id)
+        run_dir = self.base_dir / run_id
+        run_dir.mkdir(parents=True, exist_ok=True)
+        alerts_jsonl = run_dir / "alerts.jsonl"
+        alert_summary = run_dir / "alert_summary.json"
+
+        _write_jsonl(alerts, alerts_jsonl)
+        _write_json(
+            build_alert_summary(alerts, run_id=run_id, video_id=video_id),
+            alert_summary,
+        )
+        self._merge_metadata_artifacts(run_id, ALERT_ARTIFACTS, video_id=video_id)
+        return {
+            "alerts": alerts_jsonl,
+            "alerts_jsonl": alerts_jsonl,
+            "alert_summary": alert_summary,
+        }
+
     def artifact_index(self, run_id: str) -> dict[str, str]:
         _validate_run_id(run_id)
         run_dir = self.base_dir / run_id
@@ -549,6 +579,62 @@ def build_event_summary(
         "rule_execution_counts": dict(sorted(rule_execution_counts.items())),
         "first_event_time_ms": min(event_times) if event_times else None,
         "last_event_time_ms": max(event_times) if event_times else None,
+    }
+
+
+def build_alert_summary(
+    alerts: list[dict[str, Any]],
+    run_id: str | None = None,
+    video_id: str | None = None,
+) -> dict[str, Any]:
+    per_alert_type_counts: dict[str, int] = {}
+    per_level_counts: dict[str, int] = {}
+    per_status_counts: dict[str, int] = {}
+    unique_event_ids: set[Any] = set()
+    unique_track_ids: set[Any] = set()
+    alert_times: list[int] = []
+
+    for alert in alerts:
+        alert_type = alert.get("alert_type")
+        if alert_type is not None:
+            alert_type_key = str(alert_type)
+            per_alert_type_counts[alert_type_key] = (
+                per_alert_type_counts.get(alert_type_key, 0) + 1
+            )
+
+        level = alert.get("level")
+        if level is not None:
+            level_key = str(level)
+            per_level_counts[level_key] = per_level_counts.get(level_key, 0) + 1
+
+        status = alert.get("status")
+        if status is not None:
+            status_key = str(status)
+            per_status_counts[status_key] = per_status_counts.get(status_key, 0) + 1
+
+        event_id = alert.get("event_id")
+        if event_id is not None:
+            unique_event_ids.add(event_id)
+
+        track_id = alert.get("track_id")
+        if track_id is not None:
+            unique_track_ids.add(track_id)
+
+        timestamp_ms = alert.get("timestamp_ms")
+        if timestamp_ms is not None:
+            alert_times.append(int(timestamp_ms))
+
+    return {
+        "run_id": run_id,
+        "video_id": video_id,
+        "total_alerts": len(alerts),
+        "per_alert_type_counts": dict(sorted(per_alert_type_counts.items())),
+        "per_level_counts": dict(sorted(per_level_counts.items())),
+        "per_status_counts": dict(sorted(per_status_counts.items())),
+        "unique_event_ids": len(unique_event_ids),
+        "unique_track_ids": len(unique_track_ids),
+        "first_alert_time_ms": min(alert_times) if alert_times else None,
+        "last_alert_time_ms": max(alert_times) if alert_times else None,
     }
 
 

@@ -261,6 +261,48 @@ class TrafficAnalysisService:
             "track_id": track_id,
         }
 
+    def read_run_alerts(
+        self,
+        run_id: str,
+        limit: int = 100,
+        status: str | None = None,
+        level: str | None = None,
+        event_type: str | None = None,
+    ) -> dict[str, Any]:
+        run_dir = self._run_dir(run_id)
+        metadata = self._load_metadata(run_id)
+        summary_path = run_dir / "alert_summary.json"
+        alerts_path = run_dir / "alerts.jsonl"
+        if not summary_path.is_file() or not alerts_path.is_file():
+            raise FileNotFoundError("alert artifacts not found")
+
+        with summary_path.open(encoding="utf-8") as file:
+            summary = json.load(file)
+
+        alerts: list[dict[str, Any]] = []
+        if limit > 0:
+            alerts = _read_jsonl_limited(
+                alerts_path,
+                limit=limit,
+                predicate=lambda item: _alert_matches(
+                    item,
+                    status=status,
+                    level=level,
+                    event_type=event_type,
+                ),
+            )
+
+        return {
+            "run_id": run_id,
+            "video_id": metadata.get("video_id", ""),
+            "summary": summary,
+            "alerts": alerts,
+            "limit": limit,
+            "status": status,
+            "level": level,
+            "event_type": event_type,
+        }
+
     def clear(self) -> None:
         self._runs.clear()
 
@@ -340,5 +382,21 @@ def _event_related_record_matches(
         if event_id is None or str(event_id) not in event_ids:
             return False
     if track_id is not None and not _track_id_matches(row.get("track_id"), track_id):
+        return False
+    return True
+
+
+def _alert_matches(
+    alert: dict[str, Any],
+    *,
+    status: str | None,
+    level: str | None,
+    event_type: str | None,
+) -> bool:
+    if status is not None and alert.get("status") != status:
+        return False
+    if level is not None and alert.get("level") != level:
+        return False
+    if event_type is not None and alert.get("event_type") != event_type:
         return False
     return True

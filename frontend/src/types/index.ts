@@ -205,3 +205,37 @@ export interface EventsResponse {
   event_type?: string | null;
   track_id?: number | null;
 }
+
+export interface AlertSummary {
+  total_alerts?: number;
+  per_alert_type_counts?: Record<string, number>;
+  per_level_counts?: Record<string, number>;
+  per_status_counts?: Record<string, number>;
+  unique_event_ids?: number;
+  unique_track_ids?: number;
+  first_alert_time_ms?: number | null;
+  last_alert_time_ms?: number | null;
+  [key: string]: unknown;
+}
+
+export type AlertRecord = Record<string, string | number | boolean | null | object | undefined>;
+
+export interface AlertsResponse {
+  run_id: string;
+  video_id?: string;
+  summary: AlertSummary;
+  alerts: AlertRecord[];
+  limit: number;
+  status?: string | null;
+  level?: string | null;
+  event_type?: string | null;
+}
+
+export interface GenerateAlertsResponse {
+  run_id: string;
+  video_id?: string;
+  status: string;
+  total_alerts: number;
+  alert_summary: AlertSummary;
+  artifacts: Record<string, string>;
+}

@@ -1,9 +1,11 @@
-import { apiGet } from "./client";
+import { apiGet, apiPost } from "./client";
 import type {
   AnalysisRun,
   AnalysisRunDetections,
   AnalysisRunTracks,
+  AlertsResponse,
   EventsResponse,
+  GenerateAlertsResponse,
   TrajectoryPointsResponse
 } from "../types";
 
@@ -63,5 +65,37 @@ export function getEvents(
 
   return apiGet<EventsResponse>(
     `/api/analysis-runs/${encodeURIComponent(runId)}/events?${params.toString()}`
+  );
+}
+
+export function generateAlerts(runId: string): Promise<GenerateAlertsResponse> {
+  return apiPost<GenerateAlertsResponse>(
+    `/api/analysis-runs/${encodeURIComponent(runId)}/alerts/generate`
+  );
+}
+
+export function getAlerts(
+  runId: string,
+  options: {
+    limit?: number;
+    status?: string | null;
+    level?: string | null;
+    eventType?: string | null;
+  } = {}
+): Promise<AlertsResponse> {
+  const params = new URLSearchParams();
+  params.set("limit", String(options.limit ?? 100));
+  if (options.status) {
+    params.set("status", options.status);
+  }
+  if (options.level) {
+    params.set("level", options.level);
+  }
+  if (options.eventType) {
+    params.set("event_type", options.eventType);
+  }
+
+  return apiGet<AlertsResponse>(
+    `/api/analysis-runs/${encodeURIComponent(runId)}/alerts?${params.toString()}`
   );
 }
