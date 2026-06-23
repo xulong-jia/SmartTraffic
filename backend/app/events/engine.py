@@ -6,11 +6,17 @@ from app.events.dedup import build_event_dedup_key
 from app.events.evidence import build_event_evidence
 from app.events.rule_callbacks import DEFAULT_RULE_CALLBACKS
 from app.events.rule_execution import build_rule_execution
-from app.events.rules import EventRule
+from app.events.rules import EventRule, is_aggregate_rule
 
 
 RuleCallback = Callable[
-    [EventRule, dict[str, Any], dict[str, Any], list[dict[str, Any]] | None, dict[str, Any]],
+    [
+        EventRule,
+        dict[str, Any] | None,
+        dict[str, Any],
+        list[dict[str, Any]] | None,
+        dict[str, Any],
+    ],
     dict[str, Any],
 ]
 
@@ -54,20 +60,31 @@ class EventEngine:
         }
         trajectory_points = list(frame_result.get("trajectory_points", []) or [])
         event_rules = [_normalize_rule(rule) for rule in rules or []]
-        if not event_rules or not trajectory_points:
+        if not event_rules:
             return result
 
+        track_rules = [rule for rule in event_rules if not is_aggregate_rule(rule)]
+        aggregate_rules = [rule for rule in event_rules if is_aggregate_rule(rule)]
+
         frame_payload = dict(frame_result)
-        for trajectory_point in trajectory_points:
-            point = dict(trajectory_point)
-            for rule in event_rules:
+        frame_payload["trajectory_points"] = [dict(point) for point in trajectory_points]
+
+        for trajectory_point in frame_payload["trajectory_points"]:
+            for rule in track_rules:
                 self._evaluate_rule_for_point(
                     result=result,
                     rule=rule,
-                    trajectory_point=point,
+                    trajectory_point=trajectory_point,
                     frame_result=frame_payload,
                     zones=zones,
                 )
+        for rule in aggregate_rules:
+            self._evaluate_aggregate_rule(
+                result=result,
+                rule=rule,
+                frame_result=frame_payload,
+                zones=zones,
+            )
         return result
 
     def evaluate(
@@ -232,6 +249,99 @@ class EventEngine:
         self._emitted_event_keys.add(dedup_key)
         self._record_event(event, evidence)
 
+    def _evaluate_aggregate_rule(
+        self,
+        *,
+        result: dict[str, Any],
+        rule: EventRule,
+        frame_result: dict[str, Any],
+        zones: list[dict[str, Any]] | None,
+    ) -> None:
+        if not rule.enabled:
+            self._append_skipped(result, rule, None, frame_result, "rule_disabled")
+            return
+
+        # Aggregate rules own class and track-length filtering because they
+        # evaluate the full frame rather than a single trajectory point.
+        dedup_key = self._dedup_key(rule, None)
+        if self._is_in_cooldown(rule, frame_result, dedup_key):
+            self._append_skipped(result, rule, None, frame_result, "cooldown")
+            return
+
+        callback = self._rule_callback(rule, zones)
+        if callback is None:
+            self._append_skipped(result, rule, None, frame_result, "rule_callback_missing")
+            return
+
+        try:
+            callback_output = callback(
+                rule,
+                None,
+                frame_result,
+                zones,
+                self._engine_state(),
+            )
+        except Exception as exc:
+            self._append_execution(
+                result,
+                rule=rule,
+                trajectory_point=None,
+                frame_result=frame_result,
+                status="error",
+                input_features=_input_features(None),
+                output_result={"reason": "rule_error", "error": str(exc)},
+            )
+            return
+
+        matched = bool(callback_output.get("matched"))
+        if not matched:
+            if self.record_not_matched:
+                self._append_execution(
+                    result,
+                    rule=rule,
+                    trajectory_point=None,
+                    frame_result=frame_result,
+                    status="not_matched",
+                    input_features=callback_output.get("input_features")
+                    or _input_features(None),
+                    output_result=_callback_output_result(
+                        callback_output,
+                        matched=False,
+                        default_reason="not_matched",
+                    ),
+                )
+            return
+
+        event = self._build_matched_event(rule, None, frame_result, callback_output)
+        evidence = self._build_matched_evidence(
+            event,
+            None,
+            frame_result,
+            callback_output,
+        )
+        result["events"].append(event)
+        result["event_evidence"].extend(evidence)
+        self._append_execution(
+            result,
+            rule=rule,
+            trajectory_point=None,
+            frame_result=frame_result,
+            status="matched",
+            event_id=event["event_id"],
+            input_features=callback_output.get("input_features")
+            or _input_features(None),
+            output_result=_callback_output_result(
+                callback_output,
+                matched=True,
+                default_reason="matched",
+            ),
+        )
+        marker = _cooldown_marker(frame_result)
+        if marker is not None:
+            self._last_event_time_by_key[dedup_key] = marker
+        self._emitted_event_keys.add(dedup_key)
+        self._record_event(event, evidence)
+
     def _rule_callback(
         self,
         rule: EventRule,
@@ -250,7 +360,7 @@ class EventEngine:
         self,
         result: dict[str, Any],
         rule: EventRule,
-        trajectory_point: dict[str, Any],
+        trajectory_point: dict[str, Any] | None,
         frame_result: dict[str, Any],
         reason: str,
     ) -> None:
@@ -269,7 +379,7 @@ class EventEngine:
         result: dict[str, Any],
         *,
         rule: EventRule,
-        trajectory_point: dict[str, Any],
+        trajectory_point: dict[str, Any] | None,
         frame_result: dict[str, Any],
         status: str,
         event_id: str | None = None,
@@ -292,7 +402,7 @@ class EventEngine:
     def _build_matched_event(
         self,
         rule: EventRule,
-        trajectory_point: dict[str, Any],
+        trajectory_point: dict[str, Any] | None,
         frame_result: dict[str, Any],
         callback_output: dict[str, Any],
     ) -> dict[str, Any]:
@@ -304,7 +414,10 @@ class EventEngine:
             event_type=raw_event.get("event_type", rule.event_type),
             severity=raw_event.get("severity", rule.severity),
             track_id=raw_event.get("track_id", _track_id(trajectory_point)),
-            class_name=raw_event.get("class_name", trajectory_point.get("class_name")),
+            class_name=raw_event.get(
+                "class_name",
+                trajectory_point.get("class_name") if trajectory_point is not None else None,
+            ),
             zone_id=raw_event.get("zone_id", rule.zone_id),
             rule_id=raw_event.get("rule_id", rule.rule_id),
             start_frame=raw_event.get("start_frame", frame_result.get("frame_index")),
@@ -320,7 +433,7 @@ class EventEngine:
     def _build_matched_evidence(
         self,
         event: dict[str, Any],
-        trajectory_point: dict[str, Any],
+        trajectory_point: dict[str, Any] | None,
         frame_result: dict[str, Any],
         callback_output: dict[str, Any],
     ) -> list[dict[str, Any]]:
@@ -363,7 +476,7 @@ class EventEngine:
             return True
         return str(trajectory_point.get("class_name")) in rule.target_classes
 
-    def _dedup_key(self, rule: EventRule, trajectory_point: dict[str, Any]) -> str:
+    def _dedup_key(self, rule: EventRule, trajectory_point: dict[str, Any] | None) -> str:
         return build_event_dedup_key(
             run_id=self.run_id,
             event_type=rule.event_type,
@@ -432,7 +545,9 @@ def _normalize_rule(rule: EventRule | dict[str, Any]) -> EventRule:
     raise ValueError("rule must be an EventRule or dict")
 
 
-def _track_id(trajectory_point: Mapping[str, Any]) -> int | None:
+def _track_id(trajectory_point: Mapping[str, Any] | None) -> int | None:
+    if trajectory_point is None:
+        return None
     track_id = trajectory_point.get("track_id")
     if track_id is None:
         return None
@@ -446,7 +561,13 @@ def _track_length(trajectory_point: Mapping[str, Any]) -> int:
     return int(track_length)
 
 
-def _input_features(trajectory_point: Mapping[str, Any]) -> dict[str, Any]:
+def _input_features(trajectory_point: Mapping[str, Any] | None) -> dict[str, Any]:
+    if trajectory_point is None:
+        return {
+            "track_id": None,
+            "class_name": None,
+            "track_length": None,
+        }
     return {
         "track_id": trajectory_point.get("track_id"),
         "class_name": trajectory_point.get("class_name"),

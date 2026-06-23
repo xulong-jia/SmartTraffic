@@ -244,6 +244,168 @@ def test_event_engine_record_not_matched_debug() -> None:
     assert result["rule_executions"][0]["output_result"]["reason"] == "no_match"
 
 
+def test_aggregate_rule_callback_called_once_per_frame() -> None:
+    calls = []
+    engine = EventEngine(
+        run_id="run_001",
+        video_id="video_001",
+        rule_callbacks={"congestion": _aggregate_not_matching_callback(calls)},
+    )
+
+    engine.update(
+        _frame_with_points(
+            [
+                _trajectory_point(track_id=7),
+                _trajectory_point(track_id=8),
+            ]
+        ),
+        rules=[_aggregate_rule()],
+    )
+
+    assert len(calls) == 1
+    assert calls[0]["trajectory_point"] is None
+
+
+def test_aggregate_rule_receives_full_frame_trajectory_points() -> None:
+    calls = []
+    engine = EventEngine(
+        run_id="run_001",
+        video_id="video_001",
+        rule_callbacks={"congestion": _aggregate_not_matching_callback(calls)},
+    )
+
+    engine.update(
+        _frame_with_points(
+            [
+                _trajectory_point(track_id=7),
+                _trajectory_point(track_id=8),
+                _trajectory_point(track_id=9),
+            ]
+        ),
+        rules=[_aggregate_rule()],
+    )
+
+    assert calls[0]["trajectory_point_count"] == 3
+    assert calls[0]["track_ids"] == [7, 8, 9]
+
+
+def test_aggregate_rule_can_emit_event_with_track_id_none() -> None:
+    engine = EventEngine(
+        run_id="run_001",
+        video_id="video_001",
+        rule_callbacks={"congestion": _aggregate_matching_callback},
+    )
+
+    result = engine.update(
+        _frame_with_points([_trajectory_point(track_id=7), _trajectory_point(track_id=8)]),
+        rules=[_aggregate_rule()],
+    )
+
+    assert len(result["events"]) == 1
+    event = result["events"][0]
+    assert event["event_type"] == "congestion"
+    assert event["track_id"] is None
+    assert event["class_name"] is None
+    assert event["zone_id"] == "zone_001"
+    assert event["start_frame"] == 10
+    assert event["start_time_ms"] == 1000
+
+
+def test_aggregate_rule_execution_allows_track_id_none() -> None:
+    engine = EventEngine(
+        run_id="run_001",
+        video_id="video_001",
+        rule_callbacks={"congestion": _aggregate_matching_callback},
+    )
+
+    result = engine.update(
+        _frame_with_points([_trajectory_point(track_id=7), _trajectory_point(track_id=8)]),
+        rules=[_aggregate_rule()],
+    )
+
+    execution = result["rule_executions"][0]
+    assert execution["status"] == "matched"
+    assert execution["track_id"] is None
+    assert execution["event_id"] == result["events"][0]["event_id"]
+
+
+def test_aggregate_rule_cooldown_uses_zone_level_key() -> None:
+    calls = []
+    engine = EventEngine(
+        run_id="run_001",
+        video_id="video_001",
+        rule_callbacks={"congestion": _aggregate_matching_callback_with_calls(calls)},
+    )
+    rule = _aggregate_rule(cooldown_seconds=10)
+
+    first = engine.update(
+        _frame_with_points([_trajectory_point(track_id=7)], timestamp_ms=1000),
+        rules=[rule],
+    )
+    second = engine.update(
+        _frame_with_points([_trajectory_point(track_id=8)], frame_index=11, timestamp_ms=5000),
+        rules=[rule],
+    )
+
+    assert len(first["events"]) == 1
+    assert second["events"] == []
+    assert _execution_reasons(second) == ["cooldown"]
+    assert len(calls) == 1
+
+
+def test_aggregate_rule_does_not_break_track_rules() -> None:
+    track_calls = []
+    aggregate_calls = []
+    engine = EventEngine(
+        run_id="run_001",
+        video_id="video_001",
+        rule_callbacks={
+            "danger_zone_intrusion": _track_calling_callback(track_calls),
+            "congestion": _aggregate_not_matching_callback(aggregate_calls),
+        },
+    )
+
+    result = engine.update(
+        _frame_with_points(
+            [
+                _trajectory_point(track_id=7, class_name="car", track_length=3),
+                _trajectory_point(track_id=8, class_name="person", track_length=3),
+                _trajectory_point(track_id=9, class_name="car", track_length=1),
+            ]
+        ),
+        rules=[
+            _rule(target_classes=["car"], min_track_length=2),
+            _aggregate_rule(target_classes=["truck"], min_track_length=99),
+        ],
+    )
+
+    assert track_calls == [7]
+    assert len(aggregate_calls) == 1
+    assert _execution_reasons(result) == [
+        "matched by track callback",
+        "target_class_filtered",
+        "min_track_length_not_met",
+    ]
+
+
+def test_aggregate_rule_reset_clears_callback_state() -> None:
+    engine = EventEngine(
+        run_id="run_001",
+        video_id="video_001",
+        rule_callbacks={"congestion": _aggregate_stateful_matching_callback},
+    )
+    rule = _aggregate_rule()
+    engine.update(_frame_with_points([_trajectory_point(track_id=7)]), rules=[rule])
+
+    engine.reset()
+    result = engine.update(
+        _frame_with_points([_trajectory_point(track_id=8)], frame_index=11),
+        rules=[rule],
+    )
+
+    assert result["events"][0]["evidence"]["seen_count"] == 1
+
+
 def test_event_rule_from_dict_validates_contract() -> None:
     rule = EventRule.from_dict(
         {
@@ -303,6 +465,22 @@ def _rule(**overrides) -> EventRule:
     return EventRule(**values)
 
 
+def _aggregate_rule(**overrides) -> EventRule:
+    values = {
+        "rule_id": "rule_aggregate_001",
+        "name": "Mock aggregate congestion rule",
+        "event_type": "congestion",
+        "severity": "medium",
+        "target_classes": (),
+        "zone_id": "zone_001",
+        "parameters": {"rule_mode": "aggregate"},
+        "cooldown_seconds": 0,
+        "min_track_length": 1,
+    }
+    values.update(overrides)
+    return EventRule(**values)
+
+
 def _frame(
     *,
     frame_index: int = 10,
@@ -322,6 +500,34 @@ def _frame(
                 "speed_px_per_second": 4.2,
             }
         ],
+    }
+
+
+def _frame_with_points(
+    trajectory_points: list[dict],
+    *,
+    frame_index: int = 10,
+    timestamp_ms: int | None = 1000,
+) -> dict:
+    return {
+        "frame_index": frame_index,
+        "timestamp_ms": timestamp_ms,
+        "trajectory_points": trajectory_points,
+    }
+
+
+def _trajectory_point(
+    *,
+    track_id: int,
+    class_name: str = "car",
+    track_length: int = 3,
+    speed_px_per_frame: float = 1.0,
+) -> dict:
+    return {
+        "track_id": track_id,
+        "class_name": class_name,
+        "track_length": track_length,
+        "speed_px_per_frame": speed_px_per_frame,
     }
 
 
@@ -374,6 +580,112 @@ def _stateful_matching_callback(rule, trajectory_point, frame_result, zones, eng
         ],
         "reason": "matched by stateful callback",
         "input_features": {"track_id": trajectory_point["track_id"]},
+        "output_result": {"matched": True, "seen_count": state["seen_count"]},
+    }
+
+
+def _aggregate_not_matching_callback(calls):
+    def callback(rule, trajectory_point, frame_result, zones, engine_state) -> dict:
+        calls.append(
+            {
+                "trajectory_point": trajectory_point,
+                "trajectory_point_count": len(frame_result["trajectory_points"]),
+                "track_ids": [
+                    point["track_id"] for point in frame_result["trajectory_points"]
+                ],
+            }
+        )
+        return {
+            "matched": False,
+            "reason": "aggregate_no_match",
+            "input_features": {
+                "trajectory_point_count": len(frame_result["trajectory_points"])
+            },
+            "output_result": {"matched": False, "reason": "aggregate_no_match"},
+        }
+
+    return callback
+
+
+def _aggregate_matching_callback(rule, trajectory_point, frame_result, zones, engine_state) -> dict:
+    return {
+        "matched": True,
+        "event": {
+            "event_type": rule.event_type,
+            "track_id": None,
+            "class_name": None,
+            "zone_id": rule.zone_id,
+            "evidence": {
+                "trajectory_point_count": len(frame_result["trajectory_points"])
+            },
+        },
+        "evidence": [
+            {
+                "track_id": None,
+                "evidence_type": "rule",
+                "evidence_json": {
+                    "trajectory_point_count": len(frame_result["trajectory_points"])
+                },
+            }
+        ],
+        "reason": "aggregate matched",
+        "input_features": {
+            "trajectory_point_count": len(frame_result["trajectory_points"])
+        },
+        "output_result": {"matched": True, "reason": "aggregate matched"},
+    }
+
+
+def _aggregate_matching_callback_with_calls(calls):
+    def callback(rule, trajectory_point, frame_result, zones, engine_state) -> dict:
+        calls.append(frame_result["frame_index"])
+        return _aggregate_matching_callback(
+            rule,
+            trajectory_point,
+            frame_result,
+            zones,
+            engine_state,
+        )
+
+    return callback
+
+
+def _track_calling_callback(calls):
+    def callback(rule, trajectory_point, frame_result, zones, engine_state) -> dict:
+        calls.append(trajectory_point["track_id"])
+        return {
+            "matched": True,
+            "reason": "matched by track callback",
+            "input_features": {"track_id": trajectory_point["track_id"]},
+            "output_result": {
+                "matched": True,
+                "reason": "matched by track callback",
+            },
+        }
+
+    return callback
+
+
+def _aggregate_stateful_matching_callback(
+    rule,
+    trajectory_point,
+    frame_result,
+    zones,
+    engine_state,
+) -> dict:
+    state = engine_state["state"].setdefault("aggregate_test", {"seen_count": 0})
+    state["seen_count"] += 1
+    return {
+        "matched": True,
+        "event": {
+            "event_type": rule.event_type,
+            "track_id": None,
+            "class_name": None,
+            "zone_id": rule.zone_id,
+            "evidence": {"seen_count": state["seen_count"]},
+        },
+        "reason": "aggregate state matched",
+        "input_features": {"trajectory_point_count": len(frame_result["trajectory_points"])},
         "output_result": {"matched": True, "seen_count": state["seen_count"]},
     }
 

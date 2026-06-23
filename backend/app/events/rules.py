@@ -56,3 +56,7 @@ def _normalize_target_classes(value: Any) -> tuple[str, ...]:
     if isinstance(value, str):
         return (value,)
     return tuple(str(item) for item in value)
+
+
+def is_aggregate_rule(rule: EventRule) -> bool:
+    return rule.parameters.get("rule_mode") == "aggregate"
