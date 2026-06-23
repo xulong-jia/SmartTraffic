@@ -67,3 +67,29 @@ def get_analysis_run_trajectory_points(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="trajectory artifacts not found",
         ) from exc
+
+
+@router.get("/{run_id}/events")
+def get_analysis_run_events(
+    run_id: str,
+    limit: int = Query(default=100, ge=0, le=1000),
+    event_type: str | None = Query(default=None),
+    track_id: int | None = Query(default=None),
+) -> dict:
+    try:
+        return traffic_analysis_service.read_run_events(
+            run_id,
+            limit=limit,
+            event_type=event_type,
+            track_id=track_id,
+        )
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="analysis run not found",
+        ) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="event artifacts not found",
+        ) from exc

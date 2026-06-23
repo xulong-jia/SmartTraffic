@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   getAnalysisRunDetections,
   getAnalysisRunTracks,
+  getEvents,
   getTrajectoryPoints,
   listAnalysisRuns
 } from "../api/analysisRuns";
@@ -11,6 +12,10 @@ import type {
   AnalysisRun,
   AnalysisRunDetections,
   AnalysisRunTracks,
+  EventEvidenceRecord,
+  EventRecord,
+  EventsResponse,
+  RuleExecutionRecord,
   TrajectoryFrame,
   TrajectoryPointRow,
   TrajectoryPointsResponse
@@ -28,6 +33,22 @@ const trajectoryColumns: Array<keyof TrajectoryPointRow> = [
   "track_length"
 ];
 
+const eventColumns = [
+  "event_type",
+  "severity",
+  "status",
+  "track_id",
+  "class_name",
+  "zone_id",
+  "start_frame",
+  "end_frame",
+  "confidence"
+] as const;
+
+const evidenceColumns = ["event_id", "evidence_type", "frame_index", "track_id"] as const;
+
+const ruleExecutionColumns = ["rule_id", "status", "track_id", "frame_index"] as const;
+
 export default function AnalysisDetailPage() {
   const [runs, setRuns] = useState<AnalysisRun[]>([]);
   const [selectedRunId, setSelectedRunId] = useState("");
@@ -38,6 +59,12 @@ export default function AnalysisDetailPage() {
   const [trajectoryError, setTrajectoryError] = useState("");
   const [trajectoryTrackIdFilter, setTrajectoryTrackIdFilter] = useState("");
   const [trajectoryLimit, setTrajectoryLimit] = useState(100);
+  const [eventsData, setEventsData] = useState<EventsResponse | null>(null);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventsError, setEventsError] = useState("");
+  const [eventTypeFilter, setEventTypeFilter] = useState("");
+  const [eventTrackIdFilter, setEventTrackIdFilter] = useState("");
+  const [eventLimit, setEventLimit] = useState(100);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -66,6 +93,7 @@ export default function AnalysisDetailPage() {
       })
       .catch((currentError: Error) => setError(currentError.message));
     loadTrajectory(selectedRunId);
+    loadEvents(selectedRunId);
   }, [selectedRunId]);
 
   async function loadTrajectory(runId: string) {
@@ -100,6 +128,40 @@ export default function AnalysisDetailPage() {
       return;
     }
     loadTrajectory(selectedRunId);
+  }
+
+  async function loadEvents(runId: string) {
+    setEventsLoading(true);
+    setEventsError("");
+    setEventsData(null);
+    try {
+      const payload = await getEvents(runId, {
+        limit: eventLimit,
+        eventType: normalizeOptionalString(eventTypeFilter),
+        trackId: parseTrackIdFilter(eventTrackIdFilter)
+      });
+      setEventsData(payload);
+    } catch (currentError) {
+      const message = currentError instanceof Error ? currentError.message : "Events request failed";
+      if (message.includes("404")) {
+        setEventsError("当前 run 无事件产物");
+      } else {
+        setEventsError(message);
+      }
+    } finally {
+      setEventsLoading(false);
+    }
+  }
+
+  function handleEventsRefresh() {
+    if (!selectedRunId) {
+      return;
+    }
+    if (eventTrackIdFilter.trim() && parseTrackIdFilter(eventTrackIdFilter) === null) {
+      setEventsError("Track ID must be an integer.");
+      return;
+    }
+    loadEvents(selectedRunId);
   }
 
   return (
@@ -158,6 +220,46 @@ export default function AnalysisDetailPage() {
             {trajectoryLoading ? <p className="muted">Loading trajectory points...</p> : null}
             {trajectoryError ? <p>{trajectoryError}</p> : null}
             {trajectoryData ? <TrajectoryDetail data={trajectoryData} /> : null}
+          </section>
+          <section className="panel">
+            <h3>Event Query</h3>
+            <div className="toolbar">
+              <label>
+                Limit
+                <input
+                  max={1000}
+                  min={0}
+                  type="number"
+                  value={eventLimit}
+                  onChange={(event) =>
+                    setEventLimit(clampInteger(Number(event.target.value), 0, 1000))
+                  }
+                />
+              </label>
+              <label>
+                Event type
+                <input
+                  placeholder="all"
+                  value={eventTypeFilter}
+                  onChange={(event) => setEventTypeFilter(event.target.value)}
+                />
+              </label>
+              <label>
+                Track ID
+                <input
+                  placeholder="all"
+                  type="number"
+                  value={eventTrackIdFilter}
+                  onChange={(event) => setEventTrackIdFilter(event.target.value)}
+                />
+              </label>
+              <button disabled={!selectedRunId || eventsLoading} type="button" onClick={handleEventsRefresh}>
+                Apply / Refresh
+              </button>
+            </div>
+            {eventsLoading ? <p className="muted">Loading events...</p> : null}
+            {eventsError ? <p>{eventsError}</p> : null}
+            {eventsData ? <EventsDetail data={eventsData} /> : null}
           </section>
           {detections ? (
             <section className="panel">
@@ -297,6 +399,76 @@ function TrajectoryDetail({ data }: { data: TrajectoryPointsResponse }) {
   );
 }
 
+function EventsDetail({ data }: { data: EventsResponse }) {
+  const eventPreview = data.events.slice(0, 20);
+  const evidencePreview = data.event_evidence.slice(0, 20);
+  const executionPreview = data.rule_executions.slice(0, 20);
+
+  return (
+    <>
+      <h3>Event Summary</h3>
+      <p>
+        {formatValue(data.summary.total_events ?? 0)} events ·{" "}
+        {formatValue(data.summary.unique_track_ids ?? 0)} unique IDs · first{" "}
+        {formatValue(data.summary.first_event_time_ms)} · last{" "}
+        {formatValue(data.summary.last_event_time_ms)}
+      </p>
+      <p className="muted">
+        types {formatCountMap(data.summary.per_event_type_counts)} · severity{" "}
+        {formatCountMap(data.summary.per_severity_counts)} · status{" "}
+        {formatCountMap(data.summary.per_status_counts)}
+      </p>
+      <h3>Events</h3>
+      {eventPreview.length === 0 ? (
+        <p className="muted">暂无 events</p>
+      ) : (
+        <RecordTable columns={eventColumns} rows={eventPreview} />
+      )}
+      <h3>Event Evidence</h3>
+      {evidencePreview.length === 0 ? (
+        <p className="muted">暂无 event evidence</p>
+      ) : (
+        <RecordTable columns={evidenceColumns} rows={evidencePreview} />
+      )}
+      <h3>Rule Executions</h3>
+      {executionPreview.length === 0 ? (
+        <p className="muted">暂无 rule executions</p>
+      ) : (
+        <RecordTable columns={ruleExecutionColumns} rows={executionPreview} />
+      )}
+    </>
+  );
+}
+
+function RecordTable({
+  columns,
+  rows
+}: {
+  columns: readonly string[];
+  rows: Array<EventRecord | EventEvidenceRecord | RuleExecutionRecord>;
+}) {
+  return (
+    <table>
+      <thead>
+        <tr>
+          {columns.map((column) => (
+            <th key={column}>{column}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, index) => (
+          <tr key={`${formatValue(row.event_id)}-${formatValue(row.rule_id)}-${index}`}>
+            {columns.map((column) => (
+              <td key={column}>{formatValue(row[column])}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 function parseTrackIdFilter(value: string): number | null {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -308,6 +480,11 @@ function parseTrackIdFilter(value: string): number | null {
     return null;
   }
   return parsed;
+}
+
+function normalizeOptionalString(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed || null;
 }
 
 function clampInteger(value: number, min: number, max: number): number {
@@ -328,6 +505,15 @@ function formatValue(value: unknown): string {
     return JSON.stringify(value);
   }
   return String(value);
+}
+
+function formatCountMap(value: Record<string, number> | undefined): string {
+  if (!value || Object.keys(value).length === 0) {
+    return "-";
+  }
+  return Object.entries(value)
+    .map(([key, count]) => `${key}:${count}`)
+    .join(", ");
 }
 
 function formatTrackIds(frame: TrajectoryFrame): string {

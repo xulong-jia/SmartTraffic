@@ -183,6 +183,84 @@ class TrafficAnalysisService:
             "track_id": track_id,
         }
 
+    def read_run_events(
+        self,
+        run_id: str,
+        limit: int = 100,
+        event_type: str | None = None,
+        track_id: int | None = None,
+    ) -> dict[str, Any]:
+        run_dir = self._run_dir(run_id)
+        metadata = self._load_metadata(run_id)
+        summary_path = run_dir / "event_summary.json"
+        events_path = run_dir / "events.jsonl"
+        evidence_path = run_dir / "event_evidence.jsonl"
+        executions_path = run_dir / "rule_executions.jsonl"
+        if (
+            not summary_path.is_file()
+            or not events_path.is_file()
+            or not evidence_path.is_file()
+            or not executions_path.is_file()
+        ):
+            raise FileNotFoundError("event artifacts not found")
+
+        with summary_path.open(encoding="utf-8") as file:
+            summary = json.load(file)
+
+        events: list[dict[str, Any]] = []
+        event_ids: set[str] | None = None
+        if limit > 0:
+            for event in _read_jsonl_limited(
+                events_path,
+                limit=limit,
+                predicate=lambda item: _event_matches(
+                    item,
+                    event_type=event_type,
+                    track_id=track_id,
+                ),
+            ):
+                events.append(event)
+            if event_type is not None or track_id is not None:
+                event_ids = {
+                    str(event["event_id"])
+                    for event in events
+                    if event.get("event_id") is not None
+                }
+
+        event_evidence: list[dict[str, Any]] = []
+        rule_executions: list[dict[str, Any]] = []
+        if limit > 0:
+            event_evidence = _read_jsonl_limited(
+                evidence_path,
+                limit=limit,
+                predicate=lambda item: _event_related_record_matches(
+                    item,
+                    event_ids=event_ids,
+                    track_id=track_id,
+                ),
+            )
+            rule_executions = _read_jsonl_limited(
+                executions_path,
+                limit=limit,
+                predicate=lambda item: _event_related_record_matches(
+                    item,
+                    event_ids=event_ids,
+                    track_id=track_id,
+                ),
+            )
+
+        return {
+            "run_id": run_id,
+            "video_id": metadata.get("video_id", ""),
+            "summary": summary,
+            "events": events,
+            "event_evidence": event_evidence,
+            "rule_executions": rule_executions,
+            "limit": limit,
+            "event_type": event_type,
+            "track_id": track_id,
+        }
+
     def clear(self) -> None:
         self._runs.clear()
 
@@ -215,3 +293,52 @@ def _track_id_matches(value: Any, track_id: int) -> bool:
         return int(value) == track_id
     except (TypeError, ValueError):
         return False
+
+
+def _read_jsonl_limited(
+    path: Path,
+    *,
+    limit: int,
+    predicate,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    with path.open(encoding="utf-8") as file:
+        for line in file:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            row = json.loads(stripped)
+            if not predicate(row):
+                continue
+            rows.append(row)
+            if len(rows) >= limit:
+                break
+    return rows
+
+
+def _event_matches(
+    event: dict[str, Any],
+    *,
+    event_type: str | None,
+    track_id: int | None,
+) -> bool:
+    if event_type is not None and event.get("event_type") != event_type:
+        return False
+    if track_id is not None and not _track_id_matches(event.get("track_id"), track_id):
+        return False
+    return True
+
+
+def _event_related_record_matches(
+    row: dict[str, Any],
+    *,
+    event_ids: set[str] | None,
+    track_id: int | None,
+) -> bool:
+    if event_ids is not None:
+        event_id = row.get("event_id")
+        if event_id is None or str(event_id) not in event_ids:
+            return False
+    if track_id is not None and not _track_id_matches(row.get("track_id"), track_id):
+        return False
+    return True

@@ -3,6 +3,7 @@ import type {
   AnalysisRun,
   AnalysisRunDetections,
   AnalysisRunTracks,
+  EventsResponse,
   TrajectoryPointsResponse
 } from "../types";
 
@@ -44,5 +45,23 @@ export function getTrajectoryPoints(
 
   return apiGet<TrajectoryPointsResponse>(
     `/api/analysis-runs/${encodeURIComponent(runId)}/trajectory-points?${params.toString()}`
+  );
+}
+
+export function getEvents(
+  runId: string,
+  options: { limit?: number; eventType?: string | null; trackId?: number | null } = {}
+): Promise<EventsResponse> {
+  const params = new URLSearchParams();
+  params.set("limit", String(options.limit ?? 100));
+  if (options.eventType) {
+    params.set("event_type", options.eventType);
+  }
+  if (options.trackId !== undefined && options.trackId !== null) {
+    params.set("track_id", String(options.trackId));
+  }
+
+  return apiGet<EventsResponse>(
+    `/api/analysis-runs/${encodeURIComponent(runId)}/events?${params.toString()}`
   );
 }

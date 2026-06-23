@@ -177,3 +177,31 @@ export interface TrajectoryPointsResponse {
   limit: number;
   track_id?: number | null;
 }
+
+export interface EventSummary {
+  total_events?: number;
+  per_event_type_counts?: Record<string, number>;
+  per_severity_counts?: Record<string, number>;
+  per_status_counts?: Record<string, number>;
+  unique_track_ids?: number;
+  rule_execution_counts?: Record<string, number>;
+  first_event_time_ms?: number | null;
+  last_event_time_ms?: number | null;
+  [key: string]: unknown;
+}
+
+export type EventRecord = Record<string, string | number | boolean | null | object | undefined>;
+export type EventEvidenceRecord = Record<string, string | number | boolean | null | object | undefined>;
+export type RuleExecutionRecord = Record<string, string | number | boolean | null | object | undefined>;
+
+export interface EventsResponse {
+  run_id: string;
+  video_id?: string;
+  summary: EventSummary;
+  events: EventRecord[];
+  event_evidence: EventEvidenceRecord[];
+  rule_executions: RuleExecutionRecord[];
+  limit: number;
+  event_type?: string | null;
+  track_id?: number | null;
+}
