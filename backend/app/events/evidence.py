@@ -13,6 +13,7 @@ EVIDENCE_TYPES = {
     "dwell",
     "rule",
     "line_crossing",
+    "zone_statistics",
 }
 
 

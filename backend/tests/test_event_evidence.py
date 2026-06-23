@@ -51,6 +51,7 @@ def test_evidence_type_validation() -> None:
         "dwell",
         "rule",
         "line_crossing",
+        "zone_statistics",
     ]:
         assert validate_evidence_type(evidence_type) == evidence_type
 

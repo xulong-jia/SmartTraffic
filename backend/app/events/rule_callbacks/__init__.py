@@ -1,3 +1,4 @@
+from app.events.rule_callbacks.congestion import congestion_callback
 from app.events.rule_callbacks.danger_zone import danger_zone_intrusion_callback
 from app.events.rule_callbacks.flow_counting import flow_counting_callback
 from app.events.rule_callbacks.parking import illegal_parking_callback
@@ -11,4 +12,5 @@ DEFAULT_RULE_CALLBACKS = {
     "pedestrian_in_vehicle_lane": pedestrian_in_vehicle_lane_callback,
     "wrong_way_driving": wrong_way_driving_callback,
     "flow_counting": flow_counting_callback,
+    "congestion": congestion_callback,
 }
