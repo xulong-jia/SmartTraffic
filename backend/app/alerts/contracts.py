@@ -29,6 +29,11 @@ def build_alert(
     frame_index: int | None = None,
     timestamp_ms: int | None = None,
     zone_id: str | None = None,
+    event_evidence_id: str | None = None,
+    snapshot_path: str | None = None,
+    acknowledged_by: str | None = None,
+    acknowledged_at: str | None = None,
+    resolved_at: str | None = None,
     created_at: str | None = None,
 ) -> dict[str, Any]:
     effective_alert_type = alert_type or event_type
@@ -41,6 +46,7 @@ def build_alert(
     )
 
     return {
+        "id": effective_alert_id,
         "alert_id": effective_alert_id,
         "event_id": event_id,
         "run_id": run_id,
@@ -55,6 +61,11 @@ def build_alert(
         "frame_index": frame_index,
         "timestamp_ms": timestamp_ms,
         "zone_id": zone_id,
+        "event_evidence_id": event_evidence_id,
+        "snapshot_path": snapshot_path,
+        "acknowledged_by": acknowledged_by,
+        "acknowledged_at": acknowledged_at,
+        "resolved_at": resolved_at,
         "created_at": created_at or _utc_now_iso(),
     }
 

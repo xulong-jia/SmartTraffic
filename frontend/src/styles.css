@@ -130,6 +130,10 @@ nav button.active {
   margin-bottom: 16px;
 }
 
+.toolbar.compact {
+  margin-bottom: 0;
+}
+
 .toolbar label,
 .inline-control {
   display: inline-flex;

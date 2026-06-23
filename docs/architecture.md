@@ -41,16 +41,16 @@ Currently implemented architecture includes:
 - YOLOv8 / dry-run detection
 - DeepSORT adapter / mock tracking
 - TrajectoryEngine
-- partial EventEngine with callback-based rules
+- EventEngine with six callback-based rules
 - artifact-based EventService
 - artifact-based AlertService
 - process integration for event and alert artifact generation after trajectory
-- minimal frontend tables in Analysis Detail
+- minimal frontend tables in Analysis Detail and Alert Center
 
 The current implementation is useful for local validation, but it is not the
-complete manual architecture yet.
+complete database-backed manual architecture yet.
 
-## Stage 5 Partial Event & Alert MVP
+## Stage 5 Event & Alert MVP
 
 The current stage-five artifact path is:
 
@@ -60,8 +60,8 @@ trajectory artifacts
   -> event artifacts
   -> AlertService
   -> alert artifacts
-  -> FastAPI query endpoints
-  -> React Analysis Detail minimal view
+  -> FastAPI query and alert status endpoints
+  -> React Analysis Detail / Alert Center minimal views
 ```
 
 Event artifacts:
@@ -76,18 +76,20 @@ Alert artifacts:
 - `alerts.jsonl`
 - `alert_summary.json`
 
-The current EventService and AlertService form an artifact-based generation and query loop. They are not a complete database-backed result center, and they are not law-enforcement-grade traffic violation judgment.
+The current EventService and AlertService form an artifact-based generation,
+query, and alert status loop. They are not a complete database-backed result
+center, and they are not law-enforcement-grade traffic violation judgment.
 
 ## Planned Manual Architecture
 
 The execution manual still targets:
 
 - database-backed Traffic Analysis Center
-- full Alert Center
+- database-backed Alert Center
 - Review Center
 - Bad Case Center
 - Evaluation Center
-- persisted Zone & Rule Config
+- persisted Zone & Rule Config beyond the current in-memory MVP
 - aggregate flow counting and zone statistics
 
 These modules are not complete in the current project state.
@@ -144,26 +146,23 @@ The current database layer is not a complete production implementation. Local ar
 
 - `frontend/src/pages/VideoCenterPage.tsx`: upload and process detection / tracking / trajectory modes.
 - `frontend/src/pages/AnalysisDetailPage.tsx`: minimal detection, tracking, trajectory, event, and alert query view.
-- `frontend/src/pages/AlertCenterPage.tsx` and `frontend/src/components/AlertPanel.tsx`: currently a placeholder shell; the working minimal alert view is in Analysis Detail.
+- `frontend/src/pages/AlertCenterPage.tsx`: minimal alert query and status workflow.
 
 Current frontend limitations:
 
 - no zone editor workflow
 - no video overlay for trajectories/events/alerts
 - no alert timeline
-- no acknowledge / resolve controls
 - no review workflow
 
 ## Boundaries And Limitations
 
 Current limitations:
 
-- no full Alert Center status workflow
-- no acknowledge / resolve / ignored status mutation API
 - no Review Center workflow
 - no Bad Case Center workflow
 - no Evaluation Center workflow
-- no Zone Editor implementation
+- no database-backed Zone / Rule / Alert persistence
 - no video overlay
 - no complete Traffic Analysis Center
 - no `flow_counts` or `zone_statistics` output generation

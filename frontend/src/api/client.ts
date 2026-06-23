@@ -28,3 +28,18 @@ export async function apiPost<T>(path: string, body?: BodyInit): Promise<T> {
   }
   return (await response.json()) as T;
 }
+
+export async function apiPatch<T>(path: string, body?: unknown): Promise<T> {
+  const init: RequestInit = {
+    method: "PATCH"
+  };
+  if (body !== undefined) {
+    init.headers = { "Content-Type": "application/json" };
+    init.body = JSON.stringify(body);
+  }
+  const response = await fetch(`${getApiBaseUrl()}${path}`, init);
+  if (!response.ok) {
+    throw new Error(`Request failed with status ${response.status}`);
+  }
+  return (await response.json()) as T;
+}

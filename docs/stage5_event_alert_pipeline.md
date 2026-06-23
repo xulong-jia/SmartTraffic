@@ -1,12 +1,11 @@
-# Stage 5 Event & Alert MVP / Midpoint Status
+# Stage 5 Event & Alert MVP Status
 
 ## 1. Scope
 
-This document records the current Stage 5 MVP / midpoint state for
-SmartTraffic.
+This document records the current Stage 5 artifact-based / in-memory MVP state
+for SmartTraffic.
 
-This document does not declare full Stage 5 completion. The current milestone is
-the minimal Event & Alert artifact pipeline:
+The current milestone is the Event & Alert artifact pipeline:
 
 ```text
 trajectory artifacts
@@ -14,8 +13,8 @@ trajectory artifacts
   -> event artifacts
   -> AlertService
   -> alert artifacts
-  -> FastAPI query
-  -> React Analysis Detail minimal view
+  -> FastAPI query and alert status endpoints
+  -> React Analysis Detail / Alert Center minimal views
 ```
 
 The current system does not provide law-enforcement-grade violation judgment and does not perform real-world speed calibration.
@@ -27,7 +26,9 @@ Implemented Stage 5 MVP capabilities:
 - Event contract
 - Event evidence contract
 - Rule execution contract
+- Zone / Event Rule configuration API MVP
 - Event artifacts
+- Event Evidence and Rule Execution artifact enrichment
 - EventEngine callback framework
 - Six rule callbacks
 - EventService
@@ -35,23 +36,17 @@ Implemented Stage 5 MVP capabilities:
 - Artifact-based event query API
 - Alert contract
 - AlertService
-- Artifact-based alert generate/query API
-- Frontend minimal event and alert view
+- Artifact-based alert generate/query/status API
+- Frontend minimal event and alert views
 
 Current services operate on local artifacts under `results/traffic_analysis/<run_id>/`. They do not form a complete database-backed result center.
 
 ## 3. Strict Manual Alignment
 
-According to `docs/SmartTraffic_最终版项目开发执行手册.md`, Stage 5 still
-requires:
-
-- complete event/rule config persistence
-- complete Alert Center lifecycle
-
-The Stage 5 event rule layer now covers the six manual-defined event rules. The
-Stage 5B process pipeline now runs EventEngine / EventService and AlertService
-after trajectory processing. The remaining Stage 5 gaps above are system-level
-capabilities, not missing rule callbacks.
+The Stage 5 event rule layer covers the six manual-defined event rules. The
+process pipeline runs EventEngine / EventService and AlertService after
+trajectory processing. Zone / Event Rule config and Alert Center are MVP
+implementations, not database-backed final implementations.
 
 The current `v0.5.0-event-alert-minimal` tag is a minimal milestone tag. It is
 not a full Stage 5 completion tag and should not be moved.
@@ -378,7 +373,9 @@ Generated alerts default to:
 status = new
 ```
 
-Current alert generation does not implement acknowledge, resolve, ignored mutation APIs, notification delivery, or real-time alerting.
+The artifact-backed Alert Center API can query generated alerts and update their
+status to acknowledged, resolved, or ignored. It does not implement notification
+delivery, real-time alerting, or database-backed alert persistence.
 
 ## 8. Alert API
 
@@ -393,8 +390,7 @@ It reads existing event artifacts and does not modify event artifacts.
 
 `GET /api/analysis-runs/{run_id}/alerts`
 
-These are minimal artifact-based alert endpoints. They are not a full Alert
-Center lifecycle API.
+These are run-scoped artifact-based alert endpoints.
 
 Query parameters:
 
@@ -404,6 +400,36 @@ Query parameters:
 - `event_type`: optional
 
 Missing run or missing alert artifacts return 404.
+
+`GET /api/alerts`
+
+Lists alerts across available run artifacts.
+
+Query parameters:
+
+- `run_id`: optional
+- `status`: optional
+- `level`: optional
+
+`GET /api/alerts/{alert_id}`
+
+Returns one alert by `id` / `alert_id`.
+
+`PATCH /api/alerts/{alert_id}/acknowledge`
+
+Marks an alert as acknowledged. The request body may include
+`acknowledged_by`.
+
+`PATCH /api/alerts/{alert_id}/resolve`
+
+Marks an alert as resolved.
+
+`PATCH /api/alerts/{alert_id}/ignore`
+
+Marks an alert as ignored.
+
+The standalone Alert Center endpoints remain artifact-backed MVP endpoints, not
+database-backed final lifecycle persistence.
 
 ## 9. Frontend Minimal View
 
@@ -418,23 +444,29 @@ Missing run or missing alert artifacts return 404.
 - alert summary
 - alerts table
 
+`AlertCenterPage` currently provides:
+
+- run, status, and level filters
+- alert list cards
+- alert details including run, event, track, and zone identifiers
+- acknowledge, resolve, and ignore actions
+- loading, error, and empty states
+
 Current frontend does not provide:
 
 - event timeline
 - alert timeline
 - video overlay
-- acknowledge / resolve controls
 - Review Center workflow
-
-`AlertCenterPage` and `AlertPanel` currently remain placeholder UI shells.
 
 ## 10. Tests
 
-Current Stage 5 MVP / midpoint test coverage includes:
+Current Stage 5 MVP test coverage includes:
 
 - alert contract tests
 - alert service tests
 - alert API tests
+- stage5 event pipeline tests
 - event contract tests
 - event evidence tests
 - rule execution contract tests
@@ -462,12 +494,10 @@ Current known limitations:
 - `zone_statistics.json` is not generated
 - `/api/analysis-runs/{run_id}/zone-statistics` is not implemented
 - aggregate zone statistics history and frontend congestion charts are not implemented
-- acknowledge / resolve / ignored mutation APIs are not implemented
-- full Alert Center status workflow is not implemented
 - Review Center is not implemented
 - Bad Case Center is not implemented
 - Evaluation Center is not implemented
-- Zone Editor is not implemented
+- database-backed Zone / Rule / Alert persistence is not implemented
 - video overlay is not implemented
 - no real-world speed / direction calibration
 - no law-enforcement-grade traffic violation judgment
@@ -476,7 +506,5 @@ Current known limitations:
 
 Recommended next steps:
 
-- Run a Stage 5 execution-manual closeout audit to decide whether the completed
-  rule layer and remaining system-level gaps should be split into Stage 6/7/8.
-- Decide whether to add rule/zone configuration persistence.
+- Decide whether to add database-backed rule/zone/alert persistence.
 - Keep `v0.5.0-event-alert-minimal` as the existing minimal milestone tag; do not move it.

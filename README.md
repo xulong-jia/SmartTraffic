@@ -2,9 +2,9 @@
 
 ## 项目简介
 
-SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engine、Event Engine、minimal Alert artifacts、FastAPI、React 和本地结果产物管理的智慧交通视频分析项目。
+SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engine、Event Engine、artifact-based Alert Center MVP、FastAPI、React 和本地结果产物管理的智慧交通视频分析项目。
 
-当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 Event Engine 仍处于部分完成 / in progress 状态。当前已经实现的是 Stage 5 的六个规则回调、Event / Alert artifact-based MVP 查询能力，以及 Stage 5B process 后自动生成 Event / Alert artifacts 的系统闭环；这仍不代表完整 Stage 5 已完成。
+当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 已完成 artifact-based / in-memory MVP。当前阶段五包括 Zone / Event Rule 配置 API MVP、六类 Event Engine 规则、Event Evidence / Rule Execution artifacts 增强、Alert artifacts 生成、Alert Center 基础查询与状态流转。它不是数据库最终版，也不代表 Review Center、Bad Case、Evaluation Center 已完成。
 
 当前可验证的本地 artifacts 生成和查询闭环是：
 
@@ -35,7 +35,7 @@ video upload
 - Tracking: DeepSORT adapter / deterministic mock tracker
 - Trajectory: geometry utilities, trajectory features, TrajectoryEngine
 - Events: EventEngine callback framework, event contracts, event artifacts
-- Alerts: minimal alert contract, artifact generation and query
+- Alerts: artifact-based Alert Center MVP, alert generation, query and status transitions
 - Frontend: React, TypeScript, Vite
 - Test: pytest, Vite build
 - Storage: local videos and run artifacts, Git-ignored
@@ -127,10 +127,10 @@ cp .env.example .env
 - Stage 2 YOLOv8 Detection completed
 - Stage 3 Multi-object Tracking completed
 - Stage 4 Trajectory Engine completed
-- Stage 5 Event Engine partially completed / in progress
-- Event / Alert artifact query MVP implemented, partially overlapping later Traffic Analysis Center / Alert Center goals
+- Stage 5 Event / Alert artifact-based MVP completed
+- Zone / Event Rule configuration API MVP, Event Evidence / Rule Execution artifacts, and Alert Center status workflow implemented
 
-`v0.5.0-event-alert-minimal` is a minimal milestone tag. It does not represent full Stage 5 completion and should not be moved to newer commits.
+`v0.5.0-event-alert-minimal` is an earlier minimal Event / Alert milestone tag and should not be moved to newer commits.
 
 ### 阶段一：项目骨架与视频管理初始化
 
@@ -245,18 +245,29 @@ dffaf02 feat: add trajectory points query api
 1a9dad8 feat: add minimal trajectory frontend view
 ```
 
-### 阶段五：Event Engine 部分完成 / Event & Alert MVP
+### 阶段五：Event Engine / Alert Center artifact-based MVP
 
-当前阶段五严格按执行手册仍不能判定为完成。已实现部分包括 Event contract、六个规则回调、event artifacts、alert artifacts、artifact-based event / alert query MVP，以及 process pipeline 中 detection / tracking / trajectory / event / alert artifact generation 的直接串联。Stage 5 event rule layer now covers the six manual-defined event rules, but complete Stage 5 still has unfinished system-level capabilities: complete zone/rule config persistence 以及完整 Alert Center 状态流转。
+当前阶段五已完成 artifact-based / in-memory MVP。已实现部分包括 Zone / Event Rule 配置 API MVP、Event contract、六个规则回调、event artifacts、alert artifacts、Alert Center 基础查询与状态流转，以及 process pipeline 中 detection / tracking / trajectory / event / alert artifact generation 的直接串联。阶段五仍不是数据库最终版，zone/rule 和 alert 状态均为本地 artifact / 内存边界。
 
 Implemented:
 
 - Event contract / evidence / rule execution records
+- Zone / Event Rule 配置 API MVP：
+  - `POST /api/zones`
+  - `GET /api/zones`
+  - `PATCH /api/zones/{zone_id}`
+  - `DELETE /api/zones/{zone_id}`
+  - `POST /api/event-rules`
+  - `GET /api/event-rules`
+  - `PATCH /api/event-rules/{rule_id}`
+  - `DELETE /api/event-rules/{rule_id}`
 - Event artifacts：
   - `events.jsonl`
   - `event_evidence.jsonl`
   - `rule_executions.jsonl`
   - `event_summary.json`
+- Event Evidence 已补充 rule parameters、trigger reason、trajectory features 和 snapshot fallback 信息
+- Rule Execution 已稳定记录 matched / not_matched / skipped / error
 - EventEngine callback framework
 - 已实现六类事件规则回调：
   - `danger_zone_intrusion`
@@ -274,20 +285,25 @@ Implemented:
 - Alert artifacts：
   - `alerts.jsonl`
   - `alert_summary.json`
-- Alert generate/query API：
+- Alert generate/query/status API：
   - `POST /api/analysis-runs/{run_id}/alerts/generate`
   - `GET /api/analysis-runs/{run_id}/alerts`
+  - `GET /api/alerts`
+  - `GET /api/alerts/{alert_id}`
+  - `PATCH /api/alerts/{alert_id}/acknowledge`
+  - `PATCH /api/alerts/{alert_id}/resolve`
+  - `PATCH /api/alerts/{alert_id}/ignore`
 - Analysis Detail 最小 event / alert table 展示
+- Alert Center 最小页面：支持 run/status/level 过滤，以及 acknowledge / resolve / ignore
 
 Not implemented yet:
 
-- complete zone/rule config persistence
-- full Alert Center lifecycle: acknowledge / resolve / ignored
+- database-backed zone/rule config persistence
+- database-backed alert persistence
 - Review / Bad Case / Evaluation
-- Zone Editor
 - Database implementation / persistence
 
-Event/Alert query endpoints are artifact-based MVP endpoints. They partially overlap with later-stage Traffic Analysis Center / Alert Center goals but are not a full database-backed result center or full Alert Center.
+Event/Alert query endpoints are artifact-based MVP endpoints. They are not a full database-backed result center.
 
 当前事件判断基于像素级轨迹特征、zone polygon 和规则阈值。`illegal_parking` 是视频分析事件，不是正式执法级违停结论。
 
@@ -329,6 +345,11 @@ bddcd93 feat: add congestion rule
 - `GET /api/analysis-runs/{run_id}/events`
 - `POST /api/analysis-runs/{run_id}/alerts/generate`
 - `GET /api/analysis-runs/{run_id}/alerts`
+- `GET /api/alerts`
+- `GET /api/alerts/{alert_id}`
+- `PATCH /api/alerts/{alert_id}/acknowledge`
+- `PATCH /api/alerts/{alert_id}/resolve`
+- `PATCH /api/alerts/{alert_id}/ignore`
 
 `POST /api/videos/{video_id}/process` 当前支持：
 
@@ -382,7 +403,7 @@ results/traffic_analysis/<run_id>/
 
 EventService 和 AlertService 基于上述 local artifacts 工作。当前 Traffic Analysis Center 是 artifact-based run result query，不是完整数据库结果中心。真实运行产物不提交到 Git。
 
-The `v0.5.0-event-alert-minimal` tag marks this minimal Event / Alert milestone only. It is not a full Stage 5 completion tag.
+The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert milestone only.
 
 ## 当前边界
 
@@ -395,11 +416,10 @@ The `v0.5.0-event-alert-minimal` tag marks this minimal Event / Alert milestone 
 - `/api/analysis-runs/{run_id}/zone-statistics`
 - frontend congestion chart
 - Alert acknowledge / resolve / ignored 状态修改 API
-- full Alert Center status workflow
 - Review Center 真实逻辑
 - Bad Case Center 真实逻辑
 - Evaluation Center 完整评测
-- Zone Editor
+- 数据库持久化 Zone / Event Rule / Alert 状态
 - video overlay
 - 正式实时流处理
 - 真实世界速度标定；当前 `speed_px_per_second` 不是 m/s 或 km/h

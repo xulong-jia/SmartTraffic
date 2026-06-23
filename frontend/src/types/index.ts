@@ -218,7 +218,34 @@ export interface AlertSummary {
   [key: string]: unknown;
 }
 
-export type AlertRecord = Record<string, string | number | boolean | null | object | undefined>;
+export type AlertStatus = "new" | "acknowledged" | "resolved" | "ignored";
+export type AlertLevel = "info" | "warning" | "critical";
+
+export interface AlertRecord {
+  [key: string]: string | number | boolean | null | object | undefined;
+  id: string;
+  alert_id: string;
+  event_id: string;
+  video_id: string;
+  run_id: string;
+  track_id?: number | null;
+  event_type?: string | null;
+  alert_type: string;
+  title: string;
+  message: string;
+  level: AlertLevel | string;
+  status: AlertStatus | string;
+  frame_index?: number | null;
+  timestamp_ms?: number | null;
+  zone_id?: string | null;
+  rule_id?: string | null;
+  event_evidence_id?: string | null;
+  snapshot_path?: string | null;
+  acknowledged_by?: string | null;
+  acknowledged_at?: string | null;
+  resolved_at?: string | null;
+  created_at: string;
+}
 
 export interface AlertsResponse {
   run_id: string;
@@ -238,4 +265,12 @@ export interface GenerateAlertsResponse {
   total_alerts: number;
   alert_summary: AlertSummary;
   artifacts: Record<string, string>;
+}
+
+export interface AlertCenterResponse {
+  alerts: AlertRecord[];
+  total: number;
+  run_id?: string | null;
+  status?: string | null;
+  level?: string | null;
 }

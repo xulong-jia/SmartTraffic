@@ -3,16 +3,17 @@
 This document reflects the current implementation status after aligning with
 `docs/SmartTraffic_最终版项目开发执行手册.md`.
 
-Stage 5 is partially completed. The current event rules are artifact-based
-callback implementations over trajectory artifacts, and Stage 5B now connects
-the video process pipeline to direct Event / Alert artifact generation after
-trajectory processing. The current implementation is still not backed by
-database-managed rule configuration or a complete Zone & Rule Config UI.
+Stage 5 is implemented as an artifact-based / in-memory MVP. The current event
+rules are callback implementations over trajectory artifacts, and the video
+process pipeline can generate Event / Alert artifacts after trajectory
+processing. The current implementation is still not backed by database-managed
+rule configuration.
 
 The Stage 5 event rule layer currently covers the six event rules defined by the
-execution manual. Stage 5 is still not fully complete because system-level
-capabilities such as persisted zone/rule configuration, database-backed result
-management, and the full Alert Center lifecycle remain unfinished.
+execution manual. Zone / Event Rule configuration APIs exist as an MVP, Event
+Evidence and Rule Execution artifacts include rule inputs and trigger context,
+and the Alert Center supports artifact-backed query plus acknowledge / resolve /
+ignore status transitions.
 
 SmartTraffic event outputs are video-analysis signals only. They are not
 law-enforcement-grade traffic violation judgments.
@@ -275,25 +276,22 @@ inventing events. Generated process artifacts can be queried through
 `GET /api/analysis-runs/{run_id}/alerts`.
 
 This remains an artifact-based MVP. It is not the final database-backed Traffic
-Analysis Center, not the complete Alert Center lifecycle, and not a completed
-Review / Bad Case / Evaluation workflow.
+Analysis Center, and not a completed Review / Bad Case / Evaluation workflow.
 
 ## Current Missing Capabilities
 
 - Multi-frame confirmation for rules that require temporal confirmation.
-- Persisted event/rule configuration.
-- UI-based Zone & Rule Config.
+- Database-backed event/rule configuration.
 - DirectionLineEditor and CountingLineEditor.
 - Aggregate `flow_counts.json` and flow statistics APIs.
 - Aggregate `zone_statistics.json` and zone statistics APIs.
 - Database-backed Traffic Analysis Center result management.
-- Full Alert Center lifecycle: acknowledge / resolve / ignored.
 - Review / Bad Case / Evaluation workflows.
 
 ## Current Contract Boundary
 
-Current rules consume trajectory artifacts and in-memory `rules` / `zones`
-parameters. They do not call YOLOv8 directly, do not run DeepSORT directly, and
-do not replace the Trajectory Engine. The database-backed `event_rules`,
-`zones`, `flow_counts`, and `zone_statistics` layers remain target design from
-the execution manual.
+Current rules consume trajectory artifacts and configured `rules` / `zones`
+from request payloads or the Stage 5A in-memory config services. They do not
+call YOLOv8 directly, do not run DeepSORT directly, and do not replace the
+Trajectory Engine. The database-backed `event_rules`, `zones`, `flow_counts`,
+and `zone_statistics` layers remain target design from the execution manual.

@@ -28,6 +28,79 @@ def test_alert_api_generate_alerts(tmp_path: Path, monkeypatch) -> None:
     assert payload["artifacts"]["alerts"] == "alerts.jsonl"
 
 
+def test_alert_center_api_lists_and_filters_alerts(tmp_path: Path, monkeypatch) -> None:
+    client = _client_for_tmp_run(tmp_path, monkeypatch)
+    run_id = _create_event_artifact_run(tmp_path)
+    client.post(f"/api/analysis-runs/{run_id}/alerts/generate")
+
+    response = client.get(
+        f"/api/alerts?run_id={run_id}&status=new&level=critical"
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["run_id"] == run_id
+    assert payload["status"] == "new"
+    assert payload["level"] == "critical"
+    assert payload["total"] == 1
+    assert payload["alerts"][0]["id"] == payload["alerts"][0]["alert_id"]
+    assert payload["alerts"][0]["event_id"] == "event_danger"
+    assert payload["alerts"][0]["level"] == "critical"
+
+
+def test_alert_center_api_get_and_status_transitions(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    client = _client_for_tmp_run(tmp_path, monkeypatch)
+    run_id = _create_event_artifact_run(tmp_path)
+    client.post(f"/api/analysis-runs/{run_id}/alerts/generate")
+    alert = client.get(f"/api/alerts?run_id={run_id}").json()["alerts"][0]
+    alert_id = alert["id"]
+
+    get_response = client.get(f"/api/alerts/{alert_id}")
+    assert get_response.status_code == 200
+    assert get_response.json()["id"] == alert_id
+
+    acknowledge_response = client.patch(
+        f"/api/alerts/{alert_id}/acknowledge",
+        json={"acknowledged_by": "operator_1"},
+    )
+    assert acknowledge_response.status_code == 200
+    acknowledged = acknowledge_response.json()
+    assert acknowledged["status"] == "acknowledged"
+    assert acknowledged["acknowledged_by"] == "operator_1"
+    assert acknowledged["acknowledged_at"]
+
+    resolve_response = client.patch(f"/api/alerts/{alert_id}/resolve")
+    assert resolve_response.status_code == 200
+    resolved = resolve_response.json()
+    assert resolved["status"] == "resolved"
+    assert resolved["resolved_at"]
+
+    stored_alert = client.get(f"/api/alerts/{alert_id}").json()
+    assert stored_alert["status"] == "resolved"
+    assert stored_alert["acknowledged_by"] == "operator_1"
+    assert stored_alert["resolved_at"] == resolved["resolved_at"]
+
+
+def test_alert_center_api_ignore_and_missing_alert(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    client = _client_for_tmp_run(tmp_path, monkeypatch)
+    run_id = _create_event_artifact_run(tmp_path)
+    client.post(f"/api/analysis-runs/{run_id}/alerts/generate")
+    alert = client.get(f"/api/alerts?run_id={run_id}&level=warning").json()["alerts"][0]
+
+    ignore_response = client.patch(f"/api/alerts/{alert['id']}/ignore")
+
+    assert ignore_response.status_code == 200
+    assert ignore_response.json()["status"] == "ignored"
+    assert client.get("/api/alerts/missing_alert").status_code == 404
+    assert client.patch("/api/alerts/missing_alert/resolve").status_code == 404
+
+
 def test_alert_api_get_alerts(tmp_path: Path, monkeypatch) -> None:
     client = _client_for_tmp_run(tmp_path, monkeypatch)
     run_id = _create_event_artifact_run(tmp_path)

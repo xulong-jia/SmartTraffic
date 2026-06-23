@@ -74,9 +74,39 @@ analysis-runs endpoints.
 
 Manual alignment note:
 
-- Stage 5 is partially completed, not fully complete.
-- Event and alert endpoints documented below are artifact-based MVP run query endpoints.
-- They partially overlap later Traffic Analysis Center and Alert Center goals, but they are not the final standalone Event Center / Alert Center API set from the execution manual.
+- Stage 5 is implemented as an artifact-based / in-memory MVP.
+- Event and alert endpoints documented below are artifact-based MVP endpoints.
+- They are not a database-backed final Traffic Analysis Center implementation.
+
+## Zone / Event Rule Config
+
+These endpoints are Stage 5A artifact-based / in-memory MVP configuration APIs.
+They provide stable Event Engine input without claiming database persistence.
+
+Zones:
+
+- `POST /api/zones`
+- `GET /api/zones?video_id=&enabled=`
+- `GET /api/zones/{zone_id}`
+- `PATCH /api/zones/{zone_id}`
+- `DELETE /api/zones/{zone_id}`
+
+Event Rules:
+
+- `POST /api/event-rules`
+- `GET /api/event-rules?event_type=&enabled=&zone_id=`
+- `GET /api/event-rules/{rule_id}`
+- `PATCH /api/event-rules/{rule_id}`
+- `DELETE /api/event-rules/{rule_id}`
+
+Supported `event_type` values:
+
+- `wrong_way_driving`
+- `illegal_parking`
+- `danger_zone_intrusion`
+- `pedestrian_in_vehicle_lane`
+- `congestion`
+- `flow_counting`
 
 ## Analysis Runs
 
@@ -88,6 +118,11 @@ Manual alignment note:
 - `GET /api/analysis-runs/{run_id}/events?limit=100`
 - `POST /api/analysis-runs/{run_id}/alerts/generate`
 - `GET /api/analysis-runs/{run_id}/alerts?limit=100`
+- `GET /api/alerts`
+- `GET /api/alerts/{alert_id}`
+- `PATCH /api/alerts/{alert_id}/acknowledge`
+- `PATCH /api/alerts/{alert_id}/resolve`
+- `PATCH /api/alerts/{alert_id}/ignore`
 
 ### Trajectory Points
 
@@ -167,9 +202,8 @@ This endpoint reads existing `events.jsonl` and generates:
 - `alerts.jsonl`
 - `alert_summary.json`
 
-It does not modify event artifacts and does not implement acknowledge / resolve behavior.
-It is a minimal artifact generation endpoint, not a full Alert Center lifecycle
-API.
+It does not modify event artifacts. Alert status changes are handled by the
+standalone `/api/alerts/{alert_id}/...` endpoints below.
 
 Response shape:
 
@@ -194,8 +228,8 @@ Behavior:
 
 `GET /api/analysis-runs/{run_id}/alerts`
 
-This endpoint is an artifact-based run alert query. It is not the final
-standalone `/api/alerts` Alert Center implementation from the execution manual.
+This endpoint is an artifact-based run alert query. The standalone Alert Center
+MVP endpoints are listed below.
 
 Query parameters:
 
@@ -224,18 +258,58 @@ Behavior:
 - Missing run returns 404.
 - Existing run without alert artifacts returns 404.
 - `limit=0` returns `summary` with an empty `alerts` list.
-- The current minimal Alert Center does not support acknowledge / resolve status mutation APIs.
+### Alert Center
+
+`GET /api/alerts`
+
+Query parameters:
+
+- `run_id`: optional run id filter.
+- `status`: optional alert status filter: `new`, `acknowledged`, `resolved`, or `ignored`.
+- `level`: optional alert level filter: `info`, `warning`, or `critical`.
+
+Response shape:
+
+```json
+{
+  "alerts": [],
+  "total": 0,
+  "run_id": null,
+  "status": null,
+  "level": null
+}
+```
+
+`GET /api/alerts/{alert_id}` returns one alert or 404.
+
+`PATCH /api/alerts/{alert_id}/acknowledge`
+
+Optional body:
+
+```json
+{
+  "acknowledged_by": "operator_1"
+}
+```
+
+Sets `status=acknowledged`, writes `acknowledged_by`, and writes
+`acknowledged_at`.
+
+`PATCH /api/alerts/{alert_id}/resolve` sets `status=resolved` and writes
+`resolved_at`.
+
+`PATCH /api/alerts/{alert_id}/ignore` sets `status=ignored`.
+
+These endpoints update the current artifact-backed MVP storage. They are not a
+database-backed workflow engine.
 
 ## Not Implemented From The Manual Yet
 
 The following API capabilities are planned by the execution manual but are not
 implemented as working behavior yet:
 
-- `PATCH /api/alerts/{alert_id}/acknowledge`
-- `PATCH /api/alerts/{alert_id}/resolve`
 - `PATCH /api/events/{event_id}/status`
 - standalone `/api/events` full query
-- standalone `/api/alerts` full query
 - `/api/analysis-runs/{run_id}/flow-counts`
 - `/api/analysis-runs/{run_id}/zone-statistics`
 - `zone_statistics.json` generation and aggregate zone statistics APIs
