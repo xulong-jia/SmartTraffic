@@ -27,7 +27,7 @@ Completed Stage 5 midpoint capabilities:
 - Rule execution contract
 - Event artifacts
 - EventEngine callback framework
-- Three rule callbacks
+- Four rule callbacks
 - EventService
 - Event query API
 - Alert contract
@@ -115,6 +115,67 @@ Limitations:
 - no real-world speed calibration
 - no formal parking violation conclusion
 - no law-enforcement-grade judgment
+
+### wrong_way_driving
+
+Purpose: detect vehicles moving in a clear opposite direction inside a configured `vehicle_lane` zone.
+
+Inputs:
+
+- vehicle class: `car`, `truck`, `bus`, or `motorcycle`
+- `zone_id`
+- `vehicle_lane` polygon
+- `point_type`: `bottom_center` or `center`
+- `moving_angle`
+- `allowed_angle`
+- `angle_tolerance`
+- `min_speed_px_per_frame`
+- `track_length`
+
+Angle convention:
+
+- 0 degrees: right
+- 90 degrees: down
+- 180 degrees: left
+- 270 degrees: up
+
+Strict wrong-way logic:
+
+```text
+angle_diff = angle_difference(moving_angle, allowed_angle)
+wrong_way = angle_diff >= 180 - angle_tolerance
+```
+
+This rule does not use `angle_diff > angle_tolerance`; that looser check means "not following the allowed direction" and can misclassify lateral motion. Lateral motion is not treated as `wrong_way_driving`.
+
+Output:
+
+- `event_type=wrong_way_driving`
+- `evidence_type=direction`
+- matched / skipped / error rule execution records
+
+Evidence fields:
+
+- `zone_id`
+- `zone_type`
+- `point`
+- `point_type`
+- `moving_angle`
+- `allowed_angle`
+- `angle_tolerance`
+- `angle_difference`
+- `speed_px_per_frame`
+- `min_speed_px_per_frame`
+- `direction_vector`
+- `track_length`
+- `polygon`
+
+Limitations:
+
+- no real-world direction calibration
+- no multi-frame wrong-way counter yet
+- `min_wrong_way_frames > 1` is currently unsupported
+- not law-enforcement-grade judgement
 
 ## 4. Event Artifacts
 
@@ -245,6 +306,7 @@ Current Stage 5 midpoint test coverage includes:
   - `danger_zone_intrusion`
   - `pedestrian_in_vehicle_lane`
   - `illegal_parking`
+  - `wrong_way_driving`
 
 The full backend test suite has passed for this milestone, and frontend `npm run build` has passed.
 
@@ -252,7 +314,6 @@ The full backend test suite has passed for this milestone, and frontend `npm run
 
 Current known limitations:
 
-- `wrong_way_driving` is not implemented
 - `congestion` is not implemented
 - `flow_counting` is not implemented
 - acknowledge / resolve / ignored mutation APIs are not implemented
@@ -263,14 +324,14 @@ Current known limitations:
 - Zone Editor is not implemented
 - video overlay is not implemented
 - process mode does not directly run events / alerts
-- no real-world speed calibration
+- no real-world speed / direction calibration
 - no law-enforcement-grade traffic violation judgment
 
 ## 11. Next Steps
 
 Recommended next steps:
 
-- Decide whether to implement `wrong_way_driving` next.
+- Decide whether to implement `flow_counting` or `congestion` next.
 - Decide whether to add process mode or a dedicated event run API for event/alert generation.
 - Decide whether to add rule/zone configuration persistence.
 - Consider tagging the current documented milestone as `v0.5.0-event-alert-minimal` after user confirmation.

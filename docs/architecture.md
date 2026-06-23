@@ -70,8 +70,9 @@ Implemented stage-five rule callbacks:
 - `danger_zone_intrusion`
 - `pedestrian_in_vehicle_lane`
 - `illegal_parking`
+- `wrong_way_driving`
 
-The `SUPPORTED_EVENT_TYPES` list includes future event types, but `wrong_way_driving`, `congestion`, and `flow_counting` callbacks are not implemented yet.
+The `SUPPORTED_EVENT_TYPES` list includes future event types, but `congestion` and `flow_counting` callbacks are not implemented yet.
 
 ## Query Layer
 
@@ -114,10 +115,9 @@ Current limitations:
 - no Evaluation Center workflow
 - no Zone Editor implementation
 - no video overlay
-- no `wrong_way_driving`
 - no `congestion`
 - no `flow_counting`
-- no real-world speed calibration
+- no real-world speed / direction calibration
 - no formal traffic enforcement conclusion
 
 Future phases should keep YOLOv8, DeepSORT, Trajectory Engine, Event Engine, Alert Center, Review Center, Bad Case Center, and Evaluation Center separate.

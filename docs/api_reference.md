@@ -106,7 +106,7 @@ Behavior:
 Query parameters:
 
 - `limit`: integer from 0 to 1000, default 100.
-- `event_type`: optional string. Filters returned events by event type.
+- `event_type`: optional string. Filters returned events by event type, such as `danger_zone_intrusion`, `pedestrian_in_vehicle_lane`, `illegal_parking`, or `wrong_way_driving`.
 - `track_id`: optional integer. Filters returned events, event evidence, and rule executions by track.
 
 Response shape:
@@ -131,7 +131,7 @@ Behavior:
 - Existing run without event artifacts returns 404.
 - `limit=0` returns `summary` with empty `events`, `event_evidence`, and `rule_executions`.
 - The response does not expose local absolute paths.
-- Current implemented rule callbacks are `danger_zone_intrusion`, `pedestrian_in_vehicle_lane`, and `illegal_parking`.
+- Current implemented rule callbacks are `danger_zone_intrusion`, `pedestrian_in_vehicle_lane`, `illegal_parking`, and `wrong_way_driving`.
 
 ### Alert Generation
 

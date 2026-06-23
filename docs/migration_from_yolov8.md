@@ -120,7 +120,8 @@ Stage five is not a direct migration of the old YOLOv8 project's analytics runti
 What changed:
 
 - `backend/app/events/` owns event contracts, evidence contracts, rule execution contracts, `EventEngine`, dedup helpers, and rule callbacks.
-- Implemented rule callbacks are `danger_zone_intrusion`, `pedestrian_in_vehicle_lane`, and `illegal_parking`.
+- Implemented rule callbacks are `danger_zone_intrusion`, `pedestrian_in_vehicle_lane`, `illegal_parking`, and `wrong_way_driving`.
+- `wrong_way_driving` is a SmartTraffic event-rule capability based on trajectory angle features. It depends on stage-four `moving_angle` and `direction_vector`, and is not directly migrated from the old YOLOv8 demo project.
 - `backend/app/services/event_service.py` reads existing `trajectory_points.jsonl` artifacts and writes event artifacts.
 - `backend/app/alerts/contracts.py` defines the minimal alert contract and severity-to-level mapping.
 - `backend/app/services/alert_service.py` reads existing `events.jsonl` artifacts and writes alert artifacts.
@@ -131,7 +132,6 @@ What changed:
 Still not migrated or implemented:
 
 - Old event/counting/ROI analytics runtime.
-- `wrong_way_driving`.
 - `congestion`.
 - `flow_counting`.
 - Full alert lifecycle mutation such as acknowledge / resolve.

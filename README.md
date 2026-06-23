@@ -20,7 +20,7 @@ video upload
 -> FastAPI / React display
 ```
 
-目前支持视频上传、视频元数据读取、YOLOv8 检测、deterministic dry-run 检测、DeepSORT adapter / mock tracking、多目标跟踪结果导出、Trajectory Engine 轨迹点生成、三类最小事件规则、event artifacts、alert artifacts、`run_id` 结果目录、前端最小工作台和基础 API。
+目前支持视频上传、视频元数据读取、YOLOv8 检测、deterministic dry-run 检测、DeepSORT adapter / mock tracking、多目标跟踪结果导出、Trajectory Engine 轨迹点生成、四类最小事件规则、event artifacts、alert artifacts、`run_id` 结果目录、前端最小工作台和基础 API。
 
 当前 `POST /api/videos/{video_id}/process` 仍只直接运行 detection / tracking / trajectory；EventService 和 AlertService 基于已有 local artifacts 生成和查询，不是 process mode 的一部分。
 
@@ -255,10 +255,11 @@ dffaf02 feat: add trajectory points query api
   - `rule_executions.jsonl`
   - `event_summary.json`
 - EventEngine callback framework
-- 已实现三类事件规则：
+- 已实现四类事件规则：
   - `danger_zone_intrusion`
   - `pedestrian_in_vehicle_lane`
   - `illegal_parking`
+  - `wrong_way_driving`
 - EventService：基于已有 `trajectory_points.jsonl`、rules 和 zones 生成 event artifacts
 - Event query API：`GET /api/analysis-runs/{run_id}/events`
 - Alert contract
@@ -273,6 +274,8 @@ dffaf02 feat: add trajectory points query api
 
 当前事件判断基于像素级轨迹特征、zone polygon 和规则阈值。`illegal_parking` 是视频分析事件，不是正式执法级违停结论。
 
+`wrong_way_driving` 基于 `vehicle_lane` zone、`moving_angle`、`allowed_angle`、`angle_tolerance` 和 `min_speed_px_per_frame` 判断明显反向行驶。它使用 strict wrong-way 判断：`angle_diff = angle_difference(moving_angle, allowed_angle)`，并要求 `angle_diff >= 180 - angle_tolerance`。横向运动不会被误判为 wrong-way。该规则不是正式执法级方向判断，没有真实世界方向标定，也没有连续帧 wrong-way counter；`min_wrong_way_frames > 1` 当前不支持。
+
 对应提交：
 
 ```text
@@ -283,6 +286,7 @@ badc3d4 feat: add event artifact contracts
 e6c24c6 feat: add illegal parking rule
 3b8b47d feat: add event query pipeline
 d4e1f13 feat: add minimal alert center
+a8ea862 feat: add wrong way driving rule
 ```
 
 ## API
@@ -354,7 +358,6 @@ EventService 和 AlertService 基于上述 local artifacts 工作。当前 Traff
 
 当前尚未实现：
 
-- `wrong_way_driving`
 - `congestion`
 - `flow_counting`
 - Alert acknowledge / resolve / ignored 状态修改 API
