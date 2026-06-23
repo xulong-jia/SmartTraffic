@@ -80,7 +80,7 @@ The execution manual still targets:
 - Bad Case Center
 - Evaluation Center
 - persisted Zone & Rule Config
-- flow counting and zone statistics
+- aggregate flow counting and zone statistics
 
 These modules are not complete in the current project state.
 
@@ -100,8 +100,14 @@ Implemented stage-five rule callbacks:
 - `pedestrian_in_vehicle_lane`
 - `illegal_parking`
 - `wrong_way_driving`
+- `flow_counting`
 
-The `SUPPORTED_EVENT_TYPES` list includes future event types, but `congestion` and `flow_counting` callbacks are not implemented yet.
+The `SUPPORTED_EVENT_TYPES` list includes `congestion`, but the `congestion`
+callback is not implemented yet.
+
+The current `flow_counting` callback is a Stage 5 event rule. It uses
+EventEngine callback state to maintain `previous_points` and `counted_keys`
+while evaluating whether track segments cross `rule.parameters.line`.
 
 ## Query Layer
 
@@ -149,8 +155,9 @@ Current limitations:
 - no video overlay
 - no complete Traffic Analysis Center
 - no `congestion`
-- no `flow_counting`
 - no `flow_counts` or `zone_statistics` output generation
+- no `/api/analysis-runs/{run_id}/flow-counts`
+- no frontend flow statistics view
 - no real-world speed / direction calibration
 - no formal traffic enforcement conclusion
 

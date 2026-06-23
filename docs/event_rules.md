@@ -133,16 +133,66 @@ Limitations:
 - Lateral motion is intentionally not treated as wrong-way driving.
 - Not a law-enforcement-grade direction judgment.
 
+### flow_counting
+
+Purpose:
+
+- Count vehicle or person track crossings over a configured counting line as
+  Stage 5 event records.
+
+Trigger condition:
+
+- A track segment from `previous_point` to `current_point` intersects the
+  configured `line`.
+
+Key parameters:
+
+- `line_id`
+- `line`: `[[x1, y1], [x2, y2]]`
+- `direction`: `any`, `positive`, or `negative`
+- `point_type`: `bottom_center` or `center`
+- `count_once_per_track`
+- `target_classes`
+- `min_track_length`
+- `cooldown_seconds`
+
+Inputs:
+
+- `track_id`
+- `class_name`
+- `frame_index`
+- `timestamp_ms`
+
+Evidence:
+
+- `evidence_type=line_crossing`
+- Stores `line_id`, `line`, `previous_point`, `current_point`,
+  `crossing_direction`, `configured_direction`, `count_once_per_track`,
+  `track_id`, `class_name`, `frame_index`, and `timestamp_ms`.
+
+Runtime state:
+
+- The callback uses EventEngine callback state to keep `previous_points` and
+  `counted_keys`.
+- `EventEngine.reset()` clears this state.
+
+Limitations:
+
+- No `flow_counts.json` yet.
+- No `/api/analysis-runs/{run_id}/flow-counts` API yet.
+- No per-minute aggregate stats yet.
+- No frontend flow chart yet.
+- No persistent counting line config yet.
+- No real-world flow calibration.
+
 ## Not Implemented Yet
 
-The execution manual still requires these Stage 5 rules:
+The execution manual still requires this Stage 5 rule:
 
 - `congestion`
-- `flow_counting`
 
-The current `SUPPORTED_EVENT_TYPES` list may include these future event types,
-but their callbacks, artifacts, tests, and service integration are not
-implemented yet.
+`flow_counting` is implemented as a Stage 5 EventEngine event rule, but the
+manual's later aggregate flow-counting outputs remain unfinished.
 
 ## Current Missing Capabilities
 
@@ -150,6 +200,7 @@ implemented yet.
 - Persisted event/rule configuration.
 - UI-based Zone & Rule Config.
 - DirectionLineEditor and CountingLineEditor.
+- Aggregate `flow_counts.json` and flow statistics APIs.
 - Process mode that directly runs EventEngine and AlertService.
 - Full Alert Center lifecycle: acknowledge / resolve / ignored.
 - Review / Bad Case / Evaluation workflows.

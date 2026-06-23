@@ -4,7 +4,7 @@
 
 SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engine、Event Engine、minimal Alert artifacts、FastAPI、React 和本地结果产物管理的智慧交通视频分析项目。
 
-当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 Event Engine 仍处于部分完成 / in progress 状态。当前已经实现的是 Stage 5 的四个规则回调和 Event / Alert artifact-based MVP 查询能力，不代表完整 Stage 5 已完成。
+当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 Event Engine 仍处于部分完成 / in progress 状态。当前已经实现的是 Stage 5 的五个规则回调和 Event / Alert artifact-based MVP 查询能力，不代表完整 Stage 5 已完成。
 
 当前可验证的本地 artifacts 生成和查询闭环是：
 
@@ -22,7 +22,7 @@ video upload
 -> FastAPI / React display
 ```
 
-目前支持视频上传、视频元数据读取、YOLOv8 检测、deterministic dry-run 检测、DeepSORT adapter / mock tracking、多目标跟踪结果导出、Trajectory Engine 轨迹点生成、四类事件规则回调、event artifacts、alert artifacts、`run_id` 结果目录、前端最小工作台和基础 API。
+目前支持视频上传、视频元数据读取、YOLOv8 检测、deterministic dry-run 检测、DeepSORT adapter / mock tracking、多目标跟踪结果导出、Trajectory Engine 轨迹点生成、五类事件规则回调、event artifacts、alert artifacts、`run_id` 结果目录、前端最小工作台和基础 API。
 
 当前 `POST /api/videos/{video_id}/process` 仍只直接运行 detection / tracking / trajectory；EventService 和 AlertService 基于已有 local artifacts 生成和查询，不是 process mode 的一部分。
 
@@ -247,7 +247,7 @@ dffaf02 feat: add trajectory points query api
 
 ### 阶段五：Event Engine 部分完成 / Event & Alert MVP
 
-当前阶段五严格按执行手册不能判定为完成。已实现部分包括 Event contract、四个规则回调、event artifacts、alert artifacts，以及 artifact-based event / alert query MVP。完整 Stage 5 仍缺 `congestion`、`flow_counting`、完整 zone/rule config persistence、process mode 直接运行 events / alerts、以及完整 Alert Center 状态流转。
+当前阶段五严格按执行手册不能判定为完成。已实现部分包括 Event contract、五个规则回调、event artifacts、alert artifacts，以及 artifact-based event / alert query MVP。完整 Stage 5 仍缺 `congestion`、完整 zone/rule config persistence、process mode 直接运行 events / alerts、以及完整 Alert Center 状态流转。
 
 Implemented:
 
@@ -258,11 +258,12 @@ Implemented:
   - `rule_executions.jsonl`
   - `event_summary.json`
 - EventEngine callback framework
-- 已实现四类事件规则回调：
+- 已实现五类事件规则回调：
   - `danger_zone_intrusion`
   - `pedestrian_in_vehicle_lane`
   - `illegal_parking`
   - `wrong_way_driving`
+  - `flow_counting`
 - EventService：基于已有 `trajectory_points.jsonl`、rules 和 zones 生成 event artifacts
 - Event query API：`GET /api/analysis-runs/{run_id}/events`
 - Alert contract
@@ -278,17 +279,20 @@ Implemented:
 Not implemented yet:
 
 - `congestion`
-- `flow_counting`
 - complete zone/rule config persistence
 - process mode that directly runs events / alerts
 - full Alert Center lifecycle: acknowledge / resolve / ignored
 - Review / Bad Case / Evaluation
+- Zone Editor
+- Database implementation / persistence
 
 Event/Alert query endpoints are artifact-based MVP endpoints. They partially overlap with later-stage Traffic Analysis Center / Alert Center goals but are not a full database-backed result center or full Alert Center.
 
 当前事件判断基于像素级轨迹特征、zone polygon 和规则阈值。`illegal_parking` 是视频分析事件，不是正式执法级违停结论。
 
 `wrong_way_driving` 基于 `vehicle_lane` zone、`moving_angle`、`allowed_angle`、`angle_tolerance` 和 `min_speed_px_per_frame` 判断明显反向行驶。它使用 strict wrong-way 判断：`angle_diff = angle_difference(moving_angle, allowed_angle)`，并要求 `angle_diff >= 180 - angle_tolerance`。横向运动不会被误判为 wrong-way。该规则不是正式执法级方向判断，没有真实世界方向标定，也没有连续帧 wrong-way counter；`min_wrong_way_frames > 1` 当前不支持。
+
+`flow_counting` 当前是 Stage 5 EventEngine rule，不是 Stage 6 aggregate flow-counts pipeline。它通过当前点和 previous point 判断 track segment 是否穿越 `rule.parameters.line` counting line，使用 `evidence_type=line_crossing`，支持 `direction=any / positive / negative` 和 `count_once_per_track`。当前不生成 `flow_counts.json`，不提供 `/api/analysis-runs/{run_id}/flow-counts`，也不提供前端流量图表、分钟级聚合统计、持久化 counting line 配置或真实世界流量标定。
 
 对应提交：
 
@@ -301,6 +305,7 @@ e6c24c6 feat: add illegal parking rule
 3b8b47d feat: add event query pipeline
 d4e1f13 feat: add minimal alert center
 a8ea862 feat: add wrong way driving rule
+01d6c3d feat: add flow counting rule
 ```
 
 ## API
@@ -375,7 +380,9 @@ The `v0.5.0-event-alert-minimal` tag marks this minimal Event / Alert milestone 
 当前尚未实现：
 
 - `congestion`
-- `flow_counting`
+- `flow_counts.json`
+- `/api/analysis-runs/{run_id}/flow-counts`
+- frontend flow statistics chart
 - Alert acknowledge / resolve / ignored 状态修改 API
 - full Alert Center status workflow
 - Review Center 真实逻辑

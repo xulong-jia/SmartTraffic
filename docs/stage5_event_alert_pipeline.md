@@ -29,7 +29,7 @@ Implemented Stage 5 MVP capabilities:
 - Rule execution contract
 - Event artifacts
 - EventEngine callback framework
-- Four rule callbacks
+- Five rule callbacks
 - EventService
 - Artifact-based event query API
 - Alert contract
@@ -45,7 +45,6 @@ According to `docs/SmartTraffic_最终版项目开发执行手册.md`, Stage 5 s
 requires:
 
 - `congestion`
-- `flow_counting`
 - complete event/rule config persistence
 - process pipeline integration that directly runs EventEngine and AlertService
 - complete Alert Center lifecycle
@@ -193,6 +192,63 @@ Limitations:
 - `min_wrong_way_frames > 1` is currently unsupported
 - not law-enforcement-grade judgement
 
+### flow_counting
+
+Purpose: count vehicle or person track crossings over a configured counting line
+as Stage 5 event records.
+
+Inputs:
+
+- `line_id`
+- `line` from `rule.parameters.line`, formatted as `[[x1, y1], [x2, y2]]`
+- `direction`: `any`, `positive`, or `negative`
+- `point_type`: `bottom_center` or `center`
+- `count_once_per_track`
+- `track_id`
+- `class_name`
+- `frame_index`
+- `timestamp_ms`
+
+Runtime behavior:
+
+- compares the current point with the callback state's previous point for the
+  same rule / track / point type
+- checks whether that segment crosses the configured counting line
+- filters crossing direction when `direction` is `positive` or `negative`
+- tracks counted keys when `count_once_per_track` is enabled, defaulting to true
+- clears previous point and counted-key state when `EventEngine.reset()` runs
+
+Output:
+
+- `event_type=flow_counting`
+- `evidence_type=line_crossing`
+- matched / skipped / error rule execution records
+
+Evidence fields:
+
+- `line_id`
+- `line`
+- `previous_point`
+- `current_point`
+- `point_type`
+- `crossing_direction`
+- `configured_direction`
+- `count_once_per_track`
+- `track_id`
+- `class_name`
+- `frame_index`
+- `timestamp_ms`
+
+Limitations:
+
+- no `flow_counts.json`
+- no `/api/analysis-runs/{run_id}/flow-counts` API
+- no aggregate in/out counts
+- no count-per-minute output
+- no frontend statistics chart
+- no persistent counting line config
+- no real-world flow calibration
+
 ## 5. Event Artifacts
 
 EventService and TrafficArtifactWriter can generate:
@@ -329,6 +385,7 @@ Current Stage 5 MVP / midpoint test coverage includes:
   - `pedestrian_in_vehicle_lane`
   - `illegal_parking`
   - `wrong_way_driving`
+  - `flow_counting`
 
 The full backend test suite has passed for this milestone, and frontend `npm run build` has passed.
 
@@ -337,7 +394,9 @@ The full backend test suite has passed for this milestone, and frontend `npm run
 Current known limitations:
 
 - `congestion` is not implemented
-- `flow_counting` is not implemented
+- `flow_counts.json` is not generated
+- `/api/analysis-runs/{run_id}/flow-counts` is not implemented
+- aggregate flow statistics and frontend flow charts are not implemented
 - acknowledge / resolve / ignored mutation APIs are not implemented
 - full Alert Center status workflow is not implemented
 - Review Center is not implemented
@@ -353,7 +412,8 @@ Current known limitations:
 
 Recommended next steps:
 
-- Decide whether to implement `flow_counting` or `congestion` next.
+- Implement `congestion` to close the remaining Stage 5 rule gap from the
+  execution manual.
 - Decide whether to add process mode or a dedicated event run API for event/alert generation.
 - Decide whether to add rule/zone configuration persistence.
 - Keep `v0.5.0-event-alert-minimal` as the existing minimal milestone tag; do not move it.
