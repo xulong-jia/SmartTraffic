@@ -6,6 +6,7 @@ from typing import Any
 from app.analysis.artifact_writer import TrafficArtifactWriter
 from app.core.config import get_settings
 from app.events.engine import EventEngine
+from app.services.event_rule_service import event_rule_service
 
 
 @dataclass(frozen=True)
@@ -43,6 +44,10 @@ class EventService:
             metadata,
         )
 
+        config = _resolve_event_config(
+            video_id=effective_video_id,
+            params=effective_params,
+        )
         engine = EventEngine(
             run_id=run_id,
             video_id=effective_video_id,
@@ -50,8 +55,8 @@ class EventService:
         )
         event_output = engine.evaluate(
             trajectory_frames,
-            rules=effective_params.rules or [],
-            zones=effective_params.zones or [],
+            rules=config["event_rules"],
+            zones=config["zones"],
         )
         artifact_paths = writer.write_event_outputs(
             run_id=run_id,
@@ -59,6 +64,16 @@ class EventService:
             events=event_output["events"],
             event_evidence=event_output["event_evidence"],
             rule_executions=event_output["rule_executions"],
+        )
+        writer.update_metadata(
+            run_id,
+            {
+                "event_config_snapshot": {
+                    "source": config["source"],
+                    "zones": config["zones"],
+                    "event_rules": config["event_rules"],
+                }
+            },
         )
         event_summary = _read_json(artifact_paths["event_summary"])
         metadata_after = writer.read_metadata(run_id)
@@ -90,6 +105,26 @@ def _read_trajectory_frames(
             if stripped:
                 frames.append(json.loads(stripped))
     return frames
+
+
+def _resolve_event_config(
+    *,
+    video_id: str,
+    params: EventRunParams,
+) -> dict[str, Any]:
+    request_zones = params.zones
+    request_rules = params.rules
+    source = {
+        "zones": "request" if request_zones is not None else "service",
+        "rules": "request" if request_rules is not None else "service",
+    }
+    config = event_rule_service.build_event_engine_config(
+        video_id=video_id,
+        zones=request_zones,
+        rules=request_rules,
+    )
+    config["source"] = source
+    return config
 
 
 def _read_json(path: Path) -> dict[str, Any]:

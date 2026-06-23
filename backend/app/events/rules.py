@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from dataclasses import fields
 from typing import Any
 
 from app.events.contracts import validate_event_severity
@@ -47,7 +48,17 @@ class EventRule:
     def from_dict(cls, values: dict[str, Any]) -> "EventRule":
         if not isinstance(values, dict):
             raise ValueError("EventRule values must be a dict")
-        return cls(**values)
+        normalized = dict(values)
+        if "rule_id" not in normalized and "id" in normalized:
+            normalized["rule_id"] = normalized["id"]
+        allowed_fields = {field.name for field in fields(cls)}
+        return cls(
+            **{
+                key: value
+                for key, value in normalized.items()
+                if key in allowed_fields
+            }
+        )
 
 
 def _normalize_target_classes(value: Any) -> tuple[str, ...]:

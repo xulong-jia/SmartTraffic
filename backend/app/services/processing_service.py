@@ -177,8 +177,8 @@ def _run_event_alert_pipeline(
         run_id=run_id,
         video_id=video_id,
         params=EventRunParams(
-            rules=effective_params.event_rules or [],
-            zones=effective_params.zones or [],
+            rules=effective_params.event_rules,
+            zones=effective_params.zones,
             record_not_matched=effective_params.record_not_matched,
         ),
     )

@@ -6,6 +6,7 @@ from app.api import (
     analysis_runs,
     bad_cases,
     detections,
+    event_rules,
     evaluation,
     events,
     health,
@@ -38,6 +39,7 @@ def create_app() -> FastAPI:
     app.include_router(tracks.router)
     app.include_router(trajectories.router)
     app.include_router(events.router)
+    app.include_router(event_rules.router)
     app.include_router(alerts.router)
     app.include_router(zones.router)
     app.include_router(analysis_runs.router)
