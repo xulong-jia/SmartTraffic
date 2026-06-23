@@ -5,7 +5,15 @@ from pathlib import Path
 from typing import Any
 
 
-EVIDENCE_TYPES = {"trajectory", "zone", "speed", "direction", "dwell", "rule"}
+EVIDENCE_TYPES = {
+    "trajectory",
+    "zone",
+    "speed",
+    "direction",
+    "dwell",
+    "rule",
+    "line_crossing",
+}
 
 
 def build_evidence(**values) -> dict:

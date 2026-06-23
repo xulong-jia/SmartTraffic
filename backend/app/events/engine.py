@@ -94,6 +94,7 @@ class EventEngine:
         }
 
     def reset(self) -> None:
+        self._callback_state: dict[str, Any] = {}
         self._last_event_time_by_key: dict[str, float] = {}
         self._emitted_event_keys: set[str] = set()
         self._total_events = 0
@@ -397,6 +398,7 @@ class EventEngine:
             "run_id": self.run_id,
             "video_id": self.video_id,
             "summary": self.get_summary(),
+            "state": self._callback_state,
         }
 
     def _record_event(

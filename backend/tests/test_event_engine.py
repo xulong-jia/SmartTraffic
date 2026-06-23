@@ -170,6 +170,38 @@ def test_event_engine_reset() -> None:
     assert engine.get_summary()["total_events"] == 1
 
 
+def test_event_engine_callback_state_persists_during_evaluate() -> None:
+    engine = EventEngine(
+        run_id="run_001",
+        video_id="video_001",
+        rule_callbacks={"danger_zone_intrusion": _stateful_matching_callback},
+    )
+
+    result = engine.evaluate(
+        [
+            _frame(frame_index=10, timestamp_ms=1000),
+            _frame(frame_index=11, timestamp_ms=1100),
+        ],
+        rules=[_rule(cooldown_seconds=0)],
+    )
+
+    assert [event["evidence"]["seen_count"] for event in result["events"]] == [1, 2]
+
+
+def test_event_engine_reset_clears_callback_state() -> None:
+    engine = EventEngine(
+        run_id="run_001",
+        video_id="video_001",
+        rule_callbacks={"danger_zone_intrusion": _stateful_matching_callback},
+    )
+    engine.update(_frame(), rules=[_rule()])
+
+    engine.reset()
+    result = engine.update(_frame(frame_index=11), rules=[_rule()])
+
+    assert result["events"][0]["evidence"]["seen_count"] == 1
+
+
 def test_event_engine_summary() -> None:
     engine = EventEngine(
         run_id="run_001",
@@ -323,6 +355,27 @@ def _not_matching_callback(rule, trajectory_point, frame_result, zones, engine_s
 
 def _error_callback(rule, trajectory_point, frame_result, zones, engine_state) -> dict:
     raise RuntimeError("boom")
+
+
+def _stateful_matching_callback(rule, trajectory_point, frame_result, zones, engine_state) -> dict:
+    state = engine_state["state"].setdefault("test_callback", {"seen_count": 0})
+    state["seen_count"] += 1
+    return {
+        "matched": True,
+        "event": {
+            "event_type": rule.event_type,
+            "evidence": {"seen_count": state["seen_count"]},
+        },
+        "evidence": [
+            {
+                "evidence_type": "rule",
+                "evidence_json": {"seen_count": state["seen_count"]},
+            }
+        ],
+        "reason": "matched by stateful callback",
+        "input_features": {"track_id": trajectory_point["track_id"]},
+        "output_result": {"matched": True, "seen_count": state["seen_count"]},
+    }
 
 
 def _execution_reasons(result: dict) -> list[str]:

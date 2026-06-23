@@ -43,7 +43,15 @@ def test_generate_evidence_id_is_stable() -> None:
 
 
 def test_evidence_type_validation() -> None:
-    for evidence_type in ["trajectory", "zone", "speed", "direction", "dwell", "rule"]:
+    for evidence_type in [
+        "trajectory",
+        "zone",
+        "speed",
+        "direction",
+        "dwell",
+        "rule",
+        "line_crossing",
+    ]:
         assert validate_evidence_type(evidence_type) == evidence_type
 
     with pytest.raises(ValueError):
