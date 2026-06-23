@@ -323,16 +323,23 @@ class TrafficArtifactWriter:
         _write_jsonl(events, events_jsonl)
         _write_jsonl(event_evidence, event_evidence_jsonl)
         _write_jsonl(rule_executions, rule_executions_jsonl)
-        _write_json(
-            build_event_summary(
-                events,
-                rule_executions,
-                run_id=run_id,
-                video_id=video_id,
-            ),
-            event_summary,
+        summary = build_event_summary(
+            events,
+            rule_executions,
+            run_id=run_id,
+            video_id=video_id,
         )
-        self._merge_metadata_artifacts(run_id, EVENT_ARTIFACTS, video_id=video_id)
+        _write_json(summary, event_summary)
+        self._merge_metadata_artifacts(
+            run_id,
+            EVENT_ARTIFACTS,
+            video_id=video_id,
+            metadata_updates={
+                "events_count": len(events),
+                "event_evidence_count": len(event_evidence),
+                "rule_executions_count": len(rule_executions),
+            },
+        )
         return {
             "events": events_jsonl,
             "events_jsonl": events_jsonl,
@@ -358,7 +365,12 @@ class TrafficArtifactWriter:
             build_alert_summary(alerts, run_id=run_id, video_id=video_id),
             alert_summary,
         )
-        self._merge_metadata_artifacts(run_id, ALERT_ARTIFACTS, video_id=video_id)
+        self._merge_metadata_artifacts(
+            run_id,
+            ALERT_ARTIFACTS,
+            video_id=video_id,
+            metadata_updates={"alerts_count": len(alerts)},
+        )
         return {
             "alerts": alerts_jsonl,
             "alerts_jsonl": alerts_jsonl,
@@ -370,7 +382,8 @@ class TrafficArtifactWriter:
         run_dir = self.base_dir / run_id
         return {
             name: str(relative_path)
-            for name, relative_path in CORE_ARTIFACTS.items()
+            for name, relative_path in _candidate_artifacts(run_dir).items()
+            if _artifact_exists(run_dir / relative_path)
         }
 
     def _merge_metadata_artifacts(
@@ -378,6 +391,7 @@ class TrafficArtifactWriter:
         run_id: str,
         artifact_updates: dict[str, str],
         video_id: str | None = None,
+        metadata_updates: dict[str, Any] | None = None,
     ) -> Path:
         _validate_run_id(run_id)
         metadata_path = self.base_dir / run_id / "metadata.json"
@@ -397,6 +411,8 @@ class TrafficArtifactWriter:
         artifacts = dict(metadata.get("artifacts", {}))
         artifacts.update(artifact_updates)
         metadata["artifacts"] = artifacts
+        if metadata_updates:
+            metadata.update(metadata_updates)
         return _write_json(metadata, metadata_path)
 
 
@@ -745,6 +761,23 @@ def _write_jsonl(rows: list[dict[str, Any]], output_path: Path) -> Path:
             file.write(json.dumps(row, ensure_ascii=False))
             file.write("\n")
     return output_path
+
+
+def _candidate_artifacts(run_dir: Path) -> dict[str, str]:
+    metadata_path = run_dir / "metadata.json"
+    if metadata_path.is_file():
+        with metadata_path.open(encoding="utf-8") as file:
+            metadata = json.load(file)
+        artifacts = metadata.get("artifacts")
+        if isinstance(artifacts, dict):
+            return {str(name): str(path) for name, path in artifacts.items()}
+    return dict(CORE_ARTIFACTS)
+
+
+def _artifact_exists(path: Path) -> bool:
+    if path.is_file():
+        return True
+    return path.is_dir() and any(path.iterdir())
 
 
 def _validate_run_id(run_id: str) -> None:

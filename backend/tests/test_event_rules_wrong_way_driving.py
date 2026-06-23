@@ -250,7 +250,7 @@ def test_wrong_way_driving_builds_direction_evidence() -> None:
     assert evidence["track_id"] == 7
     assert evidence["frame_index"] == 10
     assert evidence["timestamp_ms"] == 1000
-    assert evidence["evidence_json"] == {
+    expected_evidence = {
         "zone_id": "vehicle_lane_1",
         "zone_type": "vehicle_lane",
         "point": [50.0, 50.0],
@@ -267,6 +267,8 @@ def test_wrong_way_driving_builds_direction_evidence() -> None:
         "track_length": 5,
         "polygon": polygon,
     }
+    for key, value in expected_evidence.items():
+        assert evidence["evidence_json"][key] == value
 
 
 def test_wrong_way_driving_cooldown_prevents_duplicate_event() -> None:

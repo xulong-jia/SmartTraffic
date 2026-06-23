@@ -175,7 +175,7 @@ def test_pedestrian_in_vehicle_lane_builds_zone_evidence() -> None:
     assert evidence["track_id"] == 7
     assert evidence["frame_index"] == 10
     assert evidence["timestamp_ms"] == 1000
-    assert evidence["evidence_json"] == {
+    expected_evidence = {
         "zone_id": "vehicle_lane_1",
         "zone_type": "vehicle_lane",
         "point": [50.0, 50.0],
@@ -184,6 +184,8 @@ def test_pedestrian_in_vehicle_lane_builds_zone_evidence() -> None:
         "class_name": "person",
         "polygon": polygon,
     }
+    for key, value in expected_evidence.items():
+        assert evidence["evidence_json"][key] == value
 
 
 def test_pedestrian_in_vehicle_lane_cooldown_prevents_duplicate_event() -> None:

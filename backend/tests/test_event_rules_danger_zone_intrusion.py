@@ -157,7 +157,7 @@ def test_danger_zone_intrusion_builds_zone_evidence() -> None:
     assert evidence["track_id"] == 7
     assert evidence["frame_index"] == 10
     assert evidence["timestamp_ms"] == 1000
-    assert evidence["evidence_json"] == {
+    expected_evidence = {
         "zone_id": "danger_zone_1",
         "zone_type": "danger_zone",
         "point": [50.0, 50.0],
@@ -165,6 +165,8 @@ def test_danger_zone_intrusion_builds_zone_evidence() -> None:
         "inside": True,
         "polygon": polygon,
     }
+    for key, value in expected_evidence.items():
+        assert evidence["evidence_json"][key] == value
 
 
 def test_danger_zone_intrusion_cooldown_prevents_duplicate_event() -> None:

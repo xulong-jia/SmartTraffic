@@ -196,7 +196,7 @@ class EventEngine:
                 frame_result=frame_result,
                 status="error",
                 input_features=_input_features(trajectory_point),
-                output_result={"reason": "rule_error", "error": str(exc)},
+                output_result=_error_output(exc),
             )
             return
 
@@ -221,10 +221,12 @@ class EventEngine:
 
         event = self._build_matched_event(rule, trajectory_point, frame_result, callback_output)
         evidence = self._build_matched_evidence(
+            rule,
             event,
             trajectory_point,
             frame_result,
             callback_output,
+            zones,
         )
         result["events"].append(event)
         result["event_evidence"].extend(evidence)
@@ -289,7 +291,7 @@ class EventEngine:
                 frame_result=frame_result,
                 status="error",
                 input_features=_input_features(None),
-                output_result={"reason": "rule_error", "error": str(exc)},
+                output_result=_error_output(exc),
             )
             return
 
@@ -314,10 +316,12 @@ class EventEngine:
 
         event = self._build_matched_event(rule, None, frame_result, callback_output)
         evidence = self._build_matched_evidence(
+            rule,
             event,
             None,
             frame_result,
             callback_output,
+            zones,
         )
         result["events"].append(event)
         result["event_evidence"].extend(evidence)
@@ -432,18 +436,31 @@ class EventEngine:
 
     def _build_matched_evidence(
         self,
+        rule: EventRule,
         event: dict[str, Any],
         trajectory_point: dict[str, Any] | None,
         frame_result: dict[str, Any],
         callback_output: dict[str, Any],
+        zones: list[dict[str, Any]] | None,
     ) -> list[dict[str, Any]]:
         evidence_values = callback_output.get("evidence") or []
         if isinstance(evidence_values, Mapping):
             evidence_values = [evidence_values]
+        if not evidence_values:
+            evidence_values = [{}]
 
         evidence: list[dict[str, Any]] = []
+        zone = _find_zone(event.get("zone_id", rule.zone_id), zones or [])
         for item in evidence_values:
             raw_evidence = dict(item)
+            evidence_json = _enriched_evidence_json(
+                raw_evidence=raw_evidence,
+                rule=rule,
+                event=event,
+                trajectory_point=trajectory_point,
+                callback_output=callback_output,
+                zone=zone,
+            )
             evidence.append(
                 build_event_evidence(
                     evidence_id=raw_evidence.get("evidence_id"),
@@ -459,8 +476,11 @@ class EventEngine:
                         "timestamp_ms",
                         frame_result.get("timestamp_ms"),
                     ),
+                    event_type=raw_evidence.get("event_type", event.get("event_type")),
+                    zone_id=raw_evidence.get("zone_id", event.get("zone_id")),
+                    rule_id=raw_evidence.get("rule_id", event.get("rule_id")),
                     evidence_type=raw_evidence.get("evidence_type", "rule"),
-                    evidence_json=raw_evidence.get("evidence_json", {}),
+                    evidence_json=evidence_json,
                     snapshot_path=raw_evidence.get("snapshot_path"),
                     created_at=raw_evidence.get("created_at"),
                 )
@@ -567,11 +587,25 @@ def _input_features(trajectory_point: Mapping[str, Any] | None) -> dict[str, Any
             "track_id": None,
             "class_name": None,
             "track_length": None,
+            "bbox": None,
+            "center": None,
+            "bottom_center": None,
+            "speed_px_per_frame": None,
+            "speed_px_per_second": None,
+            "moving_angle": None,
+            "dwell_time_ms": None,
         }
     return {
         "track_id": trajectory_point.get("track_id"),
         "class_name": trajectory_point.get("class_name"),
         "track_length": trajectory_point.get("track_length"),
+        "bbox": trajectory_point.get("bbox"),
+        "center": trajectory_point.get("center"),
+        "bottom_center": trajectory_point.get("bottom_center"),
+        "speed_px_per_frame": trajectory_point.get("speed_px_per_frame"),
+        "speed_px_per_second": trajectory_point.get("speed_px_per_second"),
+        "moving_angle": trajectory_point.get("moving_angle"),
+        "dwell_time_ms": trajectory_point.get("dwell_time_ms"),
     }
 
 
@@ -585,6 +619,103 @@ def _callback_output_result(
     output_result.setdefault("matched", matched)
     output_result.setdefault("reason", callback_output.get("reason", default_reason))
     return output_result
+
+
+def _error_output(exc: Exception) -> dict[str, Any]:
+    return {
+        "reason": "rule_error",
+        "error_type": type(exc).__name__,
+        "error": _truncate_error(str(exc)),
+    }
+
+
+def _truncate_error(message: str, max_length: int = 500) -> str:
+    if len(message) <= max_length:
+        return message
+    return message[: max_length - 3] + "..."
+
+
+def _enriched_evidence_json(
+    *,
+    raw_evidence: Mapping[str, Any],
+    rule: EventRule,
+    event: Mapping[str, Any],
+    trajectory_point: Mapping[str, Any] | None,
+    callback_output: Mapping[str, Any],
+    zone: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    evidence_json = dict(raw_evidence.get("evidence_json") or {})
+    output_result = dict(callback_output.get("output_result") or {})
+    trigger_reason = (
+        evidence_json.get("trigger_reason")
+        or evidence_json.get("reason")
+        or callback_output.get("reason")
+        or output_result.get("reason")
+        or "matched"
+    )
+
+    if trajectory_point is not None:
+        _set_if_present(evidence_json, "bbox", trajectory_point.get("bbox"))
+        _set_if_present(
+            evidence_json,
+            "center",
+            trajectory_point.get("center") or trajectory_point.get("bottom_center"),
+        )
+        _set_if_present(
+            evidence_json,
+            "speed",
+            trajectory_point.get("speed_px_per_frame")
+            if trajectory_point.get("speed_px_per_frame") is not None
+            else trajectory_point.get("speed_px_per_second"),
+        )
+        _set_if_present(evidence_json, "moving_angle", trajectory_point.get("moving_angle"))
+        _set_if_present(evidence_json, "dwell_time_ms", trajectory_point.get("dwell_time_ms"))
+
+    evidence_json.setdefault("zone_id", event.get("zone_id") or rule.zone_id)
+    if zone is not None:
+        evidence_json.setdefault("zone_type", zone.get("zone_type"))
+    evidence_json.setdefault("rule_parameters", dict(rule.parameters))
+    evidence_json.setdefault("trigger_reason", trigger_reason)
+
+    if "direction_angle" not in evidence_json:
+        _set_if_present(
+            evidence_json,
+            "direction_angle",
+            evidence_json.get("moving_angle")
+            or (trajectory_point or {}).get("moving_angle"),
+        )
+    if "allowed_angle" not in evidence_json:
+        _set_if_present(evidence_json, "allowed_angle", rule.parameters.get("allowed_angle"))
+    if "angle_diff" not in evidence_json:
+        _set_if_present(evidence_json, "angle_diff", output_result.get("angle_diff"))
+
+    snapshot_path = raw_evidence.get("snapshot_path")
+    if snapshot_path:
+        evidence_json.setdefault("snapshot_available", True)
+    else:
+        evidence_json.setdefault("snapshot_available", False)
+        evidence_json.setdefault(
+            "snapshot_reason",
+            "frame image not available in current artifact pipeline",
+        )
+    return evidence_json
+
+
+def _find_zone(
+    zone_id: str | None,
+    zones: Sequence[Mapping[str, Any]],
+) -> Mapping[str, Any] | None:
+    if zone_id is None:
+        return None
+    for zone in zones:
+        if zone.get("zone_id") == zone_id or zone.get("id") == zone_id:
+            return zone
+    return None
+
+
+def _set_if_present(payload: dict[str, Any], key: str, value: Any) -> None:
+    if key not in payload and value is not None:
+        payload[key] = value
 
 
 def _cooldown_marker(frame_result: Mapping[str, Any]) -> float | None:

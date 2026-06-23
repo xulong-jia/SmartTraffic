@@ -203,7 +203,7 @@ def test_congestion_builds_zone_statistics_evidence() -> None:
     assert evidence["track_id"] is None
     assert evidence["frame_index"] == 22
     assert evidence["timestamp_ms"] == 2200
-    assert evidence["evidence_json"] == {
+    expected_evidence = {
         "zone_id": "lane_zone_1",
         "zone_type": "vehicle_lane",
         "frame_index": 22,
@@ -218,6 +218,8 @@ def test_congestion_builds_zone_statistics_evidence() -> None:
         "congestion_frame_count": 1,
         "polygon": polygon,
     }
+    for key, value in expected_evidence.items():
+        assert evidence["evidence_json"][key] == value
 
 
 def test_congestion_cooldown_prevents_duplicate_event() -> None:

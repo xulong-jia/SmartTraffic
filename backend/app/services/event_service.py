@@ -72,7 +72,13 @@ class EventService:
                     "source": config["source"],
                     "zones": config["zones"],
                     "event_rules": config["event_rules"],
-                }
+                },
+                "enabled_rules_count": _enabled_count(config["event_rules"]),
+                "enabled_zones_count": _enabled_count(config["zones"]),
+                "events_count": len(event_output["events"]),
+                "event_evidence_count": len(event_output["event_evidence"]),
+                "rule_executions_count": len(event_output["rule_executions"]),
+                "alerts_count": 0,
             },
         )
         event_summary = _read_json(artifact_paths["event_summary"])
@@ -125,6 +131,10 @@ def _resolve_event_config(
     )
     config["source"] = source
     return config
+
+
+def _enabled_count(items: list[dict[str, Any]]) -> int:
+    return sum(1 for item in items if item.get("enabled", True))
 
 
 def _read_json(path: Path) -> dict[str, Any]:

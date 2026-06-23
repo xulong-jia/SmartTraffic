@@ -254,7 +254,7 @@ def test_flow_counting_evidence_fields() -> None:
     result = _run_two_frames([5, -2], [5, 2])
 
     evidence_json = result["event_evidence"][0]["evidence_json"]
-    assert evidence_json == {
+    expected_evidence = {
         "line_id": "entry_line_1",
         "line": [[0.0, 0.0], [10.0, 0.0]],
         "previous_point": [5.0, -2.0],
@@ -268,6 +268,8 @@ def test_flow_counting_evidence_fields() -> None:
         "frame_index": 11,
         "timestamp_ms": 1100,
     }
+    for key, value in expected_evidence.items():
+        assert evidence_json[key] == value
 
 
 def test_flow_counting_cooldown_interaction() -> None:
