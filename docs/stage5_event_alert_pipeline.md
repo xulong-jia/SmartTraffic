@@ -31,6 +31,7 @@ Implemented Stage 5 MVP capabilities:
 - EventEngine callback framework
 - Six rule callbacks
 - EventService
+- Process pipeline integration after `mode=detection_tracking_trajectory`
 - Artifact-based event query API
 - Alert contract
 - AlertService
@@ -45,12 +46,12 @@ According to `docs/SmartTraffic_最终版项目开发执行手册.md`, Stage 5 s
 requires:
 
 - complete event/rule config persistence
-- process pipeline integration that directly runs EventEngine and AlertService
 - complete Alert Center lifecycle
 
 The Stage 5 event rule layer now covers the six manual-defined event rules. The
-remaining Stage 5 gaps above are system-level capabilities, not missing rule
-callbacks.
+Stage 5B process pipeline now runs EventEngine / EventService and AlertService
+after trajectory processing. The remaining Stage 5 gaps above are system-level
+capabilities, not missing rule callbacks.
 
 The current `v0.5.0-event-alert-minimal` tag is a minimal milestone tag. It is
 not a full Stage 5 completion tag and should not be moved.
@@ -468,7 +469,6 @@ Current known limitations:
 - Evaluation Center is not implemented
 - Zone Editor is not implemented
 - video overlay is not implemented
-- process mode does not directly run events / alerts
 - no real-world speed / direction calibration
 - no law-enforcement-grade traffic violation judgment
 
@@ -478,6 +478,5 @@ Recommended next steps:
 
 - Run a Stage 5 execution-manual closeout audit to decide whether the completed
   rule layer and remaining system-level gaps should be split into Stage 6/7/8.
-- Decide whether to add process mode or a dedicated event run API for event/alert generation.
 - Decide whether to add rule/zone configuration persistence.
 - Keep `v0.5.0-event-alert-minimal` as the existing minimal milestone tag; do not move it.

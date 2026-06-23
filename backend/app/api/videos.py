@@ -9,7 +9,7 @@ from app.services.detection_service import DetectionRunParams
 from app.services.trajectory_service import TrajectoryRunParams
 from app.services.tracking_service import TrackingRunParams
 from app.schemas.video import VideoResponse, VideoStatusResponse
-from app.services.processing_service import processing_service
+from app.services.processing_service import EventAlertProcessParams, processing_service
 from app.services.video_service import video_registry
 
 
@@ -139,6 +139,13 @@ def process_video(
             video,
             params=params,
             mode=payload.mode,
+            event_alert_params=EventAlertProcessParams(
+                event_rules=payload.event_rules,
+                zones=payload.zones,
+                run_events=payload.run_events,
+                generate_alerts=payload.generate_alerts,
+                record_not_matched=payload.record_not_matched,
+            ),
         )
     except (FileNotFoundError, RuntimeError, ValueError) as exc:
         raise HTTPException(

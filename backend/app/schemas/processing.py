@@ -25,6 +25,11 @@ class DetectionProcessRequest(BaseModel):
     direction_window: int | None = None
     dwell_speed_threshold: float | None = None
     max_history_points: int | None = None
+    event_rules: list[dict[str, Any]] | None = None
+    zones: list[dict[str, Any]] | None = None
+    run_events: bool = True
+    generate_alerts: bool = True
+    record_not_matched: bool = False
 
 
 class ProcessingTaskResponse(BaseModel):

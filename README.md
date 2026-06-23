@@ -4,7 +4,7 @@
 
 SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engine、Event Engine、minimal Alert artifacts、FastAPI、React 和本地结果产物管理的智慧交通视频分析项目。
 
-当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 Event Engine 仍处于部分完成 / in progress 状态。当前已经实现的是 Stage 5 的六个规则回调和 Event / Alert artifact-based MVP 查询能力，不代表完整 Stage 5 已完成。
+当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 Event Engine 仍处于部分完成 / in progress 状态。当前已经实现的是 Stage 5 的六个规则回调、Event / Alert artifact-based MVP 查询能力，以及 Stage 5B process 后自动生成 Event / Alert artifacts 的系统闭环；这仍不代表完整 Stage 5 已完成。
 
 当前可验证的本地 artifacts 生成和查询闭环是：
 
@@ -24,7 +24,7 @@ video upload
 
 目前支持视频上传、视频元数据读取、YOLOv8 检测、deterministic dry-run 检测、DeepSORT adapter / mock tracking、多目标跟踪结果导出、Trajectory Engine 轨迹点生成、六类事件规则回调、event artifacts、alert artifacts、`run_id` 结果目录、前端最小工作台和基础 API。
 
-当前 `POST /api/videos/{video_id}/process` 仍只直接运行 detection / tracking / trajectory；EventService 和 AlertService 基于已有 local artifacts 生成和查询，不是 process mode 的一部分。
+当前 `POST /api/videos/{video_id}/process` 在 `mode=detection_tracking_trajectory` 下会先运行 detection / tracking / trajectory，然后自动调用 EventService 和 AlertService 写入 event / alert artifacts。旧请求不传 `event_rules` / `zones` 时会生成稳定的空 event / alert artifacts，不伪造事件。
 
 本项目当前不是正式交通执法系统，输出结果不作为正式交通执法依据。模型权重、上传视频和运行结果均作为本地资产管理，不进入 Git。
 
@@ -247,7 +247,7 @@ dffaf02 feat: add trajectory points query api
 
 ### 阶段五：Event Engine 部分完成 / Event & Alert MVP
 
-当前阶段五严格按执行手册不能判定为完成。已实现部分包括 Event contract、六个规则回调、event artifacts、alert artifacts，以及 artifact-based event / alert query MVP。Stage 5 event rule layer now covers the six manual-defined event rules, but complete Stage 5 still has unfinished system-level capabilities: complete zone/rule config persistence、process mode 直接运行 events / alerts、以及完整 Alert Center 状态流转。
+当前阶段五严格按执行手册仍不能判定为完成。已实现部分包括 Event contract、六个规则回调、event artifacts、alert artifacts、artifact-based event / alert query MVP，以及 process pipeline 中 detection / tracking / trajectory / event / alert artifact generation 的直接串联。Stage 5 event rule layer now covers the six manual-defined event rules, but complete Stage 5 still has unfinished system-level capabilities: complete zone/rule config persistence 以及完整 Alert Center 状态流转。
 
 Implemented:
 
@@ -266,9 +266,11 @@ Implemented:
   - `flow_counting`
   - `congestion`
 - EventService：基于已有 `trajectory_points.jsonl`、rules 和 zones 生成 event artifacts
+- Process integration：`mode=detection_tracking_trajectory` 完成 trajectory 后自动运行 EventService；未提供 rules / zones 时写出空 event artifacts
 - Event query API：`GET /api/analysis-runs/{run_id}/events`
 - Alert contract
 - AlertService：基于已有 `events.jsonl` 生成 alert artifacts
+- Process integration：EventService 完成后自动运行 AlertService；空 events 会写出空 alert artifacts
 - Alert artifacts：
   - `alerts.jsonl`
   - `alert_summary.json`
@@ -280,7 +282,6 @@ Implemented:
 Not implemented yet:
 
 - complete zone/rule config persistence
-- process mode that directly runs events / alerts
 - full Alert Center lifecycle: acknowledge / resolve / ignored
 - Review / Bad Case / Evaluation
 - Zone Editor
@@ -344,8 +345,13 @@ bddcd93 feat: add congestion rule
 - `direction_window`
 - `dwell_speed_threshold`
 - `max_history_points`
+- `event_rules`
+- `zones`
+- `run_events`
+- `generate_alerts`
+- `record_not_matched`
 
-当前 process API 不直接运行 events / alerts，也不直接返回 traffic event 或 alert 结果。
+当前 process API 在 `mode=detection_tracking_trajectory` 下会自动生成 event / alert artifacts，并通过 `GET /api/analysis-runs/{run_id}/events` 与 `GET /api/analysis-runs/{run_id}/alerts` 查询。process response 仍以原有处理摘要为主，不直接展开完整 event / alert 明细。
 
 ## 结果产物
 
@@ -395,7 +401,6 @@ The `v0.5.0-event-alert-minimal` tag marks this minimal Event / Alert milestone 
 - Evaluation Center 完整评测
 - Zone Editor
 - video overlay
-- process mode 直接运行 events / alerts
 - 正式实时流处理
 - 真实世界速度标定；当前 `speed_px_per_second` 不是 m/s 或 km/h
 - law-enforcement-grade violation judgement

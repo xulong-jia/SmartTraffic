@@ -28,6 +28,11 @@
 - `direction_window`
 - `dwell_speed_threshold`
 - `max_history_points`
+- `event_rules`: optional list of EventEngine rule dictionaries.
+- `zones`: optional list of zone dictionaries.
+- `run_events`: optional boolean, default true.
+- `generate_alerts`: optional boolean, default true.
+- `record_not_matched`: optional boolean, default false.
 
 Stage four trajectory request example:
 
@@ -40,7 +45,11 @@ Stage four trajectory request example:
   "max_frames": 5,
   "direction_window": 2,
   "dwell_speed_threshold": 1.0,
-  "max_history_points": null
+  "max_history_points": null,
+  "event_rules": [],
+  "zones": [],
+  "run_events": true,
+  "generate_alerts": true
 }
 ```
 
@@ -56,7 +65,12 @@ Stage four response fields include:
 
 `avg_speed_px_per_second` is a pixel-level speed estimate derived from timestamp or fps. It is not real-world speed in m/s or km/h.
 
-The current process API does not directly run event or alert generation and does not return traffic event or alert results. EventService and AlertService currently operate on existing local artifacts.
+For `mode=detection_tracking_trajectory`, the process API now runs EventService
+after trajectory artifacts are written, then runs AlertService after event
+artifacts are written. If `event_rules` / `zones` are omitted, the process still
+writes stable empty event and alert artifacts. The process response keeps the
+existing summary shape; full event and alert details are queried from
+analysis-runs endpoints.
 
 Manual alignment note:
 

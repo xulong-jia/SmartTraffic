@@ -36,6 +36,51 @@ def test_trajectory_api_process_mode(tmp_path: Path, monkeypatch) -> None:
     assert "total_trajectory_points" in payload
 
 
+def test_trajectory_process_generates_empty_event_and_alert_artifacts_by_default(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    client = _client_for_tmp_run(tmp_path, monkeypatch)
+    video_id = _upload_video(client, tmp_path)
+
+    process_response = client.post(
+        f"/api/videos/{video_id}/process",
+        json={
+            "mode": "detection_tracking_trajectory",
+            "detector_dry_run": True,
+            "tracker_dry_run": True,
+            "max_frames": 2,
+        },
+    )
+
+    assert process_response.status_code == 200
+    process_payload = process_response.json()
+    run_id = process_payload["run_id"]
+    for artifact_key in (
+        "events",
+        "event_evidence_jsonl",
+        "rule_executions_jsonl",
+        "event_summary",
+        "alerts",
+        "alert_summary",
+    ):
+        assert process_payload["artifacts"][artifact_key]
+
+    events_response = client.get(f"/api/analysis-runs/{run_id}/events")
+    assert events_response.status_code == 200
+    events_payload = events_response.json()
+    assert events_payload["summary"]["total_events"] == 0
+    assert events_payload["events"] == []
+    assert events_payload["event_evidence"] == []
+    assert events_payload["rule_executions"] == []
+
+    alerts_response = client.get(f"/api/analysis-runs/{run_id}/alerts")
+    assert alerts_response.status_code == 200
+    alerts_payload = alerts_response.json()
+    assert alerts_payload["summary"]["total_alerts"] == 0
+    assert alerts_payload["alerts"] == []
+
+
 def test_trajectory_api_get_trajectory_points(tmp_path: Path, monkeypatch) -> None:
     client = _client_for_tmp_run(tmp_path, monkeypatch)
     video_id = _upload_video(client, tmp_path)

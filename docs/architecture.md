@@ -12,7 +12,8 @@ React frontend
 
 ## Current Runnable Path
 
-The current runnable processing path is still detection / tracking / trajectory:
+The current runnable processing path can run detection / tracking / trajectory
+and then generate event / alert artifacts:
 
 ```text
 video upload
@@ -21,11 +22,17 @@ video upload
   -> DeepSORT / mock tracker
   -> TrajectoryEngine
   -> trajectory artifacts
+  -> EventService / EventEngine
+  -> event artifacts
+  -> AlertService
+  -> alert artifacts
   -> FastAPI query
   -> React minimal dashboard
 ```
 
-The current process API does not directly run events or alerts. Stage 5 minimal Event & Alert behavior operates on existing local artifacts.
+The current process API runs EventService and AlertService after
+`mode=detection_tracking_trajectory`. Empty `event_rules` / `zones` produce
+stable empty event and alert artifacts rather than fake events.
 
 ## Current Implemented Architecture
 
@@ -37,6 +44,7 @@ Currently implemented architecture includes:
 - partial EventEngine with callback-based rules
 - artifact-based EventService
 - artifact-based AlertService
+- process integration for event and alert artifact generation after trajectory
 - minimal frontend tables in Analysis Detail
 
 The current implementation is useful for local validation, but it is not the
@@ -150,7 +158,6 @@ Current frontend limitations:
 
 Current limitations:
 
-- no process mode for events / alerts yet
 - no full Alert Center status workflow
 - no acknowledge / resolve / ignored status mutation API
 - no Review Center workflow

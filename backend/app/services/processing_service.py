@@ -1,13 +1,25 @@
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
 from app.core.config import get_settings
+from app.services.alert_service import AlertService
 from app.services.detection_service import DetectionRunParams, DetectionService
+from app.services.event_service import EventRunParams, EventService
 from app.services.traffic_analysis_service import traffic_analysis_service
 from app.services.trajectory_service import TrajectoryRunParams, TrajectoryService
 from app.services.tracking_service import TrackingRunParams, TrackingService
 from app.services.video_service import video_registry
+
+
+@dataclass(frozen=True)
+class EventAlertProcessParams:
+    event_rules: list[dict[str, Any]] | None = None
+    zones: list[dict[str, Any]] | None = None
+    run_events: bool = True
+    generate_alerts: bool = True
+    record_not_matched: bool = False
 
 
 class ProcessingService:
@@ -19,6 +31,7 @@ class ProcessingService:
         video: dict[str, Any],
         params: DetectionRunParams | TrackingRunParams | TrajectoryRunParams | None = None,
         mode: str = "detection_tracking",
+        event_alert_params: EventAlertProcessParams | None = None,
     ) -> dict[str, Any]:
         settings = get_settings()
         if mode not in {
@@ -86,6 +99,12 @@ class ProcessingService:
                     run_id=run_id,
                     params=trajectory_params,
                 )
+                result = _run_event_alert_pipeline(
+                    run_id=run_id,
+                    video_id=video["id"],
+                    result=result,
+                    params=event_alert_params,
+                )
             task.update(
                 {
                     "status": "completed",
@@ -140,3 +159,37 @@ def _stage_for_mode(mode: str) -> tuple[str, str]:
 
 
 processing_service = ProcessingService()
+
+
+def _run_event_alert_pipeline(
+    *,
+    run_id: str,
+    video_id: str,
+    result: dict[str, Any],
+    params: EventAlertProcessParams | None,
+) -> dict[str, Any]:
+    effective_params = params or EventAlertProcessParams()
+    if not effective_params.run_events:
+        return result
+
+    merged_result = dict(result)
+    event_result = EventService().run_events(
+        run_id=run_id,
+        video_id=video_id,
+        params=EventRunParams(
+            rules=effective_params.event_rules or [],
+            zones=effective_params.zones or [],
+            record_not_matched=effective_params.record_not_matched,
+        ),
+    )
+    merged_result["total_events"] = event_result["total_events"]
+    merged_result["event_summary"] = event_result["event_summary"]
+    merged_result["artifacts"] = event_result["artifacts"]
+
+    if effective_params.generate_alerts:
+        alert_result = AlertService().generate_alerts(run_id=run_id)
+        merged_result["total_alerts"] = alert_result["total_alerts"]
+        merged_result["alert_summary"] = alert_result["alert_summary"]
+        merged_result["artifacts"] = alert_result["artifacts"]
+
+    return merged_result
