@@ -4,14 +4,15 @@ This document reflects the current implementation status after aligning with
 `docs/SmartTraffic_最终版项目开发执行手册.md`.
 
 Stage 5 is partially completed. The current event rules are artifact-based
-callback implementations over trajectory artifacts. They are not yet backed by
-database-managed rule configuration, a complete Zone & Rule Config UI, or a
-full process mode that directly runs events and alerts.
+callback implementations over trajectory artifacts, and Stage 5B now connects
+the video process pipeline to direct Event / Alert artifact generation after
+trajectory processing. The current implementation is still not backed by
+database-managed rule configuration or a complete Zone & Rule Config UI.
 
 The Stage 5 event rule layer currently covers the six event rules defined by the
 execution manual. Stage 5 is still not fully complete because system-level
-capabilities such as persisted zone/rule configuration, direct process pipeline
-integration, and the full Alert Center lifecycle remain unfinished.
+capabilities such as persisted zone/rule configuration, database-backed result
+management, and the full Alert Center lifecycle remain unfinished.
 
 SmartTraffic event outputs are video-analysis signals only. They are not
 law-enforcement-grade traffic violation judgments.
@@ -248,6 +249,35 @@ manual's later aggregate flow-counting outputs remain unfinished.
 `congestion` is implemented as a Stage 5 EventEngine event rule, but the
 manual's later aggregate zone-statistics outputs remain unfinished.
 
+## Process Integration Status
+
+`POST /api/videos/{video_id}/process` now supports direct Event / Alert artifact
+generation when `mode=detection_tracking_trajectory` is used. The process flow
+is:
+
+```text
+video process
+  -> detection
+  -> tracking
+  -> trajectory
+  -> EventService / EventEngine
+  -> event artifacts
+  -> AlertService
+  -> alert artifacts
+  -> artifact index
+  -> analysis-runs query
+```
+
+The process request can pass `event_rules` and `zones`. If no rules or zones are
+provided, the pipeline writes stable empty event and alert artifacts rather than
+inventing events. Generated process artifacts can be queried through
+`GET /api/analysis-runs/{run_id}/events` and
+`GET /api/analysis-runs/{run_id}/alerts`.
+
+This remains an artifact-based MVP. It is not the final database-backed Traffic
+Analysis Center, not the complete Alert Center lifecycle, and not a completed
+Review / Bad Case / Evaluation workflow.
+
 ## Current Missing Capabilities
 
 - Multi-frame confirmation for rules that require temporal confirmation.
@@ -256,7 +286,7 @@ manual's later aggregate zone-statistics outputs remain unfinished.
 - DirectionLineEditor and CountingLineEditor.
 - Aggregate `flow_counts.json` and flow statistics APIs.
 - Aggregate `zone_statistics.json` and zone statistics APIs.
-- Process mode that directly runs EventEngine and AlertService.
+- Database-backed Traffic Analysis Center result management.
 - Full Alert Center lifecycle: acknowledge / resolve / ignored.
 - Review / Bad Case / Evaluation workflows.
 
