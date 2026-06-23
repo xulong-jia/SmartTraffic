@@ -1,0 +1,276 @@
+# Stage 5 Event & Alert Minimal Pipeline
+
+## 1. Scope
+
+This document records the current Stage 5 midpoint state for SmartTraffic.
+
+It is not a declaration that Stage 5 is fully complete. The current milestone is the minimal Event & Alert artifact pipeline:
+
+```text
+trajectory artifacts
+  -> EventService / EventEngine
+  -> event artifacts
+  -> AlertService
+  -> alert artifacts
+  -> FastAPI query
+  -> React Analysis Detail minimal view
+```
+
+The current system does not provide law-enforcement-grade violation judgment and does not perform real-world speed calibration.
+
+## 2. Completed Capabilities
+
+Completed Stage 5 midpoint capabilities:
+
+- Event contract
+- Event evidence contract
+- Rule execution contract
+- Event artifacts
+- EventEngine callback framework
+- Three rule callbacks
+- EventService
+- Event query API
+- Alert contract
+- AlertService
+- Alert generate/query API
+- Frontend minimal event and alert view
+
+Current services operate on local artifacts under `results/traffic_analysis/<run_id>/`. They do not form a complete database-backed result center.
+
+## 3. Event Rules
+
+### danger_zone_intrusion
+
+Purpose: detect a tracked vehicle or person inside a `danger_zone`.
+
+Inputs:
+
+- trajectory point `center`, `bottom_center`, or `bbox`
+- `track_id`
+- `class_name`
+- `frame_index`
+- `timestamp_ms`
+- `zone_id`
+- zone polygon with `zone_type=danger_zone`
+
+Output:
+
+- `event_type=danger_zone_intrusion`
+- event evidence with zone and point details
+- matched / skipped / error rule execution records
+
+Limitations:
+
+- no video overlay
+- no keyframe snapshot generation
+- no law-enforcement conclusion
+
+### pedestrian_in_vehicle_lane
+
+Purpose: detect a `person` inside a `vehicle_lane` polygon.
+
+Inputs:
+
+- trajectory point `center`, `bottom_center`, or `bbox`
+- `class_name=person`
+- `track_id`
+- `frame_index`
+- `timestamp_ms`
+- zone polygon with `zone_type=vehicle_lane`
+
+Output:
+
+- `event_type=pedestrian_in_vehicle_lane`
+- event evidence with vehicle-lane zone and point details
+- rule execution records
+
+Limitations:
+
+- no Review Center flow
+- no video overlay
+- no automated safety action
+
+### illegal_parking
+
+Purpose: detect a vehicle stopped in a configured no-parking or vehicle-lane zone based on pixel-level trajectory features.
+
+Inputs:
+
+- vehicle `class_name`
+- `speed_px_per_frame`
+- `speed_px_per_second`
+- `dwell_time_ms`
+- `track_length`
+- zone polygon with supported zone type
+
+Output:
+
+- `event_type=illegal_parking`
+- dwell/zone evidence
+- rule execution records
+
+Limitations:
+
+- pixel-level speed and dwell only
+- no real-world speed calibration
+- no formal parking violation conclusion
+- no law-enforcement-grade judgment
+
+## 4. Event Artifacts
+
+EventService and TrafficArtifactWriter can generate:
+
+```text
+results/traffic_analysis/<run_id>/
+  events.jsonl
+  event_evidence.jsonl
+  rule_executions.jsonl
+  event_summary.json
+```
+
+`events.jsonl` contains generated event objects.
+
+`event_evidence.jsonl` contains event-linked evidence records.
+
+`rule_executions.jsonl` records matched, skipped, error, and optional not-matched rule execution results.
+
+`event_summary.json` contains event counts by type, severity, status, unique tracks, rule execution counts, and first/last event time.
+
+## 5. Event API
+
+`GET /api/analysis-runs/{run_id}/events`
+
+Query parameters:
+
+- `limit`: 0-1000, default 100
+- `event_type`: optional
+- `track_id`: optional
+
+Response includes:
+
+- `summary`
+- `events`
+- `event_evidence`
+- `rule_executions`
+
+Missing run or missing event artifacts return 404.
+
+## 6. Alert Pipeline
+
+The minimal alert pipeline converts event artifacts into alert artifacts:
+
+```text
+events.jsonl
+  -> AlertService
+  -> alerts.jsonl
+  -> alert_summary.json
+```
+
+Severity to alert level mapping:
+
+| Event severity | Alert level |
+| --- | --- |
+| low | info |
+| medium | warning |
+| high | critical |
+
+Generated alerts default to:
+
+```text
+status = new
+```
+
+Current alert generation does not implement acknowledge, resolve, ignored mutation APIs, notification delivery, or real-time alerting.
+
+## 7. Alert API
+
+`POST /api/analysis-runs/{run_id}/alerts/generate`
+
+Generates:
+
+- `alerts.jsonl`
+- `alert_summary.json`
+
+It reads existing event artifacts and does not modify event artifacts.
+
+`GET /api/analysis-runs/{run_id}/alerts`
+
+Query parameters:
+
+- `limit`: 0-1000, default 100
+- `status`: optional
+- `level`: optional
+- `event_type`: optional
+
+Missing run or missing alert artifacts return 404.
+
+## 8. Frontend Minimal View
+
+`AnalysisDetailPage` currently provides:
+
+- trajectory summary / rows / frames
+- event summary
+- events table
+- event evidence table
+- rule executions table
+- alert generation button
+- alert summary
+- alerts table
+
+Current frontend does not provide:
+
+- event timeline
+- alert timeline
+- video overlay
+- acknowledge / resolve controls
+- Review Center workflow
+
+`AlertCenterPage` and `AlertPanel` currently remain placeholder UI shells.
+
+## 9. Tests
+
+Current Stage 5 midpoint test coverage includes:
+
+- alert contract tests
+- alert service tests
+- alert API tests
+- event contract tests
+- event evidence tests
+- rule execution contract tests
+- event artifact writer tests
+- event engine tests
+- event service tests
+- event API tests
+- rule callback tests for:
+  - `danger_zone_intrusion`
+  - `pedestrian_in_vehicle_lane`
+  - `illegal_parking`
+
+The full backend test suite has passed for this milestone, and frontend `npm run build` has passed.
+
+## 10. Known Limitations
+
+Current known limitations:
+
+- `wrong_way_driving` is not implemented
+- `congestion` is not implemented
+- `flow_counting` is not implemented
+- acknowledge / resolve / ignored mutation APIs are not implemented
+- full Alert Center status workflow is not implemented
+- Review Center is not implemented
+- Bad Case Center is not implemented
+- Evaluation Center is not implemented
+- Zone Editor is not implemented
+- video overlay is not implemented
+- process mode does not directly run events / alerts
+- no real-world speed calibration
+- no law-enforcement-grade traffic violation judgment
+
+## 11. Next Steps
+
+Recommended next steps:
+
+- Decide whether to implement `wrong_way_driving` next.
+- Decide whether to add process mode or a dedicated event run API for event/alert generation.
+- Decide whether to add rule/zone configuration persistence.
+- Consider tagging the current documented milestone as `v0.5.0-event-alert-minimal` after user confirmation.

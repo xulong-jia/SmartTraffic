@@ -25,7 +25,7 @@ The source project was inspected in read-only mode. No files were modified, move
 | `dataset/train`, `dataset/valid`, `dataset/test` | Dataset splits are outside phase-one initialization and may be large. |
 | `app.py` and `app/streamlit_video_demo.py` | Streamlit demo is not part of the new SmartTraffic architecture. |
 | ByteTrack runtime files under `src/tracking/` and tracking CLIs | SmartTraffic stage three uses a new DeepSORT adapter boundary instead of directly migrating the old ByteTrack runtime. |
-| `src/analytics/*` event/counting runtime | Stage four implements a new SmartTraffic trajectory layer instead of migrating the old analytics runtime. Event Engine behavior remains reserved for later phases. |
+| `src/analytics/*` event/counting runtime | SmartTraffic implements new trajectory, event, and alert layers with its own contracts instead of directly migrating the old analytics runtime. |
 | Bad Case and evaluation services/docs as implemented in the old project | SmartTraffic will implement these later under its own Review/Bad Case/Evaluation Center boundaries. |
 | Old README product claims and release history | New README must reflect SmartTraffic scope and phase-one status. |
 | `frontend/dist`, `frontend/node_modules`, `.pytest_cache`, `__pycache__` | Generated caches/build outputs are not migrated. |
@@ -105,10 +105,40 @@ Generated trajectory features include:
 Still not migrated or implemented:
 
 - Old event/counting/ROI analytics runtime.
-- Event Engine rules.
-- Traffic event decisions such as reverse driving, illegal parking, intrusion, pedestrian-in-lane, or congestion.
-- Alert, Review, Bad Case, and Evaluation Center complete logic.
+- Event/counting implementations from the old project.
+- Reverse driving, congestion, and flow-counting rules.
+- Full Alert, Review, Bad Case, and Evaluation Center logic.
 
 Boundary difference:
 
 SmartTraffic Trajectory Engine converts `track_id` + center / bbox history into pixel-level trajectory features. It does not decide traffic events or alerts. `speed_px_per_second` is a pixel-level estimate based on timestamp or fps, not real-world speed in m/s or km/h.
+
+## Stage 5 Event And Alert Minimal Pipeline
+
+Stage five is not a direct migration of the old YOLOv8 project's analytics runtime. SmartTraffic adds a new Event Engine and minimal Alert Center layer on top of trajectory artifacts.
+
+What changed:
+
+- `backend/app/events/` owns event contracts, evidence contracts, rule execution contracts, `EventEngine`, dedup helpers, and rule callbacks.
+- Implemented rule callbacks are `danger_zone_intrusion`, `pedestrian_in_vehicle_lane`, and `illegal_parking`.
+- `backend/app/services/event_service.py` reads existing `trajectory_points.jsonl` artifacts and writes event artifacts.
+- `backend/app/alerts/contracts.py` defines the minimal alert contract and severity-to-level mapping.
+- `backend/app/services/alert_service.py` reads existing `events.jsonl` artifacts and writes alert artifacts.
+- `GET /api/analysis-runs/{run_id}/events` exposes event outputs from local artifacts.
+- `POST /api/analysis-runs/{run_id}/alerts/generate` generates alert artifacts from event artifacts.
+- `GET /api/analysis-runs/{run_id}/alerts` exposes alert outputs from local artifacts.
+
+Still not migrated or implemented:
+
+- Old event/counting/ROI analytics runtime.
+- `wrong_way_driving`.
+- `congestion`.
+- `flow_counting`.
+- Full alert lifecycle mutation such as acknowledge / resolve.
+- Review, Bad Case, and Evaluation Center complete logic.
+- Real-world speed calibration.
+- Law-enforcement-grade traffic violation judgment.
+
+Boundary difference:
+
+SmartTraffic Event Engine and AlertService convert local trajectory and event artifacts into traffic intelligence outputs. They do not call YOLOv8 directly, do not replace the Trajectory Engine, and do not make formal enforcement decisions.

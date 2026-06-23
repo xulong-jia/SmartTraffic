@@ -56,7 +56,7 @@ Stage four response fields include:
 
 `avg_speed_px_per_second` is a pixel-level speed estimate derived from timestamp or fps. It is not real-world speed in m/s or km/h.
 
-The current process API does not return traffic event results.
+The current process API does not directly run event or alert generation and does not return traffic event or alert results. EventService and AlertService currently operate on existing local artifacts.
 
 ## Analysis Runs
 
@@ -65,6 +65,9 @@ The current process API does not return traffic event results.
 - `GET /api/analysis-runs/{run_id}/detections?limit=100`
 - `GET /api/analysis-runs/{run_id}/tracks?limit=100`
 - `GET /api/analysis-runs/{run_id}/trajectory-points?limit=100`
+- `GET /api/analysis-runs/{run_id}/events?limit=100`
+- `POST /api/analysis-runs/{run_id}/alerts/generate`
+- `GET /api/analysis-runs/{run_id}/alerts?limit=100`
 
 ### Trajectory Points
 
@@ -96,15 +99,110 @@ Behavior:
 - `limit=0` returns `summary` with empty `frames` and `rows`.
 - `track_id` filters trajectory rows and frame-level `trajectory_points`.
 
+### Events
+
+`GET /api/analysis-runs/{run_id}/events`
+
+Query parameters:
+
+- `limit`: integer from 0 to 1000, default 100.
+- `event_type`: optional string. Filters returned events by event type.
+- `track_id`: optional integer. Filters returned events, event evidence, and rule executions by track.
+
+Response shape:
+
+```json
+{
+  "run_id": "run_xxx",
+  "video_id": "video_xxx",
+  "summary": {},
+  "events": [],
+  "event_evidence": [],
+  "rule_executions": [],
+  "limit": 100,
+  "event_type": null,
+  "track_id": null
+}
+```
+
+Behavior:
+
+- Missing run returns 404.
+- Existing run without event artifacts returns 404.
+- `limit=0` returns `summary` with empty `events`, `event_evidence`, and `rule_executions`.
+- The response does not expose local absolute paths.
+- Current implemented rule callbacks are `danger_zone_intrusion`, `pedestrian_in_vehicle_lane`, and `illegal_parking`.
+
+### Alert Generation
+
+`POST /api/analysis-runs/{run_id}/alerts/generate`
+
+This endpoint reads existing `events.jsonl` and generates:
+
+- `alerts.jsonl`
+- `alert_summary.json`
+
+It does not modify event artifacts and does not implement acknowledge / resolve behavior.
+
+Response shape:
+
+```json
+{
+  "run_id": "run_xxx",
+  "video_id": "video_xxx",
+  "status": "completed",
+  "total_alerts": 0,
+  "alert_summary": {},
+  "artifacts": {}
+}
+```
+
+Behavior:
+
+- Missing run returns 404.
+- Existing run without event artifacts returns 404.
+- Alerts are generated from existing event artifacts, not from model inference.
+
+### Alerts
+
+`GET /api/analysis-runs/{run_id}/alerts`
+
+Query parameters:
+
+- `limit`: integer from 0 to 1000, default 100.
+- `status`: optional string. Currently generated alerts default to `new`.
+- `level`: optional string. Supported generated levels are `info`, `warning`, and `critical`.
+- `event_type`: optional string. Filters alerts by source event type.
+
+Response shape:
+
+```json
+{
+  "run_id": "run_xxx",
+  "video_id": "video_xxx",
+  "summary": {},
+  "alerts": [],
+  "limit": 100,
+  "status": null,
+  "level": null,
+  "event_type": null
+}
+```
+
+Behavior:
+
+- Missing run returns 404.
+- Existing run without alert artifacts returns 404.
+- `limit=0` returns `summary` with an empty `alerts` list.
+- The current minimal Alert Center does not support acknowledge / resolve status mutation APIs.
+
 ## Placeholders For Later Phases
 
 - `GET /api/detections`
 - `GET /api/tracks`
-- `GET /api/events`
-- `GET /api/alerts`
 - `GET /api/zones`
 - `GET /api/review/events`
 - `GET /api/bad-cases`
 - `GET /api/evaluation/results`
 
-These placeholder endpoints exist to preserve module boundaries. Event, alert, review, bad-case, and evaluation behavior belongs to later phases and is not implemented as completed logic.
+These placeholder endpoints exist to preserve module boundaries. Standalone event and alert center APIs remain separate from the artifact-based `analysis-runs` event and alert endpoints documented above. Review, bad-case, and evaluation behavior belongs to later phases and is not implemented as completed logic.
