@@ -115,7 +115,11 @@ SmartTraffic Trajectory Engine converts `track_id` + center / bbox history into 
 
 ## Stage 5 Event And Alert Minimal Pipeline
 
-Stage five is not a direct migration of the old YOLOv8 project's analytics runtime. SmartTraffic adds a new Event Engine and minimal Alert Center layer on top of trajectory artifacts.
+Stage five is not a direct migration of the old YOLOv8 project's analytics runtime. SmartTraffic adds a new Event Engine and minimal alert artifact layer on top of trajectory artifacts.
+
+This is a partial Stage 5 MVP. It does not represent full Stage 5 completion,
+the complete Traffic Analysis Center, or the complete Alert Center from
+`docs/SmartTraffic_最终版项目开发执行手册.md`.
 
 What changed:
 
@@ -128,6 +132,8 @@ What changed:
 - `GET /api/analysis-runs/{run_id}/events` exposes event outputs from local artifacts.
 - `POST /api/analysis-runs/{run_id}/alerts/generate` generates alert artifacts from event artifacts.
 - `GET /api/analysis-runs/{run_id}/alerts` exposes alert outputs from local artifacts.
+- These event and alert endpoints are artifact-based MVP query endpoints, not a
+  complete database-backed result center.
 
 Still not migrated or implemented:
 

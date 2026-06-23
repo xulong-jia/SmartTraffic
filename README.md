@@ -2,9 +2,11 @@
 
 ## 项目简介
 
-SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engine、Event Engine、minimal Alert Center、FastAPI、React 和本地结果产物管理的智慧交通视频分析项目。
+SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engine、Event Engine、minimal Alert artifacts、FastAPI、React 和本地结果产物管理的智慧交通视频分析项目。
 
-当前项目已完成到 Stage 5 minimal Event & Alert pipeline。阶段五仍是部分完成状态，当前重点是打通 `detection -> tracking -> trajectory -> event -> alert` 的本地 artifacts 生成和查询闭环：
+当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 Event Engine 仍处于部分完成 / in progress 状态。当前已经实现的是 Stage 5 的四个规则回调和 Event / Alert artifact-based MVP 查询能力，不代表完整 Stage 5 已完成。
+
+当前可验证的本地 artifacts 生成和查询闭环是：
 
 ```text
 video upload
@@ -20,7 +22,7 @@ video upload
 -> FastAPI / React display
 ```
 
-目前支持视频上传、视频元数据读取、YOLOv8 检测、deterministic dry-run 检测、DeepSORT adapter / mock tracking、多目标跟踪结果导出、Trajectory Engine 轨迹点生成、四类最小事件规则、event artifacts、alert artifacts、`run_id` 结果目录、前端最小工作台和基础 API。
+目前支持视频上传、视频元数据读取、YOLOv8 检测、deterministic dry-run 检测、DeepSORT adapter / mock tracking、多目标跟踪结果导出、Trajectory Engine 轨迹点生成、四类事件规则回调、event artifacts、alert artifacts、`run_id` 结果目录、前端最小工作台和基础 API。
 
 当前 `POST /api/videos/{video_id}/process` 仍只直接运行 detection / tracking / trajectory；EventService 和 AlertService 基于已有 local artifacts 生成和查询，不是 process mode 的一部分。
 
@@ -125,7 +127,10 @@ cp .env.example .env
 - Stage 2 YOLOv8 Detection completed
 - Stage 3 Multi-object Tracking completed
 - Stage 4 Trajectory Engine completed
-- Stage 5 minimal Event & Alert pipeline partially completed
+- Stage 5 Event Engine partially completed / in progress
+- Event / Alert artifact query MVP implemented, partially overlapping later Traffic Analysis Center / Alert Center goals
+
+`v0.5.0-event-alert-minimal` is a minimal milestone tag. It does not represent full Stage 5 completion and should not be moved to newer commits.
 
 ### 阶段一：项目骨架与视频管理初始化
 
@@ -240,22 +245,20 @@ dffaf02 feat: add trajectory points query api
 1a9dad8 feat: add minimal trajectory frontend view
 ```
 
-### 阶段五：Minimal Event & Alert Pipeline 中期完成
+### 阶段五：Event Engine 部分完成 / Event & Alert MVP
 
-当前阶段五已完成最小 Event / Alert artifacts 和查询链路，但阶段五尚未完全完成。
+当前阶段五严格按执行手册不能判定为完成。已实现部分包括 Event contract、四个规则回调、event artifacts、alert artifacts，以及 artifact-based event / alert query MVP。完整 Stage 5 仍缺 `congestion`、`flow_counting`、完整 zone/rule config persistence、process mode 直接运行 events / alerts、以及完整 Alert Center 状态流转。
 
-已完成能力：
+Implemented:
 
-- Event contract
-- Event evidence contract
-- Rule execution records
+- Event contract / evidence / rule execution records
 - Event artifacts：
   - `events.jsonl`
   - `event_evidence.jsonl`
   - `rule_executions.jsonl`
   - `event_summary.json`
 - EventEngine callback framework
-- 已实现四类事件规则：
+- 已实现四类事件规则回调：
   - `danger_zone_intrusion`
   - `pedestrian_in_vehicle_lane`
   - `illegal_parking`
@@ -271,6 +274,17 @@ dffaf02 feat: add trajectory points query api
   - `POST /api/analysis-runs/{run_id}/alerts/generate`
   - `GET /api/analysis-runs/{run_id}/alerts`
 - Analysis Detail 最小 event / alert table 展示
+
+Not implemented yet:
+
+- `congestion`
+- `flow_counting`
+- complete zone/rule config persistence
+- process mode that directly runs events / alerts
+- full Alert Center lifecycle: acknowledge / resolve / ignored
+- Review / Bad Case / Evaluation
+
+Event/Alert query endpoints are artifact-based MVP endpoints. They partially overlap with later-stage Traffic Analysis Center / Alert Center goals but are not a full database-backed result center or full Alert Center.
 
 当前事件判断基于像素级轨迹特征、zone polygon 和规则阈值。`illegal_parking` 是视频分析事件，不是正式执法级违停结论。
 
@@ -353,6 +367,8 @@ results/traffic_analysis/<run_id>/
 ```
 
 EventService 和 AlertService 基于上述 local artifacts 工作。当前 Traffic Analysis Center 是 artifact-based run result query，不是完整数据库结果中心。真实运行产物不提交到 Git。
+
+The `v0.5.0-event-alert-minimal` tag marks this minimal Event / Alert milestone only. It is not a full Stage 5 completion tag.
 
 ## 当前边界
 

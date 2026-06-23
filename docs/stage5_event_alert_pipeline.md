@@ -1,10 +1,12 @@
-# Stage 5 Event & Alert Minimal Pipeline
+# Stage 5 Event & Alert MVP / Midpoint Status
 
 ## 1. Scope
 
-This document records the current Stage 5 midpoint state for SmartTraffic.
+This document records the current Stage 5 MVP / midpoint state for
+SmartTraffic.
 
-It is not a declaration that Stage 5 is fully complete. The current milestone is the minimal Event & Alert artifact pipeline:
+This document does not declare full Stage 5 completion. The current milestone is
+the minimal Event & Alert artifact pipeline:
 
 ```text
 trajectory artifacts
@@ -18,9 +20,9 @@ trajectory artifacts
 
 The current system does not provide law-enforcement-grade violation judgment and does not perform real-world speed calibration.
 
-## 2. Completed Capabilities
+## 2. Implemented MVP Capabilities
 
-Completed Stage 5 midpoint capabilities:
+Implemented Stage 5 MVP capabilities:
 
 - Event contract
 - Event evidence contract
@@ -29,15 +31,29 @@ Completed Stage 5 midpoint capabilities:
 - EventEngine callback framework
 - Four rule callbacks
 - EventService
-- Event query API
+- Artifact-based event query API
 - Alert contract
 - AlertService
-- Alert generate/query API
+- Artifact-based alert generate/query API
 - Frontend minimal event and alert view
 
 Current services operate on local artifacts under `results/traffic_analysis/<run_id>/`. They do not form a complete database-backed result center.
 
-## 3. Event Rules
+## 3. Strict Manual Alignment
+
+According to `docs/SmartTraffic_最终版项目开发执行手册.md`, Stage 5 still
+requires:
+
+- `congestion`
+- `flow_counting`
+- complete event/rule config persistence
+- process pipeline integration that directly runs EventEngine and AlertService
+- complete Alert Center lifecycle
+
+The current `v0.5.0-event-alert-minimal` tag is a minimal milestone tag. It is
+not a full Stage 5 completion tag and should not be moved.
+
+## 4. Event Rules
 
 ### danger_zone_intrusion
 
@@ -177,7 +193,7 @@ Limitations:
 - `min_wrong_way_frames > 1` is currently unsupported
 - not law-enforcement-grade judgement
 
-## 4. Event Artifacts
+## 5. Event Artifacts
 
 EventService and TrafficArtifactWriter can generate:
 
@@ -197,9 +213,12 @@ results/traffic_analysis/<run_id>/
 
 `event_summary.json` contains event counts by type, severity, status, unique tracks, rule execution counts, and first/last event time.
 
-## 5. Event API
+## 6. Event API
 
 `GET /api/analysis-runs/{run_id}/events`
+
+This is an artifact-based MVP run event query endpoint. It is not the final
+standalone Event Center API from the execution manual.
 
 Query parameters:
 
@@ -216,7 +235,7 @@ Response includes:
 
 Missing run or missing event artifacts return 404.
 
-## 6. Alert Pipeline
+## 7. Alert Pipeline
 
 The minimal alert pipeline converts event artifacts into alert artifacts:
 
@@ -243,7 +262,7 @@ status = new
 
 Current alert generation does not implement acknowledge, resolve, ignored mutation APIs, notification delivery, or real-time alerting.
 
-## 7. Alert API
+## 8. Alert API
 
 `POST /api/analysis-runs/{run_id}/alerts/generate`
 
@@ -256,6 +275,9 @@ It reads existing event artifacts and does not modify event artifacts.
 
 `GET /api/analysis-runs/{run_id}/alerts`
 
+These are minimal artifact-based alert endpoints. They are not a full Alert
+Center lifecycle API.
+
 Query parameters:
 
 - `limit`: 0-1000, default 100
@@ -265,7 +287,7 @@ Query parameters:
 
 Missing run or missing alert artifacts return 404.
 
-## 8. Frontend Minimal View
+## 9. Frontend Minimal View
 
 `AnalysisDetailPage` currently provides:
 
@@ -288,9 +310,9 @@ Current frontend does not provide:
 
 `AlertCenterPage` and `AlertPanel` currently remain placeholder UI shells.
 
-## 9. Tests
+## 10. Tests
 
-Current Stage 5 midpoint test coverage includes:
+Current Stage 5 MVP / midpoint test coverage includes:
 
 - alert contract tests
 - alert service tests
@@ -310,7 +332,7 @@ Current Stage 5 midpoint test coverage includes:
 
 The full backend test suite has passed for this milestone, and frontend `npm run build` has passed.
 
-## 10. Known Limitations
+## 11. Known Limitations
 
 Current known limitations:
 
@@ -327,11 +349,11 @@ Current known limitations:
 - no real-world speed / direction calibration
 - no law-enforcement-grade traffic violation judgment
 
-## 11. Next Steps
+## 12. Next Steps
 
 Recommended next steps:
 
 - Decide whether to implement `flow_counting` or `congestion` next.
 - Decide whether to add process mode or a dedicated event run API for event/alert generation.
 - Decide whether to add rule/zone configuration persistence.
-- Consider tagging the current documented milestone as `v0.5.0-event-alert-minimal` after user confirmation.
+- Keep `v0.5.0-event-alert-minimal` as the existing minimal milestone tag; do not move it.

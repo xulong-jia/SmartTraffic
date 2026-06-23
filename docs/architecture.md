@@ -27,7 +27,22 @@ video upload
 
 The current process API does not directly run events or alerts. Stage 5 minimal Event & Alert behavior operates on existing local artifacts.
 
-## Stage 5 Minimal Event & Alert Pipeline
+## Current Implemented Architecture
+
+Currently implemented architecture includes:
+
+- YOLOv8 / dry-run detection
+- DeepSORT adapter / mock tracking
+- TrajectoryEngine
+- partial EventEngine with callback-based rules
+- artifact-based EventService
+- artifact-based AlertService
+- minimal frontend tables in Analysis Detail
+
+The current implementation is useful for local validation, but it is not the
+complete manual architecture yet.
+
+## Stage 5 Partial Event & Alert MVP
 
 The current stage-five artifact path is:
 
@@ -55,6 +70,20 @@ Alert artifacts:
 
 The current EventService and AlertService form an artifact-based generation and query loop. They are not a complete database-backed result center, and they are not law-enforcement-grade traffic violation judgment.
 
+## Planned Manual Architecture
+
+The execution manual still targets:
+
+- database-backed Traffic Analysis Center
+- full Alert Center
+- Review Center
+- Bad Case Center
+- Evaluation Center
+- persisted Zone & Rule Config
+- flow counting and zone statistics
+
+These modules are not complete in the current project state.
+
 ## Backend Components
 
 - `backend/app/api`: HTTP routes.
@@ -77,6 +106,9 @@ The `SUPPORTED_EVENT_TYPES` list includes future event types, but `congestion` a
 ## Query Layer
 
 The current Traffic Analysis Center is primarily artifact-based run result query. It reads local files under `results/traffic_analysis/<run_id>/` and exposes detection, tracking, trajectory, event, and alert outputs through FastAPI.
+
+This partially overlaps with the execution manual's Stage 6 Traffic Analysis
+Center, but it is not a complete database-backed result center.
 
 Implemented artifact query endpoints include:
 
@@ -115,8 +147,10 @@ Current limitations:
 - no Evaluation Center workflow
 - no Zone Editor implementation
 - no video overlay
+- no complete Traffic Analysis Center
 - no `congestion`
 - no `flow_counting`
+- no `flow_counts` or `zone_statistics` output generation
 - no real-world speed / direction calibration
 - no formal traffic enforcement conclusion
 

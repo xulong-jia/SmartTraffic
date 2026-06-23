@@ -58,6 +58,12 @@ Stage four response fields include:
 
 The current process API does not directly run event or alert generation and does not return traffic event or alert results. EventService and AlertService currently operate on existing local artifacts.
 
+Manual alignment note:
+
+- Stage 5 is partially completed, not fully complete.
+- Event and alert endpoints documented below are artifact-based MVP run query endpoints.
+- They partially overlap later Traffic Analysis Center and Alert Center goals, but they are not the final standalone Event Center / Alert Center API set from the execution manual.
+
 ## Analysis Runs
 
 - `GET /api/analysis-runs`
@@ -103,6 +109,11 @@ Behavior:
 
 `GET /api/analysis-runs/{run_id}/events`
 
+This endpoint is an artifact-based run event query. It reads `events.jsonl`,
+`event_evidence.jsonl`, `rule_executions.jsonl`, and `event_summary.json` from a
+local run directory. It is not the execution manual's final standalone
+`/api/events` Event Center implementation.
+
 Query parameters:
 
 - `limit`: integer from 0 to 1000, default 100.
@@ -143,6 +154,8 @@ This endpoint reads existing `events.jsonl` and generates:
 - `alert_summary.json`
 
 It does not modify event artifacts and does not implement acknowledge / resolve behavior.
+It is a minimal artifact generation endpoint, not a full Alert Center lifecycle
+API.
 
 Response shape:
 
@@ -166,6 +179,9 @@ Behavior:
 ### Alerts
 
 `GET /api/analysis-runs/{run_id}/alerts`
+
+This endpoint is an artifact-based run alert query. It is not the final
+standalone `/api/alerts` Alert Center implementation from the execution manual.
 
 Query parameters:
 
@@ -195,6 +211,20 @@ Behavior:
 - Existing run without alert artifacts returns 404.
 - `limit=0` returns `summary` with an empty `alerts` list.
 - The current minimal Alert Center does not support acknowledge / resolve status mutation APIs.
+
+## Not Implemented From The Manual Yet
+
+The following API capabilities are planned by the execution manual but are not
+implemented as working behavior yet:
+
+- `PATCH /api/alerts/{alert_id}/acknowledge`
+- `PATCH /api/alerts/{alert_id}/resolve`
+- `PATCH /api/events/{event_id}/status`
+- standalone `/api/events` full query
+- standalone `/api/alerts` full query
+- `/api/analysis-runs/{run_id}/flow-counts`
+- `/api/analysis-runs/{run_id}/zone-statistics`
+- full Review / Bad Case / Evaluation APIs
 
 ## Placeholders For Later Phases
 
