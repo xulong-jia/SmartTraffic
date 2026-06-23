@@ -101,13 +101,18 @@ Implemented stage-five rule callbacks:
 - `illegal_parking`
 - `wrong_way_driving`
 - `flow_counting`
-
-The `SUPPORTED_EVENT_TYPES` list includes `congestion`, but the `congestion`
-callback is not implemented yet.
+- `congestion`
 
 The current `flow_counting` callback is a Stage 5 event rule. It uses
 EventEngine callback state to maintain `previous_points` and `counted_keys`
 while evaluating whether track segments cross `rule.parameters.line`.
+
+The current `congestion` callback uses aggregate event rule support. EventEngine
+calls each aggregate rule once per frame, passes the full
+`frame_result["trajectory_points"]`, and emits a zone-level event with
+`track_id=None`. The callback uses EventEngine state to maintain consecutive
+congestion-frame counts; EventEngine aggregate cooldown and dedup handle
+repeated zone-level events.
 
 ## Query Layer
 
@@ -154,10 +159,12 @@ Current limitations:
 - no Zone Editor implementation
 - no video overlay
 - no complete Traffic Analysis Center
-- no `congestion`
 - no `flow_counts` or `zone_statistics` output generation
 - no `/api/analysis-runs/{run_id}/flow-counts`
+- no `/api/analysis-runs/{run_id}/zone-statistics`
 - no frontend flow statistics view
+- no frontend congestion chart
+- no database-backed zone statistics persistence
 - no real-world speed / direction calibration
 - no formal traffic enforcement conclusion
 

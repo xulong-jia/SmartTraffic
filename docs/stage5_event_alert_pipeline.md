@@ -29,7 +29,7 @@ Implemented Stage 5 MVP capabilities:
 - Rule execution contract
 - Event artifacts
 - EventEngine callback framework
-- Five rule callbacks
+- Six rule callbacks
 - EventService
 - Artifact-based event query API
 - Alert contract
@@ -44,10 +44,13 @@ Current services operate on local artifacts under `results/traffic_analysis/<run
 According to `docs/SmartTraffic_最终版项目开发执行手册.md`, Stage 5 still
 requires:
 
-- `congestion`
 - complete event/rule config persistence
 - process pipeline integration that directly runs EventEngine and AlertService
 - complete Alert Center lifecycle
+
+The Stage 5 event rule layer now covers the six manual-defined event rules. The
+remaining Stage 5 gaps above are system-level capabilities, not missing rule
+callbacks.
 
 The current `v0.5.0-event-alert-minimal` tag is a minimal milestone tag. It is
 not a full Stage 5 completion tag and should not be moved.
@@ -249,6 +252,64 @@ Limitations:
 - no persistent counting line config
 - no real-world flow calibration
 
+### congestion
+
+Purpose: detect low-speed, high-density vehicle states inside a configured zone
+as Stage 5 event records.
+
+Inputs:
+
+- `rule_mode=aggregate`
+- `zone_id`
+- `zone_types`: typically `vehicle_lane` or `roi`
+- `point_type`: `bottom_center` or `center`
+- `vehicle_count_threshold`
+- `avg_speed_threshold`
+- `min_congestion_frames`
+- frame-level `trajectory_points`
+
+Runtime behavior:
+
+- runs as a Stage 5 aggregate event rule
+- EventEngine calls each aggregate rule once per frame
+- callback reads the full `frame_result["trajectory_points"]`
+- filters vehicle classes and track length inside the callback
+- counts zone-contained vehicles and computes `avg_speed_px_per_frame`
+- EventEngine state tracks consecutive congestion frames
+- aggregate EventEngine cooldown / dedup handles repeated zone-level events
+
+Output:
+
+- `event_type=congestion`
+- `evidence_type=zone_statistics`
+- `track_id=None`
+- matched / skipped / error rule execution records
+
+Evidence fields:
+
+- `zone_id`
+- `zone_type`
+- `frame_index`
+- `timestamp_ms`
+- `vehicle_count`
+- `vehicle_count_threshold`
+- `avg_speed_px_per_frame`
+- `avg_speed_threshold`
+- `track_ids`
+- `class_counts`
+- `min_congestion_frames`
+- `congestion_frame_count`
+- `polygon`
+
+Limitations:
+
+- no `zone_statistics.json`
+- no `/api/analysis-runs/{run_id}/zone-statistics` API
+- no aggregate zone statistics history
+- no frontend congestion chart
+- no database-backed zone statistics persistence
+- no real-world congestion calibration
+
 ## 5. Event Artifacts
 
 EventService and TrafficArtifactWriter can generate:
@@ -386,6 +447,7 @@ Current Stage 5 MVP / midpoint test coverage includes:
   - `illegal_parking`
   - `wrong_way_driving`
   - `flow_counting`
+  - `congestion`
 
 The full backend test suite has passed for this milestone, and frontend `npm run build` has passed.
 
@@ -393,10 +455,12 @@ The full backend test suite has passed for this milestone, and frontend `npm run
 
 Current known limitations:
 
-- `congestion` is not implemented
 - `flow_counts.json` is not generated
 - `/api/analysis-runs/{run_id}/flow-counts` is not implemented
 - aggregate flow statistics and frontend flow charts are not implemented
+- `zone_statistics.json` is not generated
+- `/api/analysis-runs/{run_id}/zone-statistics` is not implemented
+- aggregate zone statistics history and frontend congestion charts are not implemented
 - acknowledge / resolve / ignored mutation APIs are not implemented
 - full Alert Center status workflow is not implemented
 - Review Center is not implemented
@@ -412,8 +476,8 @@ Current known limitations:
 
 Recommended next steps:
 
-- Implement `congestion` to close the remaining Stage 5 rule gap from the
-  execution manual.
+- Run a Stage 5 execution-manual closeout audit to decide whether the completed
+  rule layer and remaining system-level gaps should be split into Stage 6/7/8.
 - Decide whether to add process mode or a dedicated event run API for event/alert generation.
 - Decide whether to add rule/zone configuration persistence.
 - Keep `v0.5.0-event-alert-minimal` as the existing minimal milestone tag; do not move it.

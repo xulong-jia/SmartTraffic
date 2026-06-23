@@ -8,6 +8,11 @@ callback implementations over trajectory artifacts. They are not yet backed by
 database-managed rule configuration, a complete Zone & Rule Config UI, or a
 full process mode that directly runs events and alerts.
 
+The Stage 5 event rule layer currently covers the six event rules defined by the
+execution manual. Stage 5 is still not fully complete because system-level
+capabilities such as persisted zone/rule configuration, direct process pipeline
+integration, and the full Alert Center lifecycle remain unfinished.
+
 SmartTraffic event outputs are video-analysis signals only. They are not
 law-enforcement-grade traffic violation judgments.
 
@@ -185,14 +190,63 @@ Limitations:
 - No persistent counting line config yet.
 - No real-world flow calibration.
 
+### congestion
+
+Purpose:
+
+- Detect low-speed, high-density vehicle states inside a configured zone as
+  Stage 5 event records.
+
+Trigger condition:
+
+- A configured zone contains enough vehicle tracks.
+- Average speed in the zone is below or equal to the configured threshold.
+- The condition is satisfied for `min_congestion_frames`.
+
+Inputs:
+
+- `zone_id`
+- `zone_types`: normally `vehicle_lane` or `roi`
+- `point_type`: `bottom_center` or `center`
+- `vehicle_count_threshold`
+- `avg_speed_threshold`
+- `min_congestion_frames`
+- target vehicle classes
+- frame-level `trajectory_points`
+
+Runtime behavior:
+
+- Runs as an aggregate rule with `rule_mode=aggregate`.
+- The callback reads the full frame's `trajectory_points`.
+- It emits a zone-level event with `track_id=None`.
+- EventEngine callback state tracks consecutive congestion frames.
+- EventEngine aggregate cooldown and dedup prevent repeated events inside the
+  cooldown window.
+
+Evidence:
+
+- `evidence_type=zone_statistics`
+- `evidence_json` includes `zone_id`, `zone_type`, `frame_index`,
+  `timestamp_ms`, `vehicle_count`, `vehicle_count_threshold`,
+  `avg_speed_px_per_frame`, `avg_speed_threshold`, `track_ids`,
+  `class_counts`, `min_congestion_frames`, `congestion_frame_count`, and
+  `polygon`.
+
+Limitations:
+
+- No `zone_statistics.json` yet.
+- No `/api/analysis-runs/{run_id}/zone-statistics` API yet.
+- No frontend congestion chart yet.
+- No database-backed zone statistics persistence yet.
+- No real-world congestion calibration.
+
 ## Not Implemented Yet
-
-The execution manual still requires this Stage 5 rule:
-
-- `congestion`
 
 `flow_counting` is implemented as a Stage 5 EventEngine event rule, but the
 manual's later aggregate flow-counting outputs remain unfinished.
+
+`congestion` is implemented as a Stage 5 EventEngine event rule, but the
+manual's later aggregate zone-statistics outputs remain unfinished.
 
 ## Current Missing Capabilities
 
@@ -201,6 +255,7 @@ manual's later aggregate flow-counting outputs remain unfinished.
 - UI-based Zone & Rule Config.
 - DirectionLineEditor and CountingLineEditor.
 - Aggregate `flow_counts.json` and flow statistics APIs.
+- Aggregate `zone_statistics.json` and zone statistics APIs.
 - Process mode that directly runs EventEngine and AlertService.
 - Full Alert Center lifecycle: acknowledge / resolve / ignored.
 - Review / Bad Case / Evaluation workflows.

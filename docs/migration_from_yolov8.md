@@ -124,12 +124,16 @@ the complete Traffic Analysis Center, or the complete Alert Center from
 What changed:
 
 - `backend/app/events/` owns event contracts, evidence contracts, rule execution contracts, `EventEngine`, dedup helpers, and rule callbacks.
-- Implemented rule callbacks are `danger_zone_intrusion`, `pedestrian_in_vehicle_lane`, `illegal_parking`, `wrong_way_driving`, and `flow_counting`.
+- Implemented rule callbacks are `danger_zone_intrusion`, `pedestrian_in_vehicle_lane`, `illegal_parking`, `wrong_way_driving`, `flow_counting`, and `congestion`.
 - `wrong_way_driving` is a SmartTraffic event-rule capability based on trajectory angle features. It depends on stage-four `moving_angle` and `direction_vector`, and is not directly migrated from the old YOLOv8 demo project.
 - `flow_counting` is a SmartTraffic event-rule capability based on trajectory
   line crossing. It depends on stage-four trajectory points and EventEngine
   callback state, and is not directly migrated from the old YOLOv8 demo
   project.
+- `congestion` is a SmartTraffic event-rule capability based on trajectory
+  points and zone-level aggregate state. It depends on stage-four trajectory
+  speed fields and EventEngine aggregate callback support, and is not directly
+  migrated from the old YOLOv8 demo project.
 - `backend/app/services/event_service.py` reads existing `trajectory_points.jsonl` artifacts and writes event artifacts.
 - `backend/app/alerts/contracts.py` defines the minimal alert contract and severity-to-level mapping.
 - `backend/app/services/alert_service.py` reads existing `events.jsonl` artifacts and writes alert artifacts.
@@ -142,8 +146,9 @@ What changed:
 Still not migrated or implemented:
 
 - Old event/counting/ROI analytics runtime.
-- `congestion`.
 - Full aggregate `flow_counts.json` generation and flow-counts analytics APIs.
+- Full aggregate `zone_statistics.json` generation and zone-statistics
+  analytics APIs.
 - Full alert lifecycle mutation such as acknowledge / resolve.
 - Review, Bad Case, and Evaluation Center complete logic.
 - Real-world speed calibration.
@@ -151,4 +156,4 @@ Still not migrated or implemented:
 
 Boundary difference:
 
-SmartTraffic Event Engine and AlertService convert local trajectory and event artifacts into traffic intelligence outputs. They do not call YOLOv8 directly, do not replace the Trajectory Engine, and do not make formal enforcement decisions. The current `flow_counting` work is limited to a Stage 5 event rule; it does not represent complete Stage 6 flow-counts analytics.
+SmartTraffic Event Engine and AlertService convert local trajectory and event artifacts into traffic intelligence outputs. They do not call YOLOv8 directly, do not replace the Trajectory Engine, and do not make formal enforcement decisions. The current `flow_counting` work is limited to a Stage 5 event rule; it does not represent complete Stage 6 flow-counts analytics. The current `congestion` work is also limited to a Stage 5 event rule; it does not represent complete Stage 6 zone-statistics analytics.
