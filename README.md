@@ -6,6 +6,8 @@ SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engin
 
 当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 已完成 artifact-based / in-memory MVP。当前阶段五包括 Zone / Event Rule 配置 API MVP、六类 Event Engine 规则、Event Evidence / Rule Execution artifacts 增强、Alert artifacts 生成、Alert Center 基础查询与状态流转。它不是数据库最终版，也不代表 Review Center、Bad Case、Evaluation Center 已完成。
 
+当前 Alert Center MVP 支持 `new`、`acknowledged`、`resolved` 和 `ignored` 基础状态流转；这些状态写回本地 alert artifacts，不是数据库持久化生命周期管理。
+
 当前可验证的本地 artifacts 生成和查询闭环是：
 
 ```text
@@ -295,11 +297,13 @@ Implemented:
   - `PATCH /api/alerts/{alert_id}/ignore`
 - Analysis Detail 最小 event / alert table 展示
 - Alert Center 最小页面：支持 run/status/level 过滤，以及 acknowledge / resolve / ignore
+- Alert 状态流转：支持 `new` / `acknowledged` / `resolved` / `ignored`
 
 Not implemented yet:
 
 - database-backed zone/rule config persistence
 - database-backed alert persistence
+- database-backed Traffic Analysis result index
 - Review / Bad Case / Evaluation
 - Database implementation / persistence
 
@@ -398,7 +402,7 @@ results/traffic_analysis/<run_id>/
   alert_summary.json
   detection_preview.mp4   # only when requested
   tracking_preview.mp4    # only when requested
-  keyframes/
+  keyframes/              # directory reserved; event snapshots are not generated yet
 ```
 
 EventService 和 AlertService 基于上述 local artifacts 工作。当前 Traffic Analysis Center 是 artifact-based run result query，不是完整数据库结果中心。真实运行产物不提交到 Git。
@@ -415,11 +419,13 @@ The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert mile
 - `zone_statistics.json`
 - `/api/analysis-runs/{run_id}/zone-statistics`
 - frontend congestion chart
-- Alert acknowledge / resolve / ignored 状态修改 API
 - Review Center 真实逻辑
 - Bad Case Center 真实逻辑
 - Evaluation Center 完整评测
 - 数据库持久化 Zone / Event Rule / Alert 状态
+- DB-backed result index
+- keyframe snapshot generation
+- final annotated_video pipeline
 - video overlay
 - 正式实时流处理
 - 真实世界速度标定；当前 `speed_px_per_second` 不是 m/s 或 km/h

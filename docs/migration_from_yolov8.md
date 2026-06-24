@@ -117,8 +117,10 @@ SmartTraffic Trajectory Engine converts `track_id` + center / bbox history into 
 
 Stage five is not a direct migration of the old YOLOv8 project's analytics runtime. SmartTraffic adds a new Event Engine and minimal alert artifact layer on top of trajectory artifacts.
 
-This is a partial Stage 5 MVP. It does not represent full Stage 5 completion,
-the complete Traffic Analysis Center, or the complete Alert Center from
+This is the current Stage 5 artifact-based / in-memory MVP. It completes the
+Stage 5 event rule layer and the Alert Center MVP status loop, but it does not
+represent the complete database-backed Traffic Analysis Center or the later
+Review / Bad Case / Evaluation workflows from
 `docs/SmartTraffic_最终版项目开发执行手册.md`.
 
 What changed:
@@ -140,6 +142,9 @@ What changed:
 - `GET /api/analysis-runs/{run_id}/events` exposes event outputs from local artifacts.
 - `POST /api/analysis-runs/{run_id}/alerts/generate` generates alert artifacts from event artifacts.
 - `GET /api/analysis-runs/{run_id}/alerts` exposes alert outputs from local artifacts.
+- `GET /api/alerts`, `GET /api/alerts/{alert_id}`, and the
+  acknowledge / resolve / ignore endpoints provide an artifact-backed Alert
+  Center MVP status loop.
 - These event and alert endpoints are artifact-based MVP query endpoints, not a
   complete database-backed result center.
 
@@ -149,7 +154,7 @@ Still not migrated or implemented:
 - Full aggregate `flow_counts.json` generation and flow-counts analytics APIs.
 - Full aggregate `zone_statistics.json` generation and zone-statistics
   analytics APIs.
-- Full alert lifecycle mutation such as acknowledge / resolve.
+- Database-backed alert lifecycle persistence and notification delivery.
 - Review, Bad Case, and Evaluation Center complete logic.
 - Real-world speed calibration.
 - Law-enforcement-grade traffic violation judgment.
