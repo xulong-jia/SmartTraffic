@@ -57,12 +57,15 @@ def test_stage6_manifest_and_artifact_index_are_written(
         "flow_counts",
         "zone_statistics",
         "evaluation_summary",
-        "annotated_video",
-        "keyframes",
     ):
         assert artifacts[key]["status"] == "planned"
         assert artifacts[key]["record_count"] == 0
         assert artifacts[key]["required"] is False
+    assert artifacts["keyframes"]["status"] == "empty"
+    assert artifacts["keyframes"]["record_count"] == 0
+    assert artifacts["keyframes_index"]["status"] == "missing"
+    assert artifacts["annotated_video"]["status"] == "missing"
+    assert artifacts["annotated_video"]["record_count"] == 0
 
     assert artifact_index == {
         "schema_version": "stage6b.v1",
@@ -91,7 +94,6 @@ def test_stage6_manifest_and_artifact_index_are_written(
             "flow_counts": "flow_counts.json",
             "zone_statistics": "zone_statistics.json",
             "evaluation_summary": "evaluation_summary.json",
-            "annotated_video": "annotated_video.mp4",
             "keyframes": "keyframes/",
         },
     }
@@ -125,7 +127,10 @@ def test_stage6_manifest_marks_missing_core_and_planned_future_artifacts(
     assert artifacts["alerts_jsonl"]["status"] == "missing"
     assert artifacts["flow_counts"]["status"] == "planned"
     assert artifacts["zone_statistics"]["status"] == "planned"
-    assert artifacts["keyframes"]["status"] == "planned"
+    assert artifacts["evaluation_summary"]["status"] == "planned"
+    assert artifacts["keyframes"]["status"] == "empty"
+    assert artifacts["keyframes_index"]["status"] == "missing"
+    assert artifacts["annotated_video"]["status"] == "missing"
 
 
 def test_analysis_run_manifest_api_builds_and_returns_manifest(

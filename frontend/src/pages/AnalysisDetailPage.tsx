@@ -20,6 +20,7 @@ import type {
   AnalysisRunDetections,
   AnalysisRunTracks,
   ArtifactAvailability,
+  ArtifactSummaryItem,
   ArtifactSummary,
   FlowCountsArtifact,
   EventEvidenceRecord,
@@ -424,6 +425,10 @@ export default function AnalysisDetailPage({ initialRunId = "" }: AnalysisDetail
             <h3>Artifact Summary</h3>
             <ArtifactSummaryTable artifactSummary={runSummary?.artifact_summary} />
           </section>
+          <section className="panel">
+            <h3>Visual Artifacts</h3>
+            <VisualArtifactsPanel artifactSummary={runSummary?.artifact_summary} />
+          </section>
         </div>
         <div className="grid">
           <section className="panel">
@@ -777,6 +782,54 @@ function ArtifactSummaryTable({ artifactSummary }: { artifactSummary?: ArtifactS
         ))}
       </tbody>
     </table>
+  );
+}
+
+function VisualArtifactsPanel({ artifactSummary }: { artifactSummary?: ArtifactSummary }) {
+  const keyframes = artifactSummary?.keyframes;
+  const keyframesIndex = artifactSummary?.keyframes_index;
+  const annotatedVideo = artifactSummary?.annotated_video;
+
+  if (!keyframes && !keyframesIndex && !annotatedVideo) {
+    return <p className="muted">No visual artifact status available.</p>;
+  }
+
+  return (
+    <table>
+      <thead>
+        <tr>
+          <th>Artifact</th>
+          <th>Status</th>
+          <th>Count</th>
+          <th>Path</th>
+        </tr>
+      </thead>
+      <tbody>
+        <VisualArtifactRow label="keyframes" value={keyframes} />
+        <VisualArtifactRow label="keyframes_index" value={keyframesIndex} />
+        <VisualArtifactRow label="annotated_video" value={annotatedVideo} />
+      </tbody>
+    </table>
+  );
+}
+
+function VisualArtifactRow({
+  label,
+  value
+}: {
+  label: string;
+  value?: ArtifactSummaryItem;
+}) {
+  const status = value?.status || "missing";
+  return (
+    <tr>
+      <td>{label}</td>
+      <td>
+        <span className={`status-pill status-${status}`}>{status}</span>
+      </td>
+      <td>{formatValue(value?.record_count)}</td>
+      <td>{formatValue(value?.path)}</td>
+    </tr>
   );
 }
 

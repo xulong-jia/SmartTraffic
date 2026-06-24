@@ -1,6 +1,6 @@
 # Stage 6 Traffic Analysis Center 设计文档
 
-本文档最初是 Stage 6A 的只读审计与设计准备文档。Stage 6B 已在 artifact-based / in-memory MVP 范围内实现 run manifest 与 artifact index 加固；Stage 6C 已实现 artifact-backed `flow_counts.json` 和 `zone_statistics.json` MVP；Stage 6D 已实现 Analysis Runs list / summary API；Stage 6E 已实现前端真实 run 数据接入 MVP。本文档继续记录 Stage 6 的目标边界和后续子阶段。
+本文档最初是 Stage 6A 的只读审计与设计准备文档。Stage 6B 已在 artifact-based / in-memory MVP 范围内实现 run manifest 与 artifact index 加固；Stage 6C 已实现 artifact-backed `flow_counts.json` 和 `zone_statistics.json` MVP；Stage 6D 已实现 Analysis Runs list / summary API；Stage 6E 已实现前端真实 run 数据接入 MVP；Stage 6F 已实现 keyframes / annotated video visual artifacts pipeline MVP。本文档继续记录 Stage 6 的目标边界和后续子阶段。
 
 ## 1. 阶段目标
 
@@ -14,7 +14,7 @@ Stage 6 要做：
 - 在已有 detections、tracks、trajectory_points、events、alerts 产物基础上，补齐 Stage 6 聚合产物 `flow_counts.json` 和 `zone_statistics.json`。
 - 增强 Analysis Runs API，使 run summary、artifact manifest、detections、tracks、trajectory points、events、alerts、flow counts、zone statistics 都有稳定读取入口。
 - 让前端 Dashboard、Video Center、Analysis Detail 逐步读取真实 run 结果。
-- 设计 keyframes 和 annotated_video 的产物契约，为后续 Stage 6F 实现预留路径。
+- 生成 keyframes 和 annotated_video visual artifacts，并通过 manifest / artifact index / metadata 暴露状态。
 - 为 Stage 7 Review Center 和 Stage 8 Evaluation Center 提供统一数据底座，但不在 Stage 6 中实现复核或评估业务。
 
 ## 2. 非目标
@@ -54,11 +54,13 @@ Stage 6 的设计重点是结果管理和读取契约，不把 Stage 5 已有事
 - Stage 6C 已新增 `flow_counts.json`、`zone_statistics.json` 生成与读取。
 - Stage 6C 已新增 `GET /api/analysis-runs/{run_id}/flow-counts` 和 `GET /api/analysis-runs/{run_id}/zone-statistics`。
 - Stage 6D 已增强 `GET /api/analysis-runs` 和 `GET /api/analysis-runs/{run_id}`，可从 manifest / metadata / artifact_index / in-memory registry / directory scan fallback 构建统一 summary。
+- Stage 6F 已新增 `keyframes/index.json`、event / alert keyframe snapshot 和 `annotated_video.mp4` visual artifacts pipeline。
+- Stage 6F visual artifacts 失败时写入 manifest 状态，例如 `missing_source_video` 或 `error`，不让已有 run 结果整体丢失。
 - `backend/app/api/analysis_runs.py` 已有 `GET /api/analysis-runs`、`GET /api/analysis-runs/{run_id}`、manifest、detections、tracks、trajectory-points、events、flow-counts、zone-statistics、alerts 查询 API。
 - `frontend/src/api/analysisRuns.ts` 已与 Stage 6D response 对齐，并支持 manifest、detections、tracks、trajectory、events、alerts、flow counts、zone statistics 读取。
 - `frontend/src/pages/DashboardPage.tsx` 已读取真实 Analysis Runs API，展示 run 总数、状态分布、artifact 状态摘要和最近 runs。
 - `frontend/src/pages/VideoCenterPage.tsx` 已展示 recent analysis runs，并可进入 Analysis Detail。
-- `frontend/src/pages/AnalysisDetailPage.tsx` 已能读取并显示 run summary、metadata / manifest / artifact index 状态、artifact summary、detections、tracks、trajectory、events、alerts、flow counts 和 zone statistics 的基础数据。
+- `frontend/src/pages/AnalysisDetailPage.tsx` 已能读取并显示 run summary、metadata / manifest / artifact index 状态、artifact summary、visual artifacts 状态、detections、tracks、trajectory、events、alerts、flow counts 和 zone statistics 的基础数据。
 
 当前已真实生成和读取的产物如下：
 
@@ -77,10 +79,13 @@ Stage 6 的设计重点是结果管理和读取契约，不把 Stage 5 已有事
 | `flow_counts.json` | 是 | `write_statistics_outputs()` | Stage 6C statistics 测试 | `/flow-counts` | Analysis Detail 最小表格 | Stage 6C / 6E |
 | `zone_statistics.json` | 是 | `write_statistics_outputs()` | Stage 6C statistics 测试 | `/zone-statistics` | Analysis Detail 最小表格 | Stage 6C / 6E |
 | `alerts.jsonl` | 是 | `write_alert_outputs()` | alert / stage5 pipeline 测试 | `/alerts` | Analysis Detail | 已有，Stage 6B 统一 manifest |
+| `keyframes/index.json` | 是 | `write_visual_artifacts()` | Stage 6F visual artifacts 测试 | manifest / summary | Analysis Detail visual artifacts panel | Stage 6F |
+| `keyframes/*.jpg` | 条件生成 | `write_visual_artifacts()` | Stage 6F synthetic video 测试 | manifest / summary | 状态展示，不预览图片 | Stage 6F |
+| `annotated_video.mp4` | 条件生成 | `write_visual_artifacts()` | Stage 6F synthetic video 测试 | manifest / summary | 状态展示，不播放视频 | Stage 6F |
 
 ### 3.2 部分能力
 
-当前已有 Stage 6B manifest / artifact index、Stage 6C traffic statistics、Stage 6D Analysis Runs summary 与 Stage 6E frontend real-data integration 的 artifact-backed MVP。
+当前已有 Stage 6B manifest / artifact index、Stage 6C traffic statistics、Stage 6D Analysis Runs summary、Stage 6E frontend real-data integration 与 Stage 6F visual artifacts 的 artifact-backed MVP。
 
 - `TrafficArtifactWriter.CORE_ARTIFACTS` 包含 detections、tracks、trajectory、events、alerts、`flow_counts.json`、`zone_statistics.json`、`evaluation_summary.json`、`annotated_video.mp4`、`keyframes/` 等候选产物名。
 - `TrafficArtifactWriter.artifact_index(run_id)` 只返回实际存在的文件或非空目录，因此候选产物不等于真实生成产物。
@@ -89,7 +94,7 @@ Stage 6 的设计重点是结果管理和读取契约，不把 Stage 5 已有事
 - `metadata.json` 保留原有字段，并补充 `schema_version`、`status`、`result_dir`、`manifest_path`、`artifact_index_path`、`artifact_summary`。
 - `backend/app/analysis/run_index.py` 目前只有 `run_directory()` helper，不是 DB-backed result index，也不是完整运行索引服务。
 - `backend/app/models/`、`backend/app/repositories/`、`backend/app/db/` 仍是 placeholder 或基础骨架。
-- `keyframes/` 目录会被创建，但当前没有 snapshot 生成逻辑；空目录不会出现在 `artifact_index()`。
+- `keyframes/` 目录会被创建；Stage 6F 会写入 `keyframes/index.json`，有可用源视频时生成 event / alert snapshot，缺源视频时写入 manifest fallback 状态。
 - 前端 Analysis Detail 已完成 Stage 6E 的 run 详情、artifact panel、flow/zone 最小表格展示；它仍不是完整 Traffic Analysis Center，也没有复杂统计图表。
 
 ### 3.3 未实现能力
@@ -97,12 +102,11 @@ Stage 6 的设计重点是结果管理和读取契约，不把 Stage 5 已有事
 当前未实现：
 
 - `evaluation_summary.json` 生成。
-- `annotated_video.mp4` final pipeline。
-- keyframe snapshot 生成。
 - `traffic_analysis_runs` 数据库表或 ORM model。
 - DB-backed result index。
 - flow / zone statistics 前端图表。
 - 完整 Dashboard 可视化工作台。
+- 复杂视频 overlay editor。
 - Review Center、Bad Case Center、Evaluation Center。
 
 ### 3.4 当前风险
@@ -110,7 +114,7 @@ Stage 6 的设计重点是结果管理和读取契约，不把 Stage 5 已有事
 - `metadata.json` 中的旧 `artifacts` 字段仍保留兼容，不应替代 Stage 6B `manifest.json` 作为产物状态来源。
 - `CORE_ARTIFACTS` 预留了尚未生成的产物名，若调用方直接读取 `metadata["artifacts"]` 而不校验文件存在，可能误判 Stage 6 产物已完成。
 - Stage 6D list API 已支持扫描历史 run 目录，但仍是 artifact-based index，不是 DB-backed result index。
-- `keyframes/` 目录虽然被创建，但没有 snapshot 生成和事件关联契约，不能视为 keyframe 能力完成。
+- keyframes / annotated video 是 artifact-based visual review artifacts，不保存人工复核决策，不能视为 Review Center。
 - Stage 5 的 `flow_counting` 和 `congestion` 是规则层能力；Stage 6C 只消费它们的 artifacts 生成本地统计文件，不应被表述为数据库统计中心或前端统计图表完成。
 - 真实数据库层还未建立，不能把当前 artifact-based / in-memory MVP 表述为 database final version。
 
@@ -513,7 +517,16 @@ alerts 可以引用 event evidence，而不是重复保存 snapshot 信息。
 
 ### 10.4 当前阶段是否实现
 
-当前没有实现 keyframe snapshot 生成。`keyframes/` 目录会被创建，但空目录不代表能力完成。Stage 6A 只设计，Stage 6F 再实现。
+Stage 6F 已实现 keyframe snapshot MVP：
+
+- 写入 `keyframes/index.json`，schema version 为 `stage6f.v1`。
+- 基于 events、alerts 和 event evidence 中的 frame index / timestamp 生成索引项。
+- 有可读取源视频时写出 `keyframes/event_<event_id>_<frame_index>.jpg` 和 `keyframes/alert_<alert_id>_<frame_index>.jpg`。
+- event_id / alert_id 会进行 safe filename 处理，keyframe path 保持相对路径。
+- 没有事件或告警时写出合法空 index。
+- 缺少源视频或 OpenCV 读取失败时，manifest / metadata 中写入 `missing_source_video` 或 `error`，不让已有 detections / tracks / events / alerts 产物丢失。
+
+keyframes 是 artifact-based 可视化复查产物，不是 Review Center，也不保存人工复核决策。
 
 ## 11. annotated_video 设计
 
@@ -547,7 +560,14 @@ alerts 可以引用 event evidence，而不是重复保存 snapshot 信息。
 
 ### 11.5 当前阶段是否实现
 
-当前没有 final annotated_video pipeline。现有 preview video 仅属于 detection / tracking 阶段可选预览，不是 Stage 6 的完整 annotated video。
+Stage 6F 已实现 annotated video MVP：
+
+- 基于 source video、detections、tracks 和 events 尝试生成 `annotated_video.mp4`。
+- 最小 overlay 包含 bbox、track id、class name 和 event label。
+- 有 synthetic video 和基础 detection / track artifacts 时可生成 mp4。
+- 缺少源视频或写入失败时，manifest / metadata 中写入 `missing_source_video`、`empty` 或 `error`，不让已有 run 结果整体失败。
+
+现有 detection / tracking preview video 仍属于对应处理阶段可选预览；Stage 6F 的 `annotated_video.mp4` 是独立的 artifact-based 离线可视化复查产物，不是复杂 overlay editor。
 
 ## 12. API Contract 草案
 
@@ -747,7 +767,7 @@ Video Center 当前可以上传和发起处理，并展示部分处理结果。S
 - flow counts panel。
 - zone statistics panel。
 
-Stage 6E 没有实现视频 overlay、keyframes 展示或 annotated video 播放。
+Stage 6E 当时没有实现视频 overlay、keyframes 展示或 annotated video 播放。Stage 6F 之后补齐了 visual artifact 状态展示，但仍不提供 keyframe 预览、annotated video 播放或复杂 overlay editor。
 
 ### 13.4 Artifact Panel
 
@@ -874,9 +894,7 @@ Stage 6 不应破坏已有 artifact 格式。
 
 未实现范围：
 
-- 视频 overlay。
-- keyframes snapshot。
-- annotated video final pipeline。
+- 复杂视频 overlay editor。
 - Review Center。
 - Bad Case Center。
 - Evaluation Center。
@@ -885,12 +903,23 @@ Stage 6 不应破坏已有 artifact 格式。
 
 ### 15.5 Stage 6F：keyframes 与 annotated_video pipeline
 
-最小范围：
+已实现范围：
 
-- 基于 event / alert 生成 keyframe snapshot。
-- manifest 标记 keyframes 状态。
-- 设计并实现离线 annotated video pipeline。
-- 不做人工复核和评估。
+- 生成 `keyframes/index.json`。
+- 基于 event / alert frame index 生成 keyframe snapshot。
+- 基于 source video、detections、tracks 和 events 生成最小 `annotated_video.mp4`。
+- manifest / artifact_index / metadata 纳入 `keyframes`、`keyframes_index` 和 `annotated_video`。
+- 缺少源视频或生成失败时写入 `missing_source_video` / `error` / `empty` 状态。
+- Analysis Detail 增加 Visual Artifacts 最小状态展示。
+- 为 empty index、missing source video、synthetic keyframes、annotated video、manifest / artifact_index / metadata 状态增加后端测试。
+
+未实现范围：
+
+- 复杂视频 overlay editor。
+- 静态文件下载或权限系统。
+- Review Center、Bad Case Center、Evaluation Center。
+- DB-backed result index。
+- 真实世界速度标定。
 
 ### 15.6 Stage 6G：文档、测试、tag 收尾
 
@@ -911,7 +940,7 @@ Stage 6 不应破坏已有 artifact 格式。
 | congestion evidence 与 zone statistics 混淆 | 区域统计能力被夸大 | `zone_statistics.json` 独立生成和读取 |
 | metadata 字段继续扩散 | 前端和后续模块难以依赖 | Stage 6B 固定 schema version |
 | 一次性引入数据库 | 范围过大，破坏 MVP | Stage 6 先保持 artifact-based，数据库留到后续明确阶段 |
-| keyframes / annotated video 过早实现 | 容易牵动视频渲染和存储细节 | Stage 6F 单独小步实现 |
+| keyframes / annotated video 生成失败 | 影响已有 run 查询 | Stage 6F 使用 manifest fallback 状态，不让 visual artifact 失败吞掉已有产物 |
 
 ## 17. Stage 6B / 6C / 6D 完成状态与后续边界
 
@@ -942,4 +971,4 @@ Stage 6D 已完成 artifact-backed Analysis Runs API 增强：
 5. 损坏 manifest 不导致 list API 整体失败。
 6. 为 list、summary、过滤分页、降级来源和 404 增加后端测试。
 
-Stage 6D 没有实现 Stage 6E 前端真实数据接入、keyframes、annotated video、Review、Bad Case、Evaluation、数据库 migration、DB-backed result index、前端统计图表或真实世界速度 / 流量标定。Stage 6E 已补齐前端真实 run 数据接入 MVP，但仍没有实现 keyframes、annotated video、Review、Bad Case、Evaluation、数据库 migration、DB-backed result index、完整前端统计图表或真实世界速度 / 流量标定。下一步建议进入 Stage 6F：keyframes 与 annotated_video pipeline。
+Stage 6D 没有实现 Stage 6E 前端真实数据接入、keyframes、annotated video、Review、Bad Case、Evaluation、数据库 migration、DB-backed result index、前端统计图表或真实世界速度 / 流量标定。Stage 6E 已补齐前端真实 run 数据接入 MVP。Stage 6F 已补齐 artifact-based keyframes / annotated video visual artifacts pipeline MVP，但仍没有实现 Review、Bad Case、Evaluation、数据库 migration、DB-backed result index、完整前端统计图表、复杂视频 overlay editor 或真实世界速度 / 流量标定。下一步建议进入 Stage 6G：Stage 6 收尾审计、文档修正、测试和 tag。

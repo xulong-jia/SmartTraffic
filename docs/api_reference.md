@@ -222,9 +222,10 @@ Behavior:
 
 `GET /api/analysis-runs/{run_id}/manifest`
 
-This endpoint returns the Stage 6B/6C run artifact manifest. It reads or builds
-`manifest.json` from the local run directory and writes `artifact_index.json`
-when the index is missing. It is artifact-backed and does not use a database.
+This endpoint returns the Stage 6B/6C/6F run artifact manifest. It reads or
+builds `manifest.json` from the local run directory and writes
+`artifact_index.json` when the index is missing. It is artifact-backed and does
+not use a database.
 
 Response shape:
 
@@ -251,6 +252,27 @@ Response shape:
       "format": "json",
       "record_count": 8,
       "required": false
+    },
+    "keyframes": {
+      "status": "available",
+      "path": "keyframes/",
+      "format": "directory",
+      "record_count": 2,
+      "required": false
+    },
+    "keyframes_index": {
+      "status": "available",
+      "path": "keyframes/index.json",
+      "format": "json",
+      "record_count": 1,
+      "required": false
+    },
+    "annotated_video": {
+      "status": "missing_source_video",
+      "path": "annotated_video.mp4",
+      "format": "mp4",
+      "record_count": 0,
+      "required": false
     }
   }
 }
@@ -260,15 +282,21 @@ Artifact status values:
 
 - `available`: file or non-empty directory exists and can be read.
 - `missing`: Stage 6B core artifact is expected but not present.
-- `planned`: later-stage artifact reserved by contract, such as `evaluation_summary.json`, `annotated_video.mp4`, or `keyframes/`. Older runs without generated Stage 6C statistics may still show `flow_counts.json` or `zone_statistics.json` as planned until those artifacts are generated.
+- `planned`: later-stage artifact reserved by contract, such as `evaluation_summary.json`. Older runs without generated Stage 6C statistics may still show `flow_counts.json` or `zone_statistics.json` as planned until those artifacts are generated.
 - `empty`: artifact exists and is readable, but has zero records.
+- `missing_source_video`: Stage 6F visual artifact generation could not run
+  because the source video was not available.
 - `error`: artifact status or count could not be read.
 
 Behavior:
 
 - Missing run returns 404.
 - Paths are relative to the run directory.
-- The endpoint does not generate keyframes, annotated video, evaluation results, or database rows.
+- Stage 6F `keyframes`, `keyframes_index`, and `annotated_video` status are
+  exposed through this manifest and through the run summary `artifact_summary`.
+- The endpoint does not generate evaluation results or database rows.
+- Visual artifact generation failures are represented in manifest status and do
+  not imply Review / Bad Case / Evaluation behavior.
 
 ### Trajectory Points
 

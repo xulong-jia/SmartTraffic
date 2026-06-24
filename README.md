@@ -4,7 +4,7 @@
 
 SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engine、Event Engine、artifact-based Alert Center MVP、FastAPI、React 和本地结果产物管理的智慧交通视频分析项目。
 
-当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 已完成 artifact-based / in-memory MVP，Stage 6B/6C/6D/6E 已完成 artifact-based run manifest、artifact index、traffic statistics artifacts、Analysis Runs list / summary API 和前端真实 run 数据接入 MVP。当前实现仍不是数据库最终版，也不代表完整 Dashboard、Review Center、Bad Case、Evaluation Center 已完成。
+当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 已完成 artifact-based / in-memory MVP，Stage 6B/6C/6D/6E/6F 已完成 artifact-based run manifest、artifact index、traffic statistics artifacts、Analysis Runs list / summary API、前端真实 run 数据接入和 visual artifacts pipeline MVP。当前实现仍不是数据库最终版，也不代表完整 Dashboard、Review Center、Bad Case、Evaluation Center 已完成。
 
 当前 Alert Center MVP 支持 `new`、`acknowledged`、`resolved` 和 `ignored` 基础状态流转；这些状态写回本地 alert artifacts，不是数据库持久化生命周期管理。
 
@@ -21,13 +21,14 @@ video upload
 -> traffic statistics artifacts
 -> Alert Service
 -> alert artifacts
+-> keyframes / annotated video artifacts
 -> run artifacts
 -> FastAPI / React display
 ```
 
-目前支持视频上传、视频元数据读取、YOLOv8 检测、deterministic dry-run 检测、DeepSORT adapter / mock tracking、多目标跟踪结果导出、Trajectory Engine 轨迹点生成、六类事件规则回调、event artifacts、traffic statistics artifacts、alert artifacts、`run_id` 结果目录、前端最小工作台和基础 API。
+目前支持视频上传、视频元数据读取、YOLOv8 检测、deterministic dry-run 检测、DeepSORT adapter / mock tracking、多目标跟踪结果导出、Trajectory Engine 轨迹点生成、六类事件规则回调、event artifacts、traffic statistics artifacts、alert artifacts、keyframes / annotated video artifacts、`run_id` 结果目录、前端最小工作台和基础 API。
 
-当前 `POST /api/videos/{video_id}/process` 在 `mode=detection_tracking_trajectory` 下会先运行 detection / tracking / trajectory，然后自动调用 EventService、Stage 6C traffic statistics writer 和 AlertService 写入 event / statistics / alert artifacts。旧请求不传 `event_rules` / `zones` 时会生成稳定的空 event / statistics / alert artifacts，不伪造事件。
+当前 `POST /api/videos/{video_id}/process` 在 `mode=detection_tracking_trajectory` 下会先运行 detection / tracking / trajectory，然后自动调用 EventService、Stage 6C traffic statistics writer、AlertService 和 Stage 6F visual artifacts writer 写入 event / statistics / alert / keyframe / annotated video artifacts。旧请求不传 `event_rules` / `zones` 时会生成稳定的空 event / statistics / alert / visual artifacts，不伪造事件。
 
 本项目当前不是正式交通执法系统，输出结果不作为正式交通执法依据。模型权重、上传视频和运行结果均作为本地资产管理，不进入 Git。
 
@@ -135,6 +136,7 @@ cp .env.example .env
 - Stage 6C Traffic statistics artifacts MVP completed
 - Stage 6D Analysis Runs list / summary API completed
 - Stage 6E Analysis UI real run data integration MVP completed
+- Stage 6F Visual artifacts pipeline MVP completed
 - Zone / Event Rule configuration API MVP, Event Evidence / Rule Execution artifacts, and Alert Center status workflow implemented
 
 `v0.5.0-event-alert-minimal` is an earlier minimal Event / Alert milestone tag and should not be moved to newer commits.
@@ -413,12 +415,16 @@ results/traffic_analysis/<run_id>/
   zone_statistics.json
   alerts.jsonl
   alert_summary.json
+  keyframes/
+    index.json
+    event_<event_id>_<frame_index>.jpg   # only when source video can be read
+    alert_<alert_id>_<frame_index>.jpg   # only when source video can be read
+  annotated_video.mp4                    # only when source video can be read and writer succeeds
   detection_preview.mp4   # only when requested
   tracking_preview.mp4    # only when requested
-  keyframes/              # directory reserved; event snapshots are not generated yet
 ```
 
-Stage 6B adds `manifest.json` and `artifact_index.json` for each run so callers can distinguish available, missing, planned, empty, and error artifact states. Stage 6C adds artifact-based `flow_counts.json` and `zone_statistics.json` plus read APIs. Stage 6D enhances `GET /api/analysis-runs` and `GET /api/analysis-runs/{run_id}` so they can build summaries from manifest, metadata, artifact index, in-memory registry, or directory scan fallback. Stage 6E connects Dashboard, Video Center, and Analysis Detail to those real run APIs with minimal tables and status panels. EventService 和 AlertService 基于上述 local artifacts 工作。当前 Traffic Analysis Center 是 artifact-based run result query，不是完整数据库结果中心。真实运行产物不提交到 Git。
+Stage 6B adds `manifest.json` and `artifact_index.json` for each run so callers can distinguish available, missing, planned, empty, and error artifact states. Stage 6C adds artifact-based `flow_counts.json` and `zone_statistics.json` plus read APIs. Stage 6D enhances `GET /api/analysis-runs` and `GET /api/analysis-runs/{run_id}` so they can build summaries from manifest, metadata, artifact index, in-memory registry, or directory scan fallback. Stage 6E connects Dashboard, Video Center, and Analysis Detail to those real run APIs with minimal tables and status panels. Stage 6F adds artifact-based `keyframes/index.json`, keyframe snapshots, and `annotated_video.mp4` generation with controlled manifest fallback states such as `missing_source_video` and `error`. EventService 和 AlertService 基于上述 local artifacts 工作。当前 Traffic Analysis Center 是 artifact-based run result query，不是完整数据库结果中心或 Review Center。真实运行产物不提交到 Git。
 
 The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert milestone only.
 
@@ -434,8 +440,7 @@ The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert mile
 - Evaluation Center 完整评测
 - 数据库持久化 Zone / Event Rule / Alert 状态
 - DB-backed result index
-- keyframe snapshot generation
-- final annotated_video pipeline
+- complex video overlay editor
 - video overlay
 - 正式实时流处理
 - 真实世界速度标定；当前 `speed_px_per_second` 不是 m/s 或 km/h

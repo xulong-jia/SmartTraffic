@@ -260,6 +260,7 @@ button:disabled {
 }
 
 .status-missing,
+.status-missing_source_video,
 .status-planned,
 .status-unknown {
   border-color: #d5c187;

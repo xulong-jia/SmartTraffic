@@ -82,6 +82,7 @@ class EventService:
             },
         )
         writer.write_statistics_outputs(run_id)
+        writer.write_visual_artifacts(run_id)
         event_summary = _read_json(artifact_paths["event_summary"])
         metadata_after = writer.read_metadata(run_id)
 

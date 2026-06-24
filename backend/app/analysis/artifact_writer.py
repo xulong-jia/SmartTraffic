@@ -34,6 +34,12 @@ STATISTICS_ARTIFACTS = {
     "zone_statistics": "zone_statistics.json",
 }
 
+VISUAL_ARTIFACTS = {
+    "keyframes": "keyframes/",
+    "keyframes_index": "keyframes/index.json",
+    "annotated_video": "annotated_video.mp4",
+}
+
 CORE_ARTIFACTS = {
     "detections": "detections.csv",
     "detections_csv": "detections.csv",
@@ -53,6 +59,7 @@ CORE_ARTIFACTS = {
     "evaluation_summary": "evaluation_summary.json",
     "annotated_video": "annotated_video.mp4",
     "keyframes": "keyframes",
+    "keyframes_index": "keyframes/index.json",
 }
 
 STAGE6B_ARTIFACT_DEFINITIONS = {
@@ -168,13 +175,16 @@ STAGE6B_ARTIFACT_DEFINITIONS = {
         "path": "annotated_video.mp4",
         "format": "mp4",
         "required": False,
-        "planned": True,
     },
     "keyframes": {
         "path": "keyframes/",
         "format": "directory",
         "required": False,
-        "planned": True,
+    },
+    "keyframes_index": {
+        "path": "keyframes/index.json",
+        "format": "json",
+        "required": False,
     },
 }
 
@@ -268,6 +278,7 @@ class TrafficArtifactWriter:
                 run_dir=run_dir,
                 key=key,
                 definition=definition,
+                metadata=metadata,
                 assume_available=(
                     assume_stage6b_files and key in {"manifest", "artifact_index"}
                 ),
@@ -294,7 +305,13 @@ class TrafficArtifactWriter:
             str(key): str(value["path"])
             for key, value in artifacts.items()
             if isinstance(value, Mapping)
-            and value.get("status") in {"available", "empty", "planned"}
+            and (
+                value.get("status") in {"available", "empty", "planned"}
+                or (
+                    key in VISUAL_ARTIFACTS
+                    and value.get("status") in {"missing_source_video", "error"}
+                )
+            )
             and value.get("path")
         }
         return {
@@ -622,6 +639,40 @@ class TrafficArtifactWriter:
         return self.write_run_manifest(
             run_id,
             status=str(metadata.get("status") or "completed"),
+        )
+
+    def write_visual_artifacts(self, run_id: str) -> dict[str, Any]:
+        from app.analysis.visual_artifacts import build_visual_artifacts
+
+        _validate_run_id(run_id)
+        metadata = self.read_metadata(run_id)
+        run_dir = self.base_dir / run_id
+        visual_summary = build_visual_artifacts(
+            run_id=run_id,
+            run_dir=run_dir,
+            metadata=metadata,
+        )
+        artifact_updates = {
+            key: path
+            for key, path in VISUAL_ARTIFACTS.items()
+            if key != "annotated_video"
+            or visual_summary["annotated_video"]["status"] == "available"
+        }
+        self._merge_metadata_artifacts(
+            run_id,
+            artifact_updates,
+            metadata_updates={
+                "visual_artifacts": visual_summary,
+                "keyframes_count": visual_summary["keyframes"]["record_count"],
+                "annotated_video_status": visual_summary["annotated_video"][
+                    "status"
+                ],
+            },
+        )
+        metadata_after = self.read_metadata(run_id)
+        return self.write_run_manifest(
+            run_id,
+            status=str(metadata_after.get("status") or "completed"),
         )
 
     def artifact_index(self, run_id: str) -> dict[str, str]:
@@ -1059,6 +1110,7 @@ def _build_manifest_artifact(
     run_dir: Path,
     key: str,
     definition: Mapping[str, Any],
+    metadata: Mapping[str, Any],
     assume_available: bool = False,
 ) -> dict[str, Any]:
     relative_path = str(definition["path"])
@@ -1066,6 +1118,16 @@ def _build_manifest_artifact(
     artifact_format = str(definition["format"])
     required = bool(definition["required"])
     planned = bool(definition.get("planned", False))
+    status_override = _visual_artifact_status(metadata, key)
+
+    if status_override is not None:
+        return {
+            "status": status_override["status"],
+            "path": relative_path,
+            "format": artifact_format,
+            "record_count": status_override["record_count"],
+            "required": required,
+        }
 
     try:
         record_count = (
@@ -1120,10 +1182,20 @@ def _artifact_record_count(
             return _stage6_flow_counts_record_count(payload)
         if key == "zone_statistics":
             return _stage6_zone_statistics_record_count(payload)
+        if key == "keyframes_index":
+            items = payload.get("items") if isinstance(payload, Mapping) else None
+            return len(items) if isinstance(items, list) else 1
         return 1
     if artifact_format == "directory":
         if not path.is_dir():
             return 0
+        if key == "keyframes":
+            index_path = path / "index.json"
+            if index_path.is_file():
+                with index_path.open(encoding="utf-8") as file:
+                    payload = json.load(file)
+                items = payload.get("items") if isinstance(payload, Mapping) else None
+                return len(items) if isinstance(items, list) else 0
         return sum(1 for item in path.rglob("*") if item.is_file())
     if path.is_file():
         return 1 if path.stat().st_size > 0 else 0
@@ -1151,6 +1223,22 @@ def _stage6_zone_statistics_record_count(payload: Any) -> int:
     if isinstance(congestion_events, list):
         count += len(congestion_events)
     return count
+
+
+def _visual_artifact_status(
+    metadata: Mapping[str, Any],
+    key: str,
+) -> dict[str, Any] | None:
+    visual_artifacts = metadata.get("visual_artifacts")
+    if not isinstance(visual_artifacts, Mapping):
+        return None
+    value = visual_artifacts.get(key)
+    if not isinstance(value, Mapping) or not value.get("status"):
+        return None
+    return {
+        "status": str(value["status"]),
+        "record_count": int(value.get("record_count") or 0),
+    }
 
 
 def _logical_result_dir(run_id: str, metadata: Mapping[str, Any]) -> str:
