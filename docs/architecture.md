@@ -126,7 +126,10 @@ repeated zone-level events.
 
 ## Query Layer
 
-The current Traffic Analysis Center is primarily artifact-based run result query. It reads local files under `results/traffic_analysis/<run_id>/` and exposes detection, tracking, trajectory, event, and alert outputs through FastAPI.
+The current Traffic Analysis Center is primarily artifact-based run result
+query. It reads local files under `results/traffic_analysis/<run_id>/` and
+exposes detection, tracking, trajectory, event, traffic statistics, and alert
+outputs through FastAPI.
 
 This partially overlaps with the execution manual's Stage 6 Traffic Analysis
 Center, but it is not a complete database-backed result center.
@@ -138,10 +141,15 @@ Implemented artifact query endpoints include:
 - `GET /api/analysis-runs/{run_id}/tracks`
 - `GET /api/analysis-runs/{run_id}/trajectory-points`
 - `GET /api/analysis-runs/{run_id}/events`
+- `GET /api/analysis-runs/{run_id}/flow-counts`
+- `GET /api/analysis-runs/{run_id}/zone-statistics`
 - `POST /api/analysis-runs/{run_id}/alerts/generate`
 - `GET /api/analysis-runs/{run_id}/alerts`
 
-Stage 6B manifest/index support is still artifact-backed. The current database layer is not a complete production implementation. Local artifacts are the source of truth for trajectory, event, and alert results at this stage.
+Stage 6B manifest/index support and Stage 6C statistics support are still
+artifact-backed. The current database layer is not a complete production
+implementation. Local artifacts are the source of truth for trajectory, event,
+traffic statistics, and alert results at this stage.
 
 ## Frontend Components
 
@@ -167,12 +175,9 @@ Current limitations:
 - no video overlay
 - no complete Traffic Analysis Center
 - no DB-backed result index
-- no `flow_counts` or `zone_statistics` output generation
-- no `/api/analysis-runs/{run_id}/flow-counts`
-- no `/api/analysis-runs/{run_id}/zone-statistics`
 - no frontend flow statistics view
 - no frontend congestion chart
-- no database-backed zone statistics persistence
+- no database-backed flow or zone statistics persistence
 - no real-world speed / direction calibration
 - no formal traffic enforcement conclusion
 

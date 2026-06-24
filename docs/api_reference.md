@@ -66,16 +66,17 @@ Stage four response fields include:
 `avg_speed_px_per_second` is a pixel-level speed estimate derived from timestamp or fps. It is not real-world speed in m/s or km/h.
 
 For `mode=detection_tracking_trajectory`, the process API now runs EventService
-after trajectory artifacts are written, then runs AlertService after event
-artifacts are written. If `event_rules` / `zones` are omitted, the process still
-writes stable empty event and alert artifacts. The process response keeps the
-existing summary shape; full event and alert details are queried from
-analysis-runs endpoints.
+after trajectory artifacts are written, writes Stage 6C traffic statistics
+artifacts after event artifacts, then runs AlertService. If `event_rules` /
+`zones` are omitted, the process still writes stable empty event, statistics,
+and alert artifacts. The process response keeps the existing summary shape; full
+event, statistics, and alert details are queried from analysis-runs endpoints.
 
 Manual alignment note:
 
 - Stage 5 is implemented as an artifact-based / in-memory MVP.
-- Event and alert endpoints documented below are artifact-based MVP endpoints.
+- Event, traffic statistics, and alert endpoints documented below are
+  artifact-based MVP endpoints.
 - They are not a database-backed final Traffic Analysis Center implementation.
 
 ## Zone / Event Rule Config
@@ -117,6 +118,8 @@ Supported `event_type` values:
 - `GET /api/analysis-runs/{run_id}/tracks?limit=100`
 - `GET /api/analysis-runs/{run_id}/trajectory-points?limit=100`
 - `GET /api/analysis-runs/{run_id}/events?limit=100`
+- `GET /api/analysis-runs/{run_id}/flow-counts`
+- `GET /api/analysis-runs/{run_id}/zone-statistics`
 - `POST /api/analysis-runs/{run_id}/alerts/generate`
 - `GET /api/analysis-runs/{run_id}/alerts?limit=100`
 - `GET /api/alerts`
@@ -129,7 +132,7 @@ Supported `event_type` values:
 
 `GET /api/analysis-runs/{run_id}/manifest`
 
-This endpoint returns the Stage 6B run artifact manifest. It reads or builds
+This endpoint returns the Stage 6B/6C run artifact manifest. It reads or builds
 `manifest.json` from the local run directory and writes `artifact_index.json`
 when the index is missing. It is artifact-backed and does not use a database.
 
@@ -153,10 +156,10 @@ Response shape:
       "required": true
     },
     "flow_counts": {
-      "status": "planned",
+      "status": "available",
       "path": "flow_counts.json",
       "format": "json",
-      "record_count": 0,
+      "record_count": 8,
       "required": false
     }
   }
@@ -167,7 +170,7 @@ Artifact status values:
 
 - `available`: file or non-empty directory exists and can be read.
 - `missing`: Stage 6B core artifact is expected but not present.
-- `planned`: later-stage artifact reserved by contract, such as `flow_counts.json`, `zone_statistics.json`, `evaluation_summary.json`, `annotated_video.mp4`, or `keyframes/`.
+- `planned`: later-stage artifact reserved by contract, such as `evaluation_summary.json`, `annotated_video.mp4`, or `keyframes/`. Older runs without generated Stage 6C statistics may still show `flow_counts.json` or `zone_statistics.json` as planned until those artifacts are generated.
 - `empty`: artifact exists and is readable, but has zero records.
 - `error`: artifact status or count could not be read.
 
@@ -175,7 +178,7 @@ Behavior:
 
 - Missing run returns 404.
 - Paths are relative to the run directory.
-- The endpoint does not generate flow counts, zone statistics, keyframes, annotated video, evaluation results, or database rows.
+- The endpoint does not generate keyframes, annotated video, evaluation results, or database rows.
 
 ### Trajectory Points
 
@@ -245,6 +248,96 @@ Behavior:
 - `limit=0` returns `summary` with empty `events`, `event_evidence`, and `rule_executions`.
 - The response does not expose local absolute paths.
 - Current implemented rule callbacks are `danger_zone_intrusion`, `pedestrian_in_vehicle_lane`, `illegal_parking`, `wrong_way_driving`, `flow_counting`, and `congestion`.
+
+### Flow Counts
+
+`GET /api/analysis-runs/{run_id}/flow-counts`
+
+This endpoint returns the Stage 6C artifact-backed `flow_counts.json` payload.
+If the run exists but the statistics file is missing, the service builds it
+from local `events.jsonl` and `event_evidence.jsonl` artifacts. A run with no
+`flow_counting` events returns a valid empty artifact.
+
+Response shape:
+
+```json
+{
+  "schema_version": "stage6.flow_counts.v1",
+  "run_id": "run_xxx",
+  "video_id": "video_xxx",
+  "window_ms": 60000,
+  "source_artifacts": {
+    "events": "events.jsonl",
+    "event_evidence": "event_evidence.jsonl",
+    "rule_executions": "rule_executions.jsonl"
+  },
+  "summary": {
+    "total_count": 0,
+    "vehicle_count": 0,
+    "person_count": 0,
+    "by_class": {},
+    "by_zone": {},
+    "by_line": {},
+    "by_direction": {}
+  },
+  "windows": [],
+  "records": []
+}
+```
+
+Behavior:
+
+- Missing run returns 404.
+- Existing run without `flow_counting` events returns an empty artifact.
+- Direction values are normalized to `in`, `out`, or `unknown`.
+- This is not a frontend chart, database aggregate, or real-world calibrated
+  traffic volume system.
+
+### Zone Statistics
+
+`GET /api/analysis-runs/{run_id}/zone-statistics`
+
+This endpoint returns the Stage 6C artifact-backed `zone_statistics.json`
+payload. If the run exists but the statistics file is missing, the service
+builds it from local `trajectory_points.jsonl`, `events.jsonl`, and
+`event_evidence.jsonl` artifacts. It only aggregates explicit zone information
+already present in trajectory points and congestion evidence; it does not infer
+new zone membership from geometry at query time.
+
+Response shape:
+
+```json
+{
+  "schema_version": "stage6.zone_statistics.v1",
+  "run_id": "run_xxx",
+  "video_id": "video_xxx",
+  "window_ms": 60000,
+  "source_artifacts": {
+    "trajectory_points": "trajectory_points.jsonl",
+    "events": "events.jsonl",
+    "event_evidence": "event_evidence.jsonl"
+  },
+  "summary": {
+    "zone_count": 0,
+    "total_windows": 0,
+    "vehicle_count": 0,
+    "person_count": 0,
+    "max_vehicle_count": 0,
+    "min_avg_speed_px_per_frame": null,
+    "congestion_event_count": 0
+  },
+  "windows": [],
+  "congestion_events": []
+}
+```
+
+Behavior:
+
+- Missing run returns 404.
+- Existing run without zone data returns an empty artifact.
+- Congestion rule evidence is preserved as `congestion_events`.
+- This is not a frontend congestion chart, database persistence layer, or
+  real-world congestion calibration system.
 
 ### Alert Generation
 
@@ -363,9 +456,8 @@ implemented as working behavior yet:
 
 - `PATCH /api/events/{event_id}/status`
 - standalone `/api/events` full query
-- `/api/analysis-runs/{run_id}/flow-counts`
-- `/api/analysis-runs/{run_id}/zone-statistics`
-- `zone_statistics.json` generation and aggregate zone statistics APIs
+- advanced filtering on flow counts and zone statistics
+- database-backed aggregate statistics APIs
 - full Review / Bad Case / Evaluation APIs
 
 ## Placeholders For Later Phases

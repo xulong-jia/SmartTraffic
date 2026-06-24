@@ -81,7 +81,7 @@ class EventService:
                 "alerts_count": 0,
             },
         )
-        writer.write_run_manifest(run_id, status="completed")
+        writer.write_statistics_outputs(run_id)
         event_summary = _read_json(artifact_paths["event_summary"])
         metadata_after = writer.read_metadata(run_id)
 

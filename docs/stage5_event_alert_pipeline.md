@@ -240,10 +240,8 @@ Evidence fields:
 
 Limitations:
 
-- no `flow_counts.json`
-- no `/api/analysis-runs/{run_id}/flow-counts` API
-- no aggregate in/out counts
-- no count-per-minute output
+- Stage 5 itself does not aggregate flow-count statistics; Stage 6C now
+  generates artifact-backed `flow_counts.json` from `flow_counting` events
 - no frontend statistics chart
 - no persistent counting line config
 - no real-world flow calibration
@@ -299,9 +297,9 @@ Evidence fields:
 
 Limitations:
 
-- no `zone_statistics.json`
-- no `/api/analysis-runs/{run_id}/zone-statistics` API
-- no aggregate zone statistics history
+- Stage 5 itself does not own the zone-statistics artifact; Stage 6C now
+  generates artifact-backed `zone_statistics.json` from explicit zone data and
+  congestion evidence
 - no frontend congestion chart
 - no database-backed zone statistics persistence
 - no real-world congestion calibration
@@ -488,12 +486,9 @@ The full backend test suite has passed for this milestone, and frontend `npm run
 
 Current known limitations:
 
-- `flow_counts.json` is not generated
-- `/api/analysis-runs/{run_id}/flow-counts` is not implemented
-- aggregate flow statistics and frontend flow charts are not implemented
-- `zone_statistics.json` is not generated
-- `/api/analysis-runs/{run_id}/zone-statistics` is not implemented
-- aggregate zone statistics history and frontend congestion charts are not implemented
+- frontend flow statistics charts are not implemented
+- frontend congestion charts are not implemented
+- database-backed long-term flow / zone statistics history is not implemented
 - Review Center is not implemented
 - Bad Case Center is not implemented
 - Evaluation Center is not implemented

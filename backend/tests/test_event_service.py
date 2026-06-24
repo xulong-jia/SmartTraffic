@@ -24,6 +24,8 @@ def test_event_service_writes_empty_outputs_for_empty_rules(tmp_path: Path) -> N
     assert _read_jsonl(run_dir / "event_evidence.jsonl") == []
     assert _read_jsonl(run_dir / "rule_executions.jsonl") == []
     assert json.loads((run_dir / "event_summary.json").read_text())["total_events"] == 0
+    assert json.loads((run_dir / "flow_counts.json").read_text())["records"] == []
+    assert json.loads((run_dir / "zone_statistics.json").read_text())["windows"] == []
 
 
 def test_event_service_generates_events_with_rules_and_zones(tmp_path: Path) -> None:

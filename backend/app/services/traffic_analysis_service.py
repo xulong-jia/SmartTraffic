@@ -305,6 +305,22 @@ class TrafficAnalysisService:
             "event_type": event_type,
         }
 
+    def read_run_flow_counts(self, run_id: str) -> dict[str, Any]:
+        run_dir = self._ensure_statistics_artifacts(run_id)
+        flow_counts_path = run_dir / "flow_counts.json"
+        if not flow_counts_path.is_file():
+            raise FileNotFoundError("flow counts artifact not found")
+        with flow_counts_path.open(encoding="utf-8") as file:
+            return json.load(file)
+
+    def read_run_zone_statistics(self, run_id: str) -> dict[str, Any]:
+        run_dir = self._ensure_statistics_artifacts(run_id)
+        zone_statistics_path = run_dir / "zone_statistics.json"
+        if not zone_statistics_path.is_file():
+            raise FileNotFoundError("zone statistics artifact not found")
+        with zone_statistics_path.open(encoding="utf-8") as file:
+            return json.load(file)
+
     def read_run_manifest(self, run_id: str) -> dict[str, Any]:
         metadata = self._load_metadata(run_id)
         writer = TrafficArtifactWriter(self._run_dir(run_id).parent)
@@ -327,6 +343,21 @@ class TrafficAnalysisService:
             raise KeyError(run_id)
         with metadata_path.open(encoding="utf-8") as file:
             return json.load(file)
+
+    def _ensure_statistics_artifacts(self, run_id: str) -> Path:
+        metadata = self._load_metadata(run_id)
+        run_dir = self._run_dir(run_id)
+        writer = TrafficArtifactWriter(run_dir.parent)
+        if not (run_dir / "flow_counts.json").is_file() or not (
+            run_dir / "zone_statistics.json"
+        ).is_file():
+            writer.write_statistics_outputs(run_id)
+        else:
+            writer.write_run_manifest(
+                run_id,
+                status=str(metadata.get("status") or "completed"),
+            )
+        return run_dir
 
 
 traffic_analysis_service = TrafficAnalysisService()

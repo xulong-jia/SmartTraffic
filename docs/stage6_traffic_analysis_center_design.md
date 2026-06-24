@@ -1,6 +1,6 @@
 # Stage 6 Traffic Analysis Center 设计文档
 
-本文档最初是 Stage 6A 的只读审计与设计准备文档。Stage 6B 已在 artifact-based / in-memory MVP 范围内实现 run manifest 与 artifact index 加固；本文档继续记录 Stage 6 的目标边界和后续子阶段。
+本文档最初是 Stage 6A 的只读审计与设计准备文档。Stage 6B 已在 artifact-based / in-memory MVP 范围内实现 run manifest 与 artifact index 加固；Stage 6C 已实现 artifact-backed `flow_counts.json` 和 `zone_statistics.json` MVP；本文档继续记录 Stage 6 的目标边界和后续子阶段。
 
 ## 1. 阶段目标
 
@@ -51,8 +51,10 @@ Stage 6 的设计重点是结果管理和读取契约，不把 Stage 5 已有事
 - `TrafficAnalysisService` 已支持读取 detections、tracks、trajectory points、events、alerts。
 - Stage 6B 已新增 `manifest.json`、`artifact_index.json`、metadata `artifact_summary` / `manifest_path` / `artifact_index_path`。
 - Stage 6B 已新增 `GET /api/analysis-runs/{run_id}/manifest`。
-- `backend/app/api/analysis_runs.py` 已有 `GET /api/analysis-runs`、`GET /api/analysis-runs/{run_id}`、manifest、detections、tracks、trajectory-points、events、alerts 查询 API。
-- `frontend/src/api/analysisRuns.ts` 已有对应 API client。
+- Stage 6C 已新增 `flow_counts.json`、`zone_statistics.json` 生成与读取。
+- Stage 6C 已新增 `GET /api/analysis-runs/{run_id}/flow-counts` 和 `GET /api/analysis-runs/{run_id}/zone-statistics`。
+- `backend/app/api/analysis_runs.py` 已有 `GET /api/analysis-runs`、`GET /api/analysis-runs/{run_id}`、manifest、detections、tracks、trajectory-points、events、flow-counts、zone-statistics、alerts 查询 API。
+- `frontend/src/api/analysisRuns.ts` 已有 detections / tracks / trajectory / events / alerts API client；flow / zone statistics 前端接入留到 Stage 6E。
 - `frontend/src/pages/AnalysisDetailPage.tsx` 已能读取并显示 detections、tracks、trajectory、events、alerts 的基础数据。
 
 当前已真实生成和读取的产物如下：
@@ -69,13 +71,15 @@ Stage 6 的设计重点是结果管理和读取契约，不把 Stage 5 已有事
 | `events.jsonl` | 是 | `write_event_outputs()` | event / stage5 pipeline 测试 | `/events` | Analysis Detail | 已有，Stage 6B 统一 manifest |
 | `event_evidence.jsonl` | 是 | `write_event_outputs()` | event / stage5 pipeline 测试 | `/events` | Analysis Detail | 已有，Stage 6B 统一 manifest |
 | `rule_executions.jsonl` | 是 | `write_event_outputs()` | event / rule execution 测试 | `/events` | Analysis Detail | 已有，Stage 6B 统一 manifest |
+| `flow_counts.json` | 是 | `write_statistics_outputs()` | Stage 6C statistics 测试 | `/flow-counts` | 未接入图表 | Stage 6C |
+| `zone_statistics.json` | 是 | `write_statistics_outputs()` | Stage 6C statistics 测试 | `/zone-statistics` | 未接入图表 | Stage 6C |
 | `alerts.jsonl` | 是 | `write_alert_outputs()` | alert / stage5 pipeline 测试 | `/alerts` | Analysis Detail | 已有，Stage 6B 统一 manifest |
 
 ### 3.2 部分能力
 
-当前已有 Stage 6B manifest / artifact index 的 artifact-backed MVP。
+当前已有 Stage 6B manifest / artifact index 与 Stage 6C traffic statistics 的 artifact-backed MVP。
 
-- `TrafficArtifactWriter.CORE_ARTIFACTS` 预留了 detections、tracks、trajectory、events、alerts、`flow_counts.json`、`zone_statistics.json`、`evaluation_summary.json`、`annotated_video.mp4`、`keyframes/` 等候选产物名。
+- `TrafficArtifactWriter.CORE_ARTIFACTS` 包含 detections、tracks、trajectory、events、alerts、`flow_counts.json`、`zone_statistics.json`、`evaluation_summary.json`、`annotated_video.mp4`、`keyframes/` 等候选产物名。
 - `TrafficArtifactWriter.artifact_index(run_id)` 只返回实际存在的文件或非空目录，因此候选产物不等于真实生成产物。
 - `manifest.json` 使用 `schema_version=stage6b.v1`，按 artifact key 标注 `available`、`missing`、`planned`、`empty`、`error`。
 - `artifact_index.json` 提供标准 artifact key 到相对路径的快速索引。
@@ -89,15 +93,12 @@ Stage 6 的设计重点是结果管理和读取契约，不把 Stage 5 已有事
 
 当前未实现：
 
-- `flow_counts.json` 生成。
-- `zone_statistics.json` 生成。
 - `evaluation_summary.json` 生成。
 - `annotated_video.mp4` final pipeline。
 - keyframe snapshot 生成。
 - `traffic_analysis_runs` 数据库表或 ORM model。
 - DB-backed result index。
-- `/api/analysis-runs/{run_id}/flow-counts`。
-- `/api/analysis-runs/{run_id}/zone-statistics`。
+- flow / zone statistics 前端图表。
 - Dashboard 真实 run 指标读取。
 - Review Center、Bad Case Center、Evaluation Center。
 
@@ -107,7 +108,7 @@ Stage 6 的设计重点是结果管理和读取契约，不把 Stage 5 已有事
 - `CORE_ARTIFACTS` 预留了尚未生成的产物名，若调用方直接读取 `metadata["artifacts"]` 而不校验文件存在，可能误判 Stage 6 产物已完成。
 - `list_runs()` 当前只返回进程内 registry，不会扫描历史 run 目录；服务重启后只有按 `run_id` 查询时才会回读 metadata。
 - `keyframes/` 目录虽然被创建，但没有 snapshot 生成和事件关联契约，不能视为 keyframe 能力完成。
-- Stage 5 的 `flow_counting` 和 `congestion` 已经是规则层能力，但它们不是 Stage 6 的聚合统计文件。
+- Stage 5 的 `flow_counting` 和 `congestion` 是规则层能力；Stage 6C 只消费它们的 artifacts 生成本地统计文件，不应被表述为数据库统计中心或前端统计图表完成。
 - 真实数据库层还未建立，不能把当前 artifact-based / in-memory MVP 表述为 database final version。
 
 ## 4. Stage 6 总体设计
@@ -331,60 +332,67 @@ Stage 6A 不实现任何产物。后续 Stage 6B/6C/6F 仍应暂不实现：
 
 `flow_counts.json` 是 Stage 6 的聚合统计产物。它关注按 line、zone、class、direction、time window 汇总计数。
 
-当前不能把 Stage 5 的 `flow_counting` event 等同于 Stage 6 流量统计中心完成。
+Stage 6C 已基于 Stage 5 的 `flow_counting` event / evidence 生成 artifact-backed `flow_counts.json`。这仍只是本地 artifact MVP，不等同于数据库统计中心、前端流量图表或真实世界流量标定完成。
 
 ### 8.2 数据结构
 
-建议结构：
+当前 Stage 6C 结构：
 
 ```json
 {
+  "schema_version": "stage6.flow_counts.v1",
   "run_id": "run_abc123",
   "video_id": "video_001",
-  "schema_version": "stage6.flow_counts.v1",
-  "time_unit": "ms",
+  "window_ms": 60000,
+  "source_artifacts": {
+    "events": "events.jsonl",
+    "event_evidence": "event_evidence.jsonl",
+    "rule_executions": "rule_executions.jsonl"
+  },
   "windows": [
     {
-      "window_start_ms": 0,
-      "window_end_ms": 60000,
-      "line_id": "line_northbound",
-      "zone_id": null,
+      "time_window_start_ms": 0,
+      "time_window_end_ms": 60000,
+      "zone_id": "zone_entry",
+      "counting_line_id": "line_northbound",
       "class_name": "car",
-      "direction": "positive",
-      "count": 12,
-      "unique_track_ids": [1, 2, 3]
+      "direction": "in",
+      "in_count": 12,
+      "out_count": 0,
+      "unknown_direction_count": 0,
+      "total_count": 12,
+      "track_ids": [1, 2, 3],
+      "event_ids": ["event_1"]
     }
   ],
+  "records": [],
   "summary": {
     "total_count": 12,
+    "vehicle_count": 12,
+    "person_count": 0,
     "by_class": {"car": 12},
-    "by_direction": {"positive": 12}
+    "by_zone": {"zone_entry": 12},
+    "by_line": {"line_northbound": 12},
+    "by_direction": {"in": 12}
   }
 }
 ```
 
 ### 8.3 生成时机
 
-Stage 6C 生成，输入建议使用：
+Stage 6C 已生成，输入使用：
 
-- `trajectory_points.jsonl`
-- event rules 中的 counting line 配置
-- zones / lines 配置快照
-- 可选的 `events.jsonl` 中 `flow_counting` event 作为校验或辅助来源
+- `events.jsonl` 中的 `flow_counting` event。
+- `event_evidence.jsonl` 中 `evidence_type=line_crossing` 的 evidence。
+- `rule_executions.jsonl` 作为 source artifact 引用。
 
 ### 8.4 API 读取方式
 
-建议新增：
+已新增：
 
 - `GET /api/analysis-runs/{run_id}/flow-counts`
 
-查询参数建议：
-
-- `line_id`
-- `zone_id`
-- `class_name`
-- `direction`
-- `window_ms`
+当前 API 返回完整 artifact payload，尚未实现 query filter。
 
 ### 8.5 当前不做的内容
 
@@ -404,63 +412,61 @@ Stage 6C 生成，输入建议使用：
 
 `zone_statistics.json` 是 Stage 6 的区域统计产物。它应保存 frame / window 级别的 `vehicle_count`、`person_count`、`avg_speed`、`occupancy` 等统计。
 
-当前不能把 `congestion` event evidence 等同于 Stage 6 zone statistics analytics 完成。
+Stage 6C 已基于 explicit trajectory zone data 和 congestion evidence 生成 artifact-backed `zone_statistics.json`。这仍只是本地 artifact MVP，不等同于数据库区域统计中心、前端拥堵图表或真实世界拥堵标定完成。
 
 ### 9.2 数据结构
 
-建议结构：
+当前 Stage 6C 结构：
 
 ```json
 {
+  "schema_version": "stage6.zone_statistics.v1",
   "run_id": "run_abc123",
   "video_id": "video_001",
-  "schema_version": "stage6.zone_statistics.v1",
-  "speed_unit": "px_per_second",
-  "zones": [
+  "window_ms": 60000,
+  "source_artifacts": {
+    "trajectory_points": "trajectory_points.jsonl",
+    "events": "events.jsonl",
+    "event_evidence": "event_evidence.jsonl"
+  },
+  "windows": [
     {
       "zone_id": "intersection_core",
-      "zone_type": "traffic_zone",
-      "windows": [
-        {
-          "window_start_ms": 0,
-          "window_end_ms": 5000,
-          "vehicle_count": 8,
-          "person_count": 2,
-          "avg_speed_px_per_second": 12.5,
-          "occupancy": 0.42,
-          "unique_track_ids": [1, 2, 3]
-        }
-      ]
+      "time_window_start_ms": 0,
+      "time_window_end_ms": 60000,
+      "vehicle_count": 8,
+      "person_count": 2,
+      "occupancy_count": 10,
+      "avg_speed_px_per_frame": 1.25,
+      "class_counts": {"car": 8, "person": 2},
+      "track_ids": [1, 2, 3]
     }
   ],
+  "congestion_events": [],
   "summary": {
     "max_vehicle_count": 8,
-    "avg_vehicle_count": 4.5,
-    "max_occupancy": 0.42
+    "zone_count": 1,
+    "total_windows": 1,
+    "congestion_event_count": 0
   }
 }
 ```
 
 ### 9.3 生成时机
 
-Stage 6C 生成，输入建议使用：
+Stage 6C 已生成，输入使用：
 
-- `trajectory_points.jsonl`
-- zone config snapshot
-- video metadata
+- `trajectory_points.jsonl` 中已有的 `zone_ids` / `zone_id` / `zone_history`。
+- `events.jsonl` 中的 `congestion` event。
+- `event_evidence.jsonl` 中 `evidence_type=zone_statistics` 的 evidence。
 
 ### 9.4 API 读取方式
 
-建议新增：
+已新增：
 
 - `GET /api/analysis-runs/{run_id}/zone-statistics`
 
-查询参数建议：
-
-- `zone_id`
-- `window_ms`
-- `class_name`
-- `include_tracks`
+当前 API 返回完整 artifact payload，尚未实现 query filter。
 
 ### 9.5 当前不做的内容
 
@@ -662,9 +668,9 @@ Alert Center API 另已支持 query、acknowledge、resolve、ignore。Stage 6 �
 
 ### 12.8 Flow Counts API
 
-当前未实现。
+当前 Stage 6C 已实现 artifact-backed 读取。
 
-建议新增：
+已新增：
 
 - `GET /api/analysis-runs/{run_id}/flow-counts`
 
@@ -672,13 +678,13 @@ Alert Center API 另已支持 query、acknowledge、resolve、ignore。Stage 6 �
 
 - `flow_counts.json`
 
-如果缺失，应返回清晰的 404 或 manifest 状态，而不是空统计伪装成功。
+如果 run 存在但文件缺失，service 会基于现有 event / evidence artifacts 生成该文件；没有 `flow_counting` 记录时返回合法空统计。缺失 run 返回 404。
 
 ### 12.9 Zone Statistics API
 
-当前未实现。
+当前 Stage 6C 已实现 artifact-backed 读取。
 
-建议新增：
+已新增：
 
 - `GET /api/analysis-runs/{run_id}/zone-statistics`
 
@@ -686,7 +692,7 @@ Alert Center API 另已支持 query、acknowledge、resolve、ignore。Stage 6 �
 
 - `zone_statistics.json`
 
-如果缺失，应返回清晰的 404 或 manifest 状态。
+如果 run 存在但文件缺失，service 会基于现有 trajectory / event / evidence artifacts 生成该文件；没有 zone 数据时返回合法空统计。缺失 run 返回 404。
 
 ## 13. 前端页面草案
 
@@ -772,9 +778,9 @@ Flow / Zone Statistics Panel 读取：
 - `GET /api/analysis-runs/{run_id}`
 - `GET /api/analysis-runs/{run_id}/manifest`
 - detections / tracks / trajectory / events / alerts 回归。
-- `/flow-counts` 缺失时清晰 404。
-- `/zone-statistics` 缺失时清晰 404。
+- `/flow-counts` 和 `/zone-statistics` 缺失 run 时清晰 404。
 - flow / zone 产物存在时正常返回。
+- run 存在但统计产物缺失时可生成合法空或非空 artifact。
 
 ### 14.4 前端 build 测试
 
@@ -812,10 +818,10 @@ Stage 6 不应破坏已有 artifact 格式。
 
 ### 15.2 Stage 6C：flow_counts.json 与 zone_statistics.json
 
-最小范围：
+已实现范围：
 
-- 基于 `trajectory_points.jsonl` 和配置快照生成 `flow_counts.json`。
-- 基于 `trajectory_points.jsonl` 和 zones 生成 `zone_statistics.json`。
+- 基于 `flow_counting` events 和 line-crossing evidence 生成 `flow_counts.json`。
+- 基于 explicit trajectory zone data 和 congestion evidence 生成 `zone_statistics.json`。
 - 新增读取 service 和 API。
 - 只做像素坐标统计，不做真实世界标定。
 
@@ -867,7 +873,7 @@ Stage 6 不应破坏已有 artifact 格式。
 | 一次性引入数据库 | 范围过大，破坏 MVP | Stage 6 先保持 artifact-based，数据库留到后续明确阶段 |
 | keyframes / annotated video 过早实现 | 容易牵动视频渲染和存储细节 | Stage 6F 单独小步实现 |
 
-## 17. Stage 6B 完成状态与 Stage 6C 最小计划
+## 17. Stage 6B / 6C 完成状态与后续边界
 
 Stage 6B 已完成 run manifest 与 artifact index 加固：
 
@@ -879,4 +885,12 @@ Stage 6B 已完成 run manifest 与 artifact index 加固：
 
 Stage 6B 没有实现 `flow_counts.json`、`zone_statistics.json`、keyframes、annotated video、Review、Bad Case、Evaluation 或数据库 migration。
 
-Stage 6C 建议只做 `flow_counts.json` 与 `zone_statistics.json`，继续保持小步提交，不进入 Stage 6F/7/8。
+Stage 6C 已完成 artifact-backed traffic statistics MVP：
+
+1. 新增 `flow_counts.json` 和 `zone_statistics.json` 生成。
+2. 将 Stage 6C artifacts 纳入 manifest / artifact index / metadata summary。
+3. 新增 `GET /api/analysis-runs/{run_id}/flow-counts`。
+4. 新增 `GET /api/analysis-runs/{run_id}/zone-statistics`。
+5. 为 writer、manifest 状态和 API 增加后端测试。
+
+Stage 6C 没有实现 keyframes、annotated video、Review、Bad Case、Evaluation、数据库 migration、DB-backed result index、前端统计图表或真实世界速度 / 流量标定。下一步建议进入 Stage 6D：Analysis Runs API 增强和历史 run 目录扫描。

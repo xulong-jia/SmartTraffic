@@ -4,7 +4,7 @@
 
 SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engine、Event Engine、artifact-based Alert Center MVP、FastAPI、React 和本地结果产物管理的智慧交通视频分析项目。
 
-当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 已完成 artifact-based / in-memory MVP。当前阶段五包括 Zone / Event Rule 配置 API MVP、六类 Event Engine 规则、Event Evidence / Rule Execution artifacts 增强、Alert artifacts 生成、Alert Center 基础查询与状态流转。它不是数据库最终版，也不代表 Review Center、Bad Case、Evaluation Center 已完成。
+当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 已完成 artifact-based / in-memory MVP，Stage 6B/6C 已完成 artifact-based run manifest、artifact index、`flow_counts.json` 和 `zone_statistics.json` MVP。当前实现仍不是数据库最终版，也不代表 Review Center、Bad Case、Evaluation Center 已完成。
 
 当前 Alert Center MVP 支持 `new`、`acknowledged`、`resolved` 和 `ignored` 基础状态流转；这些状态写回本地 alert artifacts，不是数据库持久化生命周期管理。
 
@@ -18,15 +18,16 @@ video upload
 -> Trajectory Engine
 -> Event Engine
 -> event artifacts
+-> traffic statistics artifacts
 -> Alert Service
 -> alert artifacts
 -> run artifacts
 -> FastAPI / React display
 ```
 
-目前支持视频上传、视频元数据读取、YOLOv8 检测、deterministic dry-run 检测、DeepSORT adapter / mock tracking、多目标跟踪结果导出、Trajectory Engine 轨迹点生成、六类事件规则回调、event artifacts、alert artifacts、`run_id` 结果目录、前端最小工作台和基础 API。
+目前支持视频上传、视频元数据读取、YOLOv8 检测、deterministic dry-run 检测、DeepSORT adapter / mock tracking、多目标跟踪结果导出、Trajectory Engine 轨迹点生成、六类事件规则回调、event artifacts、traffic statistics artifacts、alert artifacts、`run_id` 结果目录、前端最小工作台和基础 API。
 
-当前 `POST /api/videos/{video_id}/process` 在 `mode=detection_tracking_trajectory` 下会先运行 detection / tracking / trajectory，然后自动调用 EventService 和 AlertService 写入 event / alert artifacts。旧请求不传 `event_rules` / `zones` 时会生成稳定的空 event / alert artifacts，不伪造事件。
+当前 `POST /api/videos/{video_id}/process` 在 `mode=detection_tracking_trajectory` 下会先运行 detection / tracking / trajectory，然后自动调用 EventService、Stage 6C traffic statistics writer 和 AlertService 写入 event / statistics / alert artifacts。旧请求不传 `event_rules` / `zones` 时会生成稳定的空 event / statistics / alert artifacts，不伪造事件。
 
 本项目当前不是正式交通执法系统，输出结果不作为正式交通执法依据。模型权重、上传视频和运行结果均作为本地资产管理，不进入 Git。
 
@@ -40,7 +41,7 @@ video upload
 - Alerts: artifact-based Alert Center MVP, alert generation, query and status transitions
 - Frontend: React, TypeScript, Vite
 - Test: pytest, Vite build
-- Storage: local videos and run artifacts, Git-ignored
+- Storage: local videos and artifact-based run results, Git-ignored
 - Deployment skeleton: Docker Compose / local development
 
 ## 目录结构
@@ -130,6 +131,8 @@ cp .env.example .env
 - Stage 3 Multi-object Tracking completed
 - Stage 4 Trajectory Engine completed
 - Stage 5 Event / Alert artifact-based MVP completed
+- Stage 6B Run manifest / artifact index completed
+- Stage 6C Traffic statistics artifacts MVP completed
 - Zone / Event Rule configuration API MVP, Event Evidence / Rule Execution artifacts, and Alert Center status workflow implemented
 
 `v0.5.0-event-alert-minimal` is an earlier minimal Event / Alert milestone tag and should not be moved to newer commits.
@@ -313,9 +316,9 @@ Event/Alert query endpoints are artifact-based MVP endpoints. They are not a ful
 
 `wrong_way_driving` 基于 `vehicle_lane` zone、`moving_angle`、`allowed_angle`、`angle_tolerance` 和 `min_speed_px_per_frame` 判断明显反向行驶。它使用 strict wrong-way 判断：`angle_diff = angle_difference(moving_angle, allowed_angle)`，并要求 `angle_diff >= 180 - angle_tolerance`。横向运动不会被误判为 wrong-way。该规则不是正式执法级方向判断，没有真实世界方向标定，也没有连续帧 wrong-way counter；`min_wrong_way_frames > 1` 当前不支持。
 
-`flow_counting` 当前是 Stage 5 EventEngine rule，不是 Stage 6 aggregate flow-counts pipeline。它通过当前点和 previous point 判断 track segment 是否穿越 `rule.parameters.line` counting line，使用 `evidence_type=line_crossing`，支持 `direction=any / positive / negative` 和 `count_once_per_track`。当前不生成 `flow_counts.json`，不提供 `/api/analysis-runs/{run_id}/flow-counts`，也不提供前端流量图表、分钟级聚合统计、持久化 counting line 配置或真实世界流量标定。
+`flow_counting` 是 Stage 5 EventEngine rule。它通过当前点和 previous point 判断 track segment 是否穿越 `rule.parameters.line` counting line，使用 `evidence_type=line_crossing`，支持 `direction=any / positive / negative` 和 `count_once_per_track`。Stage 6C 会基于生成的 `flow_counting` events / evidence 写出 artifact-based `flow_counts.json`，并提供 `GET /api/analysis-runs/{run_id}/flow-counts` 读取入口。当前仍不提供前端流量图表、持久化 counting line 配置、数据库聚合或真实世界流量标定。
 
-`congestion` 当前是 Stage 5 aggregate EventEngine rule，不是 Stage 6 zone statistics pipeline。它通过 aggregate callback 每帧按 zone 聚合车辆数量和平均像素速度，使用 `event_type=congestion`、`evidence_type=zone_statistics`、`rule_mode=aggregate` 和 `track_id=None`，基于 `vehicle_count`、`avg_speed_px_per_frame` 与 `min_congestion_frames` 生成事件。当前不生成 `zone_statistics.json`，不提供 `/api/analysis-runs/{run_id}/zone-statistics`，不提供前端拥堵图表，也不做真实世界拥堵标定或执法判断。
+`congestion` 是 Stage 5 aggregate EventEngine rule。它通过 aggregate callback 每帧按 zone 聚合车辆数量和平均像素速度，使用 `event_type=congestion`、`evidence_type=zone_statistics`、`rule_mode=aggregate` 和 `track_id=None`，基于 `vehicle_count`、`avg_speed_px_per_frame` 与 `min_congestion_frames` 生成事件。Stage 6C 会基于 trajectory zone 信息和 congestion evidence 写出 artifact-based `zone_statistics.json`，并提供 `GET /api/analysis-runs/{run_id}/zone-statistics` 读取入口。当前仍不提供前端拥堵图表、数据库区域统计持久化、真实世界拥堵标定或执法判断。
 
 对应提交：
 
@@ -348,6 +351,8 @@ bddcd93 feat: add congestion rule
 - `GET /api/analysis-runs/{run_id}/tracks`
 - `GET /api/analysis-runs/{run_id}/trajectory-points`
 - `GET /api/analysis-runs/{run_id}/events`
+- `GET /api/analysis-runs/{run_id}/flow-counts`
+- `GET /api/analysis-runs/{run_id}/zone-statistics`
 - `POST /api/analysis-runs/{run_id}/alerts/generate`
 - `GET /api/analysis-runs/{run_id}/alerts`
 - `GET /api/alerts`
@@ -377,7 +382,7 @@ bddcd93 feat: add congestion rule
 - `generate_alerts`
 - `record_not_matched`
 
-当前 process API 在 `mode=detection_tracking_trajectory` 下会自动生成 event / alert artifacts，并通过 `GET /api/analysis-runs/{run_id}/events` 与 `GET /api/analysis-runs/{run_id}/alerts` 查询。process response 仍以原有处理摘要为主，不直接展开完整 event / alert 明细。
+当前 process API 在 `mode=detection_tracking_trajectory` 下会自动生成 event / traffic statistics / alert artifacts，并通过 `GET /api/analysis-runs/{run_id}/events`、`GET /api/analysis-runs/{run_id}/flow-counts`、`GET /api/analysis-runs/{run_id}/zone-statistics` 与 `GET /api/analysis-runs/{run_id}/alerts` 查询。process response 仍以原有处理摘要为主，不直接展开完整 event / statistics / alert 明细。
 
 ## 结果产物
 
@@ -401,6 +406,8 @@ results/traffic_analysis/<run_id>/
   event_evidence.jsonl
   rule_executions.jsonl
   event_summary.json
+  flow_counts.json
+  zone_statistics.json
   alerts.jsonl
   alert_summary.json
   detection_preview.mp4   # only when requested
@@ -408,7 +415,7 @@ results/traffic_analysis/<run_id>/
   keyframes/              # directory reserved; event snapshots are not generated yet
 ```
 
-Stage 6B adds `manifest.json` and `artifact_index.json` for each run so callers can distinguish available, missing, planned, empty, and error artifact states. EventService 和 AlertService 基于上述 local artifacts 工作。当前 Traffic Analysis Center 是 artifact-based run result query，不是完整数据库结果中心。真实运行产物不提交到 Git。
+Stage 6B adds `manifest.json` and `artifact_index.json` for each run so callers can distinguish available, missing, planned, empty, and error artifact states. Stage 6C adds artifact-based `flow_counts.json` and `zone_statistics.json` plus read APIs. EventService 和 AlertService 基于上述 local artifacts 工作。当前 Traffic Analysis Center 是 artifact-based run result query，不是完整数据库结果中心。真实运行产物不提交到 Git。
 
 The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert milestone only.
 
@@ -416,11 +423,7 @@ The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert mile
 
 当前尚未实现：
 
-- `flow_counts.json`
-- `/api/analysis-runs/{run_id}/flow-counts`
 - frontend flow statistics chart
-- `zone_statistics.json`
-- `/api/analysis-runs/{run_id}/zone-statistics`
 - frontend congestion chart
 - Review Center 真实逻辑
 - Bad Case Center 真实逻辑

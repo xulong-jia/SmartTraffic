@@ -185,11 +185,12 @@ Runtime state:
 
 Limitations:
 
-- No `flow_counts.json` yet.
-- No `/api/analysis-runs/{run_id}/flow-counts` API yet.
-- No per-minute aggregate stats yet.
+- Stage 6C now consumes generated `flow_counting` events and line-crossing
+  evidence to write artifact-backed `flow_counts.json`.
+- `GET /api/analysis-runs/{run_id}/flow-counts` returns that local artifact.
 - No frontend flow chart yet.
 - No persistent counting line config yet.
+- No database-backed flow count persistence yet.
 - No real-world flow calibration.
 
 ### congestion
@@ -236,19 +237,22 @@ Evidence:
 
 Limitations:
 
-- No `zone_statistics.json` yet.
-- No `/api/analysis-runs/{run_id}/zone-statistics` API yet.
+- Stage 6C now consumes explicit trajectory zone data and congestion evidence
+  to write artifact-backed `zone_statistics.json`.
+- `GET /api/analysis-runs/{run_id}/zone-statistics` returns that local artifact.
 - No frontend congestion chart yet.
 - No database-backed zone statistics persistence yet.
 - No real-world congestion calibration.
 
 ## Not Implemented Yet
 
-`flow_counting` is implemented as a Stage 5 EventEngine event rule, but the
-manual's later aggregate flow-counting outputs remain unfinished.
+`flow_counting` is implemented as a Stage 5 EventEngine event rule. Stage 6C
+adds artifact-backed `flow_counts.json` generation and a run-scoped read API.
+The database-backed aggregate flow-counting layer remains unfinished.
 
-`congestion` is implemented as a Stage 5 EventEngine event rule, but the
-manual's later aggregate zone-statistics outputs remain unfinished.
+`congestion` is implemented as a Stage 5 EventEngine event rule. Stage 6C adds
+artifact-backed `zone_statistics.json` generation and a run-scoped read API. The
+database-backed zone-statistics layer remains unfinished.
 
 ## Process Integration Status
 
@@ -263,6 +267,7 @@ video process
   -> trajectory
   -> EventService / EventEngine
   -> event artifacts
+  -> flow_counts.json / zone_statistics.json
   -> AlertService
   -> alert artifacts
   -> artifact index
@@ -271,8 +276,11 @@ video process
 
 The process request can pass `event_rules` and `zones`. If no rules or zones are
 provided, the pipeline writes stable empty event and alert artifacts rather than
-inventing events. Generated process artifacts can be queried through
-`GET /api/analysis-runs/{run_id}/events` and
+inventing events; Stage 6C statistics artifacts are empty when their source
+records are empty. Generated process artifacts can be queried through
+`GET /api/analysis-runs/{run_id}/events`,
+`GET /api/analysis-runs/{run_id}/flow-counts`,
+`GET /api/analysis-runs/{run_id}/zone-statistics`, and
 `GET /api/analysis-runs/{run_id}/alerts`.
 
 This remains an artifact-based MVP. It is not the final database-backed Traffic
@@ -283,8 +291,8 @@ Analysis Center, and not a completed Review / Bad Case / Evaluation workflow.
 - Multi-frame confirmation for rules that require temporal confirmation.
 - Database-backed event/rule configuration.
 - DirectionLineEditor and CountingLineEditor.
-- Aggregate `flow_counts.json` and flow statistics APIs.
-- Aggregate `zone_statistics.json` and zone statistics APIs.
+- Frontend flow statistics and congestion charts.
+- Database-backed flow count and zone statistics persistence.
 - Database-backed Traffic Analysis Center result management.
 - Review / Bad Case / Evaluation workflows.
 

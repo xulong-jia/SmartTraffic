@@ -29,6 +29,11 @@ ALERT_ARTIFACTS = {
     "alert_summary": "alert_summary.json",
 }
 
+STATISTICS_ARTIFACTS = {
+    "flow_counts": "flow_counts.json",
+    "zone_statistics": "zone_statistics.json",
+}
+
 CORE_ARTIFACTS = {
     "detections": "detections.csv",
     "detections_csv": "detections.csv",
@@ -575,6 +580,50 @@ class TrafficArtifactWriter:
             "alert_summary": alert_summary,
         }
 
+    def write_statistics_outputs(
+        self,
+        run_id: str,
+        *,
+        window_ms: int = 60_000,
+    ) -> dict[str, Any]:
+        from app.analysis.statistics_artifacts import (
+            build_flow_counts_artifact,
+            build_zone_statistics_artifact,
+        )
+
+        _validate_run_id(run_id)
+        metadata = self.read_metadata(run_id)
+        run_dir = self.base_dir / run_id
+        flow_counts = build_flow_counts_artifact(
+            run_id=run_id,
+            run_dir=run_dir,
+            metadata=metadata,
+            window_ms=window_ms,
+        )
+        zone_statistics = build_zone_statistics_artifact(
+            run_id=run_id,
+            run_dir=run_dir,
+            metadata=metadata,
+            window_ms=window_ms,
+        )
+        _write_json(flow_counts, run_dir / "flow_counts.json")
+        _write_json(zone_statistics, run_dir / "zone_statistics.json")
+        self._merge_metadata_artifacts(
+            run_id,
+            STATISTICS_ARTIFACTS,
+            metadata_updates={
+                "flow_counts_count": len(flow_counts["records"]),
+                "zone_statistics_window_count": len(zone_statistics["windows"]),
+                "congestion_events_count": len(
+                    zone_statistics["congestion_events"]
+                ),
+            },
+        )
+        return self.write_run_manifest(
+            run_id,
+            status=str(metadata.get("status") or "completed"),
+        )
+
     def artifact_index(self, run_id: str) -> dict[str, str]:
         _validate_run_id(run_id)
         run_dir = self.base_dir / run_id
@@ -1020,13 +1069,15 @@ def _build_manifest_artifact(
 
     try:
         record_count = (
-            1 if assume_available else _artifact_record_count(artifact_path, artifact_format)
+            1
+            if assume_available
+            else _artifact_record_count(artifact_path, artifact_format, key=key)
         )
         exists = assume_available or artifact_path.exists()
-        if planned and record_count == 0:
+        if not exists:
+            status = "planned" if planned else "missing"
+        elif planned and record_count == 0 and key not in STATISTICS_ARTIFACTS:
             status = "planned"
-        elif not exists:
-            status = "missing"
         elif record_count == 0:
             status = "empty"
         else:
@@ -1048,7 +1099,12 @@ def _resolve_artifact_path(run_dir: Path, relative_path: str) -> Path:
     return run_dir / relative_path.rstrip("/")
 
 
-def _artifact_record_count(path: Path, artifact_format: str) -> int:
+def _artifact_record_count(
+    path: Path,
+    artifact_format: str,
+    *,
+    key: str | None = None,
+) -> int:
     if not path.exists():
         return 0
     if artifact_format == "csv":
@@ -1059,7 +1115,11 @@ def _artifact_record_count(path: Path, artifact_format: str) -> int:
             return sum(1 for line in file if line.strip())
     if artifact_format == "json":
         with path.open(encoding="utf-8") as file:
-            json.load(file)
+            payload = json.load(file)
+        if key == "flow_counts":
+            return _stage6_flow_counts_record_count(payload)
+        if key == "zone_statistics":
+            return _stage6_zone_statistics_record_count(payload)
         return 1
     if artifact_format == "directory":
         if not path.is_dir():
@@ -1068,6 +1128,29 @@ def _artifact_record_count(path: Path, artifact_format: str) -> int:
     if path.is_file():
         return 1 if path.stat().st_size > 0 else 0
     return 0
+
+
+def _stage6_flow_counts_record_count(payload: Any) -> int:
+    if not isinstance(payload, Mapping):
+        return 0
+    records = payload.get("records")
+    if isinstance(records, list):
+        return len(records)
+    windows = payload.get("windows")
+    return len(windows) if isinstance(windows, list) else 0
+
+
+def _stage6_zone_statistics_record_count(payload: Any) -> int:
+    if not isinstance(payload, Mapping):
+        return 0
+    count = 0
+    windows = payload.get("windows")
+    if isinstance(windows, list):
+        count += len(windows)
+    congestion_events = payload.get("congestion_events")
+    if isinstance(congestion_events, list):
+        count += len(congestion_events)
+    return count
 
 
 def _logical_result_dir(run_id: str, metadata: Mapping[str, Any]) -> str:

@@ -151,9 +151,11 @@ What changed:
 Still not migrated or implemented:
 
 - Old event/counting/ROI analytics runtime.
-- Full aggregate `flow_counts.json` generation and flow-counts analytics APIs.
-- Full aggregate `zone_statistics.json` generation and zone-statistics
-  analytics APIs.
+- Advanced flow-counts analytics beyond the Stage 6C artifact-backed
+  `flow_counts.json` read API.
+- Advanced zone-statistics analytics beyond the Stage 6C artifact-backed
+  `zone_statistics.json` read API.
+- Frontend flow / congestion charts and long-term database aggregates.
 - Database-backed alert lifecycle persistence and notification delivery.
 - Review, Bad Case, and Evaluation Center complete logic.
 - Real-world speed calibration.
@@ -161,4 +163,4 @@ Still not migrated or implemented:
 
 Boundary difference:
 
-SmartTraffic Event Engine and AlertService convert local trajectory and event artifacts into traffic intelligence outputs. They do not call YOLOv8 directly, do not replace the Trajectory Engine, and do not make formal enforcement decisions. The current `flow_counting` work is limited to a Stage 5 event rule; it does not represent complete Stage 6 flow-counts analytics. The current `congestion` work is also limited to a Stage 5 event rule; it does not represent complete Stage 6 zone-statistics analytics.
+SmartTraffic Event Engine and AlertService convert local trajectory and event artifacts into traffic intelligence outputs. They do not call YOLOv8 directly, do not replace the Trajectory Engine, and do not make formal enforcement decisions. Stage 6C now converts `flow_counting` and `congestion` related artifacts into local `flow_counts.json` and `zone_statistics.json` outputs, but this remains an artifact-backed MVP rather than complete database-backed traffic analytics.
