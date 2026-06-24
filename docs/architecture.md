@@ -102,7 +102,7 @@ These modules are not complete in the current project state.
 - `backend/app/trajectory`: geometry utilities, trajectory feature helpers, and `TrajectoryEngine`.
 - `backend/app/events`: event contracts, evidence helpers, rule execution helpers, `EventEngine`, dedup helpers, and rule callbacks.
 - `backend/app/alerts`: minimal alert contract helpers.
-- `backend/app/analysis`: artifact writer for run directories, metadata, detections, tracks, trajectory outputs, event outputs, and alert outputs.
+- `backend/app/analysis`: artifact writer for run directories, metadata, Stage 6B `manifest.json` / `artifact_index.json`, detections, tracks, trajectory outputs, event outputs, and alert outputs.
 
 Implemented stage-five rule callbacks:
 
@@ -133,6 +133,7 @@ Center, but it is not a complete database-backed result center.
 
 Implemented artifact query endpoints include:
 
+- `GET /api/analysis-runs/{run_id}/manifest`
 - `GET /api/analysis-runs/{run_id}/detections`
 - `GET /api/analysis-runs/{run_id}/tracks`
 - `GET /api/analysis-runs/{run_id}/trajectory-points`
@@ -140,7 +141,7 @@ Implemented artifact query endpoints include:
 - `POST /api/analysis-runs/{run_id}/alerts/generate`
 - `GET /api/analysis-runs/{run_id}/alerts`
 
-The current database layer is not a complete production implementation. Local artifacts are the source of truth for trajectory, event, and alert results at this stage.
+Stage 6B manifest/index support is still artifact-backed. The current database layer is not a complete production implementation. Local artifacts are the source of truth for trajectory, event, and alert results at this stage.
 
 ## Frontend Components
 
@@ -165,6 +166,7 @@ Current limitations:
 - no database-backed Zone / Rule / Alert persistence
 - no video overlay
 - no complete Traffic Analysis Center
+- no DB-backed result index
 - no `flow_counts` or `zone_statistics` output generation
 - no `/api/analysis-runs/{run_id}/flow-counts`
 - no `/api/analysis-runs/{run_id}/zone-statistics`

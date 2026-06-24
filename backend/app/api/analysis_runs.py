@@ -23,6 +23,17 @@ def get_analysis_run(run_id: str) -> dict:
         ) from exc
 
 
+@router.get("/{run_id}/manifest")
+def get_analysis_run_manifest(run_id: str) -> dict:
+    try:
+        return traffic_analysis_service.read_run_manifest(run_id)
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="analysis run not found",
+        ) from exc
+
+
 @router.get("/{run_id}/detections")
 def get_analysis_run_detections(
     run_id: str,

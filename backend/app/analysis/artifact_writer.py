@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Any
 
 
+STAGE6B_SCHEMA_VERSION = "stage6b.v1"
+
 TRAJECTORY_ARTIFACTS = {
     "trajectory_points": "trajectory_points.csv",
     "trajectory_points_csv": "trajectory_points.csv",
@@ -46,6 +48,129 @@ CORE_ARTIFACTS = {
     "evaluation_summary": "evaluation_summary.json",
     "annotated_video": "annotated_video.mp4",
     "keyframes": "keyframes",
+}
+
+STAGE6B_ARTIFACT_DEFINITIONS = {
+    "metadata": {
+        "path": "metadata.json",
+        "format": "json",
+        "required": True,
+    },
+    "manifest": {
+        "path": "manifest.json",
+        "format": "json",
+        "required": True,
+    },
+    "artifact_index": {
+        "path": "artifact_index.json",
+        "format": "json",
+        "required": True,
+    },
+    "detections_csv": {
+        "path": "detections.csv",
+        "format": "csv",
+        "required": True,
+    },
+    "detections_jsonl": {
+        "path": "detections.jsonl",
+        "format": "jsonl",
+        "required": False,
+    },
+    "detection_summary": {
+        "path": "detection_summary.json",
+        "format": "json",
+        "required": False,
+    },
+    "tracks_csv": {
+        "path": "tracks.csv",
+        "format": "csv",
+        "required": True,
+    },
+    "tracks_jsonl": {
+        "path": "tracks.jsonl",
+        "format": "jsonl",
+        "required": False,
+    },
+    "tracking_summary": {
+        "path": "tracking_summary.json",
+        "format": "json",
+        "required": False,
+    },
+    "trajectory_points_csv": {
+        "path": "trajectory_points.csv",
+        "format": "csv",
+        "required": True,
+    },
+    "trajectory_points_jsonl": {
+        "path": "trajectory_points.jsonl",
+        "format": "jsonl",
+        "required": False,
+    },
+    "trajectory_summary": {
+        "path": "trajectory_summary.json",
+        "format": "json",
+        "required": False,
+    },
+    "events_jsonl": {
+        "path": "events.jsonl",
+        "format": "jsonl",
+        "required": True,
+    },
+    "event_evidence_jsonl": {
+        "path": "event_evidence.jsonl",
+        "format": "jsonl",
+        "required": False,
+    },
+    "rule_executions_jsonl": {
+        "path": "rule_executions.jsonl",
+        "format": "jsonl",
+        "required": False,
+    },
+    "event_summary": {
+        "path": "event_summary.json",
+        "format": "json",
+        "required": False,
+    },
+    "alerts_jsonl": {
+        "path": "alerts.jsonl",
+        "format": "jsonl",
+        "required": True,
+    },
+    "alert_summary": {
+        "path": "alert_summary.json",
+        "format": "json",
+        "required": False,
+    },
+    "flow_counts": {
+        "path": "flow_counts.json",
+        "format": "json",
+        "required": False,
+        "planned": True,
+    },
+    "zone_statistics": {
+        "path": "zone_statistics.json",
+        "format": "json",
+        "required": False,
+        "planned": True,
+    },
+    "evaluation_summary": {
+        "path": "evaluation_summary.json",
+        "format": "json",
+        "required": False,
+        "planned": True,
+    },
+    "annotated_video": {
+        "path": "annotated_video.mp4",
+        "format": "mp4",
+        "required": False,
+        "planned": True,
+    },
+    "keyframes": {
+        "path": "keyframes/",
+        "format": "directory",
+        "required": False,
+        "planned": True,
+    },
 }
 
 TRAJECTORY_FIELDNAMES = [
@@ -120,6 +245,79 @@ class TrafficArtifactWriter:
         metadata = self.read_metadata(run_id)
         metadata.update(updates)
         return self.write_metadata(run_id, metadata)
+
+    def build_run_manifest(
+        self,
+        run_id: str,
+        *,
+        status: str | None = None,
+        assume_stage6b_files: bool = False,
+    ) -> dict[str, Any]:
+        _validate_run_id(run_id)
+        run_dir = self.base_dir / run_id
+        metadata = self.read_metadata(run_id)
+        run_status = str(status or metadata.get("status") or "completed")
+        now = _utc_now_iso()
+        artifacts = {
+            key: _build_manifest_artifact(
+                run_dir=run_dir,
+                key=key,
+                definition=definition,
+                assume_available=(
+                    assume_stage6b_files and key in {"manifest", "artifact_index"}
+                ),
+            )
+            for key, definition in STAGE6B_ARTIFACT_DEFINITIONS.items()
+        }
+        return {
+            "schema_version": STAGE6B_SCHEMA_VERSION,
+            "run_id": run_id,
+            "video_id": str(metadata.get("video_id", "")),
+            "status": run_status,
+            "created_at": str(metadata.get("created_at") or now),
+            "updated_at": now,
+            "result_dir": _logical_result_dir(run_id, metadata),
+            "artifacts": artifacts,
+        }
+
+    def build_artifact_index_payload(
+        self,
+        manifest: dict[str, Any],
+    ) -> dict[str, Any]:
+        artifacts = manifest.get("artifacts", {})
+        indexed = {
+            str(key): str(value["path"])
+            for key, value in artifacts.items()
+            if isinstance(value, Mapping)
+            and value.get("status") in {"available", "empty", "planned"}
+            and value.get("path")
+        }
+        return {
+            "schema_version": STAGE6B_SCHEMA_VERSION,
+            "run_id": manifest["run_id"],
+            "video_id": manifest.get("video_id", ""),
+            "result_dir": manifest["result_dir"],
+            "artifacts": indexed,
+        }
+
+    def write_run_manifest(
+        self,
+        run_id: str,
+        *,
+        status: str | None = None,
+    ) -> dict[str, Any]:
+        _validate_run_id(run_id)
+        run_dir = self.base_dir / run_id
+        manifest = self.build_run_manifest(
+            run_id,
+            status=status,
+            assume_stage6b_files=True,
+        )
+        artifact_index = self.build_artifact_index_payload(manifest)
+        _write_json(manifest, run_dir / "manifest.json")
+        _write_json(artifact_index, run_dir / "artifact_index.json")
+        self._update_metadata_with_manifest(run_id, manifest)
+        return manifest
 
     def write_detection_outputs(
         self,
@@ -414,6 +612,39 @@ class TrafficArtifactWriter:
         if metadata_updates:
             metadata.update(metadata_updates)
         return _write_json(metadata, metadata_path)
+
+    def _update_metadata_with_manifest(
+        self,
+        run_id: str,
+        manifest: dict[str, Any],
+    ) -> Path:
+        metadata = self.read_metadata(run_id)
+        metadata["schema_version"] = STAGE6B_SCHEMA_VERSION
+        metadata.setdefault("run_id", run_id)
+        metadata.setdefault("video_id", manifest.get("video_id", ""))
+        metadata["status"] = manifest.get("status", metadata.get("status", "completed"))
+        metadata.setdefault("mode", "offline")
+        metadata.setdefault("started_at", "")
+        metadata.setdefault("finished_at", "")
+        metadata["result_dir"] = manifest["result_dir"]
+        metadata.setdefault("detector_config", {})
+        metadata.setdefault("tracker_config", {})
+        metadata.setdefault(
+            "event_config",
+            metadata.get("event_config_snapshot", {}),
+        )
+        metadata["manifest_path"] = "manifest.json"
+        metadata["artifact_index_path"] = "artifact_index.json"
+        metadata["artifact_summary"] = {
+            key: {
+                "status": artifact["status"],
+                "path": artifact["path"],
+                "record_count": artifact["record_count"],
+            }
+            for key, artifact in manifest["artifacts"].items()
+        }
+        metadata["updated_at"] = manifest["updated_at"]
+        return _write_json(metadata, self.base_dir / run_id / "metadata.json")
 
 
 def build_detection_summary(frame_results: list[dict[str, Any]]) -> dict[str, Any]:
@@ -772,6 +1003,80 @@ def _candidate_artifacts(run_dir: Path) -> dict[str, str]:
         if isinstance(artifacts, dict):
             return {str(name): str(path) for name, path in artifacts.items()}
     return dict(CORE_ARTIFACTS)
+
+
+def _build_manifest_artifact(
+    *,
+    run_dir: Path,
+    key: str,
+    definition: Mapping[str, Any],
+    assume_available: bool = False,
+) -> dict[str, Any]:
+    relative_path = str(definition["path"])
+    artifact_path = _resolve_artifact_path(run_dir, relative_path)
+    artifact_format = str(definition["format"])
+    required = bool(definition["required"])
+    planned = bool(definition.get("planned", False))
+
+    try:
+        record_count = (
+            1 if assume_available else _artifact_record_count(artifact_path, artifact_format)
+        )
+        exists = assume_available or artifact_path.exists()
+        if planned and record_count == 0:
+            status = "planned"
+        elif not exists:
+            status = "missing"
+        elif record_count == 0:
+            status = "empty"
+        else:
+            status = "available"
+    except (OSError, json.JSONDecodeError, csv.Error):
+        status = "error"
+        record_count = 0
+
+    return {
+        "status": status,
+        "path": relative_path,
+        "format": artifact_format,
+        "record_count": record_count,
+        "required": required,
+    }
+
+
+def _resolve_artifact_path(run_dir: Path, relative_path: str) -> Path:
+    return run_dir / relative_path.rstrip("/")
+
+
+def _artifact_record_count(path: Path, artifact_format: str) -> int:
+    if not path.exists():
+        return 0
+    if artifact_format == "csv":
+        with path.open(newline="", encoding="utf-8") as file:
+            return sum(1 for _ in csv.DictReader(file))
+    if artifact_format == "jsonl":
+        with path.open(encoding="utf-8") as file:
+            return sum(1 for line in file if line.strip())
+    if artifact_format == "json":
+        with path.open(encoding="utf-8") as file:
+            json.load(file)
+        return 1
+    if artifact_format == "directory":
+        if not path.is_dir():
+            return 0
+        return sum(1 for item in path.rglob("*") if item.is_file())
+    if path.is_file():
+        return 1 if path.stat().st_size > 0 else 0
+    return 0
+
+
+def _logical_result_dir(run_id: str, metadata: Mapping[str, Any]) -> str:
+    result_dir = metadata.get("result_dir")
+    if result_dir:
+        result_dir_path = Path(str(result_dir))
+        if not result_dir_path.is_absolute():
+            return str(result_dir)
+    return f"results/traffic_analysis/{run_id}"
 
 
 def _artifact_exists(path: Path) -> bool:

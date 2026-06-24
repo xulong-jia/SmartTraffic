@@ -3,6 +3,8 @@ import csv
 import json
 from pathlib import Path
 
+from app.analysis.artifact_writer import TrafficArtifactWriter
+
 
 class TrafficAnalysisService:
     def __init__(self) -> None:
@@ -302,6 +304,14 @@ class TrafficAnalysisService:
             "level": level,
             "event_type": event_type,
         }
+
+    def read_run_manifest(self, run_id: str) -> dict[str, Any]:
+        metadata = self._load_metadata(run_id)
+        writer = TrafficArtifactWriter(self._run_dir(run_id).parent)
+        return writer.write_run_manifest(
+            run_id,
+            status=str(metadata.get("status") or "completed"),
+        )
 
     def clear(self) -> None:
         self._runs.clear()

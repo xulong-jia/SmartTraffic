@@ -112,6 +112,7 @@ Supported `event_type` values:
 
 - `GET /api/analysis-runs`
 - `GET /api/analysis-runs/{run_id}`
+- `GET /api/analysis-runs/{run_id}/manifest`
 - `GET /api/analysis-runs/{run_id}/detections?limit=100`
 - `GET /api/analysis-runs/{run_id}/tracks?limit=100`
 - `GET /api/analysis-runs/{run_id}/trajectory-points?limit=100`
@@ -123,6 +124,58 @@ Supported `event_type` values:
 - `PATCH /api/alerts/{alert_id}/acknowledge`
 - `PATCH /api/alerts/{alert_id}/resolve`
 - `PATCH /api/alerts/{alert_id}/ignore`
+
+### Manifest
+
+`GET /api/analysis-runs/{run_id}/manifest`
+
+This endpoint returns the Stage 6B run artifact manifest. It reads or builds
+`manifest.json` from the local run directory and writes `artifact_index.json`
+when the index is missing. It is artifact-backed and does not use a database.
+
+Response shape:
+
+```json
+{
+  "schema_version": "stage6b.v1",
+  "run_id": "run_xxx",
+  "video_id": "video_xxx",
+  "status": "completed",
+  "created_at": "2026-01-01T00:00:00+00:00",
+  "updated_at": "2026-01-01T00:00:00+00:00",
+  "result_dir": "results/traffic_analysis/run_xxx",
+  "artifacts": {
+    "metadata": {
+      "status": "available",
+      "path": "metadata.json",
+      "format": "json",
+      "record_count": 1,
+      "required": true
+    },
+    "flow_counts": {
+      "status": "planned",
+      "path": "flow_counts.json",
+      "format": "json",
+      "record_count": 0,
+      "required": false
+    }
+  }
+}
+```
+
+Artifact status values:
+
+- `available`: file or non-empty directory exists and can be read.
+- `missing`: Stage 6B core artifact is expected but not present.
+- `planned`: later-stage artifact reserved by contract, such as `flow_counts.json`, `zone_statistics.json`, `evaluation_summary.json`, `annotated_video.mp4`, or `keyframes/`.
+- `empty`: artifact exists and is readable, but has zero records.
+- `error`: artifact status or count could not be read.
+
+Behavior:
+
+- Missing run returns 404.
+- Paths are relative to the run directory.
+- The endpoint does not generate flow counts, zone statistics, keyframes, annotated video, evaluation results, or database rows.
 
 ### Trajectory Points
 

@@ -44,6 +44,7 @@ class AlertService:
             video_id=video_id,
             alerts=alerts,
         )
+        writer.write_run_manifest(run_id, status="completed")
         alert_summary = _read_json(artifact_paths["alert_summary"])
         metadata_after = writer.read_metadata(run_id)
 
@@ -133,6 +134,7 @@ class AlertService:
                     video_id=str(metadata.get("video_id", updated.get("video_id", ""))),
                     alerts=alerts,
                 )
+                writer.write_run_manifest(run_id, status="completed")
                 return updated
         raise KeyError(alert_id)
 

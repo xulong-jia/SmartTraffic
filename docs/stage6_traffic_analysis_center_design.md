@@ -1,6 +1,6 @@
 # Stage 6 Traffic Analysis Center 设计文档
 
-本文档是 Stage 6A 的只读审计与设计准备文档。它描述当前代码基础、Stage 6 的目标边界、建议的数据产物和 API contract，不包含功能实现。
+本文档最初是 Stage 6A 的只读审计与设计准备文档。Stage 6B 已在 artifact-based / in-memory MVP 范围内实现 run manifest 与 artifact index 加固；本文档继续记录 Stage 6 的目标边界和后续子阶段。
 
 ## 1. 阶段目标
 
@@ -49,7 +49,9 @@ Stage 6 的设计重点是结果管理和读取契约，不把 Stage 5 已有事
 - `TrafficArtifactWriter.write_alert_outputs()` 会写入 `alerts.jsonl`、`alert_summary.json`。
 - `backend/app/services/traffic_analysis_service.py` 已有 in-memory run registry，并可从 `metadata.json` 回读 run。
 - `TrafficAnalysisService` 已支持读取 detections、tracks、trajectory points、events、alerts。
-- `backend/app/api/analysis_runs.py` 已有 `GET /api/analysis-runs`、`GET /api/analysis-runs/{run_id}`、detections、tracks、trajectory-points、events、alerts 查询 API。
+- Stage 6B 已新增 `manifest.json`、`artifact_index.json`、metadata `artifact_summary` / `manifest_path` / `artifact_index_path`。
+- Stage 6B 已新增 `GET /api/analysis-runs/{run_id}/manifest`。
+- `backend/app/api/analysis_runs.py` 已有 `GET /api/analysis-runs`、`GET /api/analysis-runs/{run_id}`、manifest、detections、tracks、trajectory-points、events、alerts 查询 API。
 - `frontend/src/api/analysisRuns.ts` 已有对应 API client。
 - `frontend/src/pages/AnalysisDetailPage.tsx` 已能读取并显示 detections、tracks、trajectory、events、alerts 的基础数据。
 
@@ -71,11 +73,13 @@ Stage 6 的设计重点是结果管理和读取契约，不把 Stage 5 已有事
 
 ### 3.2 部分能力
 
-当前已有 artifact index 的雏形，但不是完整 manifest。
+当前已有 Stage 6B manifest / artifact index 的 artifact-backed MVP。
 
 - `TrafficArtifactWriter.CORE_ARTIFACTS` 预留了 detections、tracks、trajectory、events、alerts、`flow_counts.json`、`zone_statistics.json`、`evaluation_summary.json`、`annotated_video.mp4`、`keyframes/` 等候选产物名。
 - `TrafficArtifactWriter.artifact_index(run_id)` 只返回实际存在的文件或非空目录，因此候选产物不等于真实生成产物。
-- `metadata.json` 当前会存 `artifacts`、阶段信息、部分 config snapshot 和计数信息，但字段还没有形成 Stage 6 的稳定 schema。
+- `manifest.json` 使用 `schema_version=stage6b.v1`，按 artifact key 标注 `available`、`missing`、`planned`、`empty`、`error`。
+- `artifact_index.json` 提供标准 artifact key 到相对路径的快速索引。
+- `metadata.json` 保留原有字段，并补充 `schema_version`、`status`、`result_dir`、`manifest_path`、`artifact_index_path`、`artifact_summary`。
 - `backend/app/analysis/run_index.py` 目前只有 `run_directory()` helper，不是 DB-backed result index，也不是完整运行索引服务。
 - `backend/app/models/`、`backend/app/repositories/`、`backend/app/db/` 仍是 placeholder 或基础骨架。
 - `keyframes/` 目录会被创建，但当前没有 snapshot 生成逻辑；空目录不会出现在 `artifact_index()`。
@@ -90,19 +94,16 @@ Stage 6 的设计重点是结果管理和读取契约，不把 Stage 5 已有事
 - `evaluation_summary.json` 生成。
 - `annotated_video.mp4` final pipeline。
 - keyframe snapshot 生成。
-- `artifact_index.json` 落盘。
-- `manifest.json` 落盘。
 - `traffic_analysis_runs` 数据库表或 ORM model。
 - DB-backed result index。
 - `/api/analysis-runs/{run_id}/flow-counts`。
 - `/api/analysis-runs/{run_id}/zone-statistics`。
-- `/api/analysis-runs/{run_id}/manifest` 或等价 Artifact Manifest API。
 - Dashboard 真实 run 指标读取。
 - Review Center、Bad Case Center、Evaluation Center。
 
 ### 3.4 当前风险
 
-- `metadata.json` 中的 `artifacts` 可能包含不同阶段写入的局部信息，缺少统一状态、大小、hash、生成时间和错误原因字段。
+- `metadata.json` 中的旧 `artifacts` 字段仍保留兼容，不应替代 Stage 6B `manifest.json` 作为产物状态来源。
 - `CORE_ARTIFACTS` 预留了尚未生成的产物名，若调用方直接读取 `metadata["artifacts"]` 而不校验文件存在，可能误判 Stage 6 产物已完成。
 - `list_runs()` 当前只返回进程内 registry，不会扫描历史 run 目录；服务重启后只有按 `run_id` 查询时才会回读 metadata。
 - `keyframes/` 目录虽然被创建，但没有 snapshot 生成和事件关联契约，不能视为 keyframe 能力完成。
@@ -799,13 +800,14 @@ Stage 6 不应破坏已有 artifact 格式。
 
 ### 15.1 Stage 6B：Run manifest 与 artifact index 加固
 
-最小范围：
+已实现范围：
 
 - 新增 manifest builder。
 - 生成 `manifest.json`。
 - 生成 `artifact_index.json`。
-- 加固 `metadata.json`。
+- 加固 `metadata.json`，补充 artifact summary 和 manifest/index 相对路径。
 - 新增 `/api/analysis-runs/{run_id}/manifest`。
+- 为 manifest/index builder 和 API 增加后端测试。
 - 不改检测、跟踪、轨迹、事件、告警算法。
 
 ### 15.2 Stage 6C：flow_counts.json 与 zone_statistics.json
@@ -865,15 +867,16 @@ Stage 6 不应破坏已有 artifact 格式。
 | 一次性引入数据库 | 范围过大，破坏 MVP | Stage 6 先保持 artifact-based，数据库留到后续明确阶段 |
 | keyframes / annotated video 过早实现 | 容易牵动视频渲染和存储细节 | Stage 6F 单独小步实现 |
 
-## 17. Stage 6B 最小开发计划
+## 17. Stage 6B 完成状态与 Stage 6C 最小计划
 
-Stage 6B 建议只做 run manifest 与 artifact index 加固，小步提交：
+Stage 6B 已完成 run manifest 与 artifact index 加固：
 
-1. 新增 manifest schema 和 builder，只读取 run 目录，不改变现有 pipeline 行为。
-2. 为已有产物生成 `manifest.json` 和 `artifact_index.json`。
-3. 在 `metadata.json` 中加入 `schema_version`、`manifest_path`、`artifact_index_path`、`summary`。
+1. 新增 `stage6b.v1` manifest schema 和 builder。
+2. 为 run 目录生成 `manifest.json` 和 `artifact_index.json`。
+3. 在 `metadata.json` 中加入 `schema_version`、`status`、`result_dir`、`manifest_path`、`artifact_index_path`、`artifact_summary`。
 4. 新增 `GET /api/analysis-runs/{run_id}/manifest`。
-5. 为 manifest builder 和 API 增加后端测试。
-6. 跑现有 Stage 2-5 回归测试，确认不破坏已有 artifact contracts。
+5. 为 manifest builder、artifact index、metadata summary 和 manifest API 增加后端测试。
 
-Stage 6B 不应实现 `flow_counts.json`、`zone_statistics.json`、keyframes、annotated video、Review、Bad Case、Evaluation 或数据库 migration。
+Stage 6B 没有实现 `flow_counts.json`、`zone_statistics.json`、keyframes、annotated video、Review、Bad Case、Evaluation 或数据库 migration。
+
+Stage 6C 建议只做 `flow_counts.json` 与 `zone_statistics.json`，继续保持小步提交，不进入 Stage 6F/7/8。

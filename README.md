@@ -343,6 +343,7 @@ bddcd93 feat: add congestion rule
 - `POST /api/videos/{video_id}/process`
 - `GET /api/videos/{video_id}/status`
 - `GET /api/analysis-runs/{run_id}`
+- `GET /api/analysis-runs/{run_id}/manifest`
 - `GET /api/analysis-runs/{run_id}/detections`
 - `GET /api/analysis-runs/{run_id}/tracks`
 - `GET /api/analysis-runs/{run_id}/trajectory-points`
@@ -385,6 +386,8 @@ bddcd93 feat: add congestion rule
 ```text
 results/traffic_analysis/<run_id>/
   metadata.json
+  manifest.json
+  artifact_index.json
   detections.csv
   detections.jsonl
   detection_summary.json
@@ -405,7 +408,7 @@ results/traffic_analysis/<run_id>/
   keyframes/              # directory reserved; event snapshots are not generated yet
 ```
 
-EventService 和 AlertService 基于上述 local artifacts 工作。当前 Traffic Analysis Center 是 artifact-based run result query，不是完整数据库结果中心。真实运行产物不提交到 Git。
+Stage 6B adds `manifest.json` and `artifact_index.json` for each run so callers can distinguish available, missing, planned, empty, and error artifact states. EventService 和 AlertService 基于上述 local artifacts 工作。当前 Traffic Analysis Center 是 artifact-based run result query，不是完整数据库结果中心。真实运行产物不提交到 Git。
 
 The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert milestone only.
 

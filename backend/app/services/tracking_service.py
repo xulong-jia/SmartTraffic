@@ -163,6 +163,7 @@ class TrackingService:
                 "tracking_summary": tracking_summary,
             },
         )
+        writer.write_run_manifest(effective_run_id, status="completed")
 
         return {
             "run_id": effective_run_id,

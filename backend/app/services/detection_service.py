@@ -150,6 +150,7 @@ class DetectionService:
                 "detection_summary": summary,
             },
         )
+        writer.write_run_manifest(effective_run_id, status="completed")
 
         return {
             "run_id": effective_run_id,
