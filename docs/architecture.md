@@ -55,6 +55,7 @@ Currently implemented architecture includes:
   statuses
 - artifact-backed Analysis Runs list / summary API with directory scan fallback
 - Stage 6E frontend Dashboard / Video Center / Analysis Detail real run data MVP
+- Stage 6 Traffic Analysis Center artifact-based MVP
 - minimal frontend tables in Analysis Detail and Alert Center
 
 The current implementation is useful for local validation, but it is not the
@@ -136,13 +137,13 @@ repeated zone-level events.
 
 ## Query Layer
 
-The current Traffic Analysis Center is primarily artifact-based run result
-query. It reads local files under `results/traffic_analysis/<run_id>/` and
-exposes detection, tracking, trajectory, event, traffic statistics, alert, and
-visual artifact status through FastAPI.
+The current Traffic Analysis Center is an artifact-based run result query MVP.
+It reads local files under `results/traffic_analysis/<run_id>/` and exposes
+detection, tracking, trajectory, event, traffic statistics, alert, and visual
+artifact status through FastAPI.
 
-This partially overlaps with the execution manual's Stage 6 Traffic Analysis
-Center, but it is not a complete database-backed result center.
+This satisfies the current Stage 6 MVP boundary, but it is not a complete
+database-backed result center.
 
 Implemented artifact query endpoints include:
 
@@ -195,7 +196,7 @@ Current limitations:
 - no Evaluation Center workflow
 - no database-backed Zone / Rule / Alert persistence
 - no video overlay
-- no complete Traffic Analysis Center
+- no database-backed final Traffic Analysis Center
 - no DB-backed result index
 - no frontend flow statistics chart
 - no frontend congestion chart

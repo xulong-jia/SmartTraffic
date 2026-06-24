@@ -111,6 +111,11 @@ Supported `event_type` values:
 
 ## Analysis Runs
 
+These endpoints form the Stage 6 Traffic Analysis Center artifact-based MVP
+API surface. They read local run artifacts and manifest status; they do not
+implement a database-backed final result center, Review Center, Bad Case
+Center, or Evaluation Center.
+
 - `GET /api/analysis-runs`
 - `GET /api/analysis-runs/{run_id}`
 - `GET /api/analysis-runs/{run_id}/manifest`

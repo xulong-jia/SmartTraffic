@@ -4,7 +4,7 @@
 
 SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engine、Event Engine、artifact-based Alert Center MVP、FastAPI、React 和本地结果产物管理的智慧交通视频分析项目。
 
-当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 已完成 artifact-based / in-memory MVP，Stage 6B/6C/6D/6E/6F 已完成 artifact-based run manifest、artifact index、traffic statistics artifacts、Analysis Runs list / summary API、前端真实 run 数据接入和 visual artifacts pipeline MVP。当前实现仍不是数据库最终版，也不代表完整 Dashboard、Review Center、Bad Case、Evaluation Center 已完成。
+当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 已完成 artifact-based / in-memory MVP，Stage 6 Traffic Analysis Center 已达到 artifact-based MVP 口径。Stage 6 已包含 run manifest、artifact index、metadata、traffic statistics artifacts、Analysis Runs list / summary API、前端真实 run 数据接入和 visual artifacts pipeline。当前实现仍不是数据库最终版，也不代表完整 Dashboard、Review Center、Bad Case、Evaluation Center 已完成。
 
 当前 Alert Center MVP 支持 `new`、`acknowledged`、`resolved` 和 `ignored` 基础状态流转；这些状态写回本地 alert artifacts，不是数据库持久化生命周期管理。
 
@@ -137,6 +137,8 @@ cp .env.example .env
 - Stage 6D Analysis Runs list / summary API completed
 - Stage 6E Analysis UI real run data integration MVP completed
 - Stage 6F Visual artifacts pipeline MVP completed
+- Stage 6G Stage 6 closeout audit completed
+- Stage 6 Traffic Analysis Center artifact-based MVP completed
 - Zone / Event Rule configuration API MVP, Event Evidence / Rule Execution artifacts, and Alert Center status workflow implemented
 
 `v0.5.0-event-alert-minimal` is an earlier minimal Event / Alert milestone tag and should not be moved to newer commits.
@@ -424,7 +426,7 @@ results/traffic_analysis/<run_id>/
   tracking_preview.mp4    # only when requested
 ```
 
-Stage 6B adds `manifest.json` and `artifact_index.json` for each run so callers can distinguish available, missing, planned, empty, and error artifact states. Stage 6C adds artifact-based `flow_counts.json` and `zone_statistics.json` plus read APIs. Stage 6D enhances `GET /api/analysis-runs` and `GET /api/analysis-runs/{run_id}` so they can build summaries from manifest, metadata, artifact index, in-memory registry, or directory scan fallback. Stage 6E connects Dashboard, Video Center, and Analysis Detail to those real run APIs with minimal tables and status panels. Stage 6F adds artifact-based `keyframes/index.json`, keyframe snapshots, and `annotated_video.mp4` generation with controlled manifest fallback states such as `missing_source_video` and `error`. EventService 和 AlertService 基于上述 local artifacts 工作。当前 Traffic Analysis Center 是 artifact-based run result query，不是完整数据库结果中心或 Review Center。真实运行产物不提交到 Git。
+Stage 6B adds `manifest.json` and `artifact_index.json` for each run so callers can distinguish available, missing, planned, empty, and error artifact states. Stage 6C adds artifact-based `flow_counts.json` and `zone_statistics.json` plus read APIs. Stage 6D enhances `GET /api/analysis-runs` and `GET /api/analysis-runs/{run_id}` so they can build summaries from manifest, metadata, artifact index, in-memory registry, or directory scan fallback. Stage 6E connects Dashboard, Video Center, and Analysis Detail to those real run APIs with minimal tables and status panels. Stage 6F adds artifact-based `keyframes/index.json`, keyframe snapshots, and `annotated_video.mp4` generation with controlled manifest fallback states such as `missing_source_video` and `error`. EventService 和 AlertService 基于上述 local artifacts 工作。Stage 6G 收尾审计确认当前 Traffic Analysis Center 可视为 artifact-based MVP 完成。它仍不是数据库最终版，也不是 Review Center。真实运行产物不提交到 Git。
 
 The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert milestone only.
 

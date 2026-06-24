@@ -164,3 +164,35 @@ Still not migrated or implemented:
 Boundary difference:
 
 SmartTraffic Event Engine and AlertService convert local trajectory and event artifacts into traffic intelligence outputs. They do not call YOLOv8 directly, do not replace the Trajectory Engine, and do not make formal enforcement decisions. Stage 6C now converts `flow_counting` and `congestion` related artifacts into local `flow_counts.json` and `zone_statistics.json` outputs, but this remains an artifact-backed MVP rather than complete database-backed traffic analytics.
+
+## Stage 6 Traffic Analysis Center MVP
+
+Stage six is also a SmartTraffic-native layer, not a direct migration of the old
+YOLOv8 project. It standardizes local run results under `run_id` and exposes an
+artifact-based Traffic Analysis Center MVP.
+
+What changed:
+
+- `metadata.json`, `manifest.json`, and `artifact_index.json` define the run
+  result contract.
+- `flow_counts.json` and `zone_statistics.json` are generated from local Stage 5
+  events, evidence, and trajectory artifacts.
+- Analysis Runs APIs list runs, return run summaries, and read detections,
+  tracks, trajectory points, events, alerts, flow counts, and zone statistics.
+- `keyframes/index.json`, conditional keyframe snapshots, and conditional
+  `annotated_video.mp4` are generated as visual review artifacts.
+- Dashboard, Video Center, and Analysis Detail read real run APIs with minimal
+  tables and status panels.
+
+Still not migrated or implemented:
+
+- Database-backed result index or database migrations.
+- Review Center, Bad Case Center, or Evaluation Center workflows.
+- Production permissions, realtime streams, model training, or deployment.
+- Real-world speed calibration or law-enforcement-grade conclusions.
+
+Boundary difference:
+
+The Stage 6 Traffic Analysis Center is complete at the artifact-based MVP
+boundary. It is not the final database-backed Traffic Analysis Center from the
+execution manual.
