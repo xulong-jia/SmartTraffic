@@ -1,23 +1,39 @@
 import { apiGet, apiPost } from "./client";
 import type {
-  AnalysisRun,
+  AnalysisRunListParams,
+  AnalysisRunListResponse,
   AnalysisRunDetections,
-  AnalysisRunsListResponse,
+  AnalysisRunSummary,
   AnalysisRunTracks,
   AlertsResponse,
   EventsResponse,
+  FlowCountsArtifact,
   GenerateAlertsResponse,
-  TrajectoryPointsResponse
+  TrajectoryPointsResponse,
+  ZoneStatisticsArtifact
 } from "../types";
 
-export function listAnalysisRuns(): Promise<AnalysisRun[]> {
-  return apiGet<AnalysisRun[] | AnalysisRunsListResponse>("/api/analysis-runs").then(
-    (payload) => (Array.isArray(payload) ? payload : payload.items)
+export function listAnalysisRuns(
+  params: AnalysisRunListParams = {}
+): Promise<AnalysisRunListResponse> {
+  const queryString = buildQueryString(params);
+  return apiGet<AnalysisRunSummary[] | AnalysisRunListResponse>(
+    `/api/analysis-runs${queryString}`
+  ).then((payload) =>
+    Array.isArray(payload)
+      ? { items: payload, total: payload.length, limit: payload.length, offset: 0 }
+      : payload
   );
 }
 
-export function getAnalysisRun(runId: string): Promise<AnalysisRun> {
-  return apiGet<AnalysisRun>(`/api/analysis-runs/${encodeURIComponent(runId)}`);
+export function getAnalysisRun(runId: string): Promise<AnalysisRunSummary> {
+  return apiGet<AnalysisRunSummary>(`/api/analysis-runs/${encodeURIComponent(runId)}`);
+}
+
+export function getAnalysisRunManifest(runId: string): Promise<Record<string, unknown>> {
+  return apiGet<Record<string, unknown>>(
+    `/api/analysis-runs/${encodeURIComponent(runId)}/manifest`
+  );
 }
 
 export function getAnalysisRunDetections(
@@ -38,7 +54,7 @@ export function getAnalysisRunTracks(
   );
 }
 
-export function getTrajectoryPoints(
+export function getAnalysisRunTrajectoryPoints(
   runId: string,
   options: { limit?: number; trackId?: number | null } = {}
 ): Promise<TrajectoryPointsResponse> {
@@ -53,7 +69,9 @@ export function getTrajectoryPoints(
   );
 }
 
-export function getEvents(
+export const getTrajectoryPoints = getAnalysisRunTrajectoryPoints;
+
+export function getAnalysisRunEvents(
   runId: string,
   options: { limit?: number; eventType?: string | null; trackId?: number | null } = {}
 ): Promise<EventsResponse> {
@@ -71,13 +89,15 @@ export function getEvents(
   );
 }
 
+export const getEvents = getAnalysisRunEvents;
+
 export function generateAlerts(runId: string): Promise<GenerateAlertsResponse> {
   return apiPost<GenerateAlertsResponse>(
     `/api/analysis-runs/${encodeURIComponent(runId)}/alerts/generate`
   );
 }
 
-export function getAlerts(
+export function getAnalysisRunAlerts(
   runId: string,
   options: {
     limit?: number;
@@ -101,4 +121,36 @@ export function getAlerts(
   return apiGet<AlertsResponse>(
     `/api/analysis-runs/${encodeURIComponent(runId)}/alerts?${params.toString()}`
   );
+}
+
+export const getAlerts = getAnalysisRunAlerts;
+
+export function getAnalysisRunFlowCounts(runId: string): Promise<FlowCountsArtifact> {
+  return apiGet<FlowCountsArtifact>(
+    `/api/analysis-runs/${encodeURIComponent(runId)}/flow-counts`
+  );
+}
+
+export function getAnalysisRunZoneStatistics(runId: string): Promise<ZoneStatisticsArtifact> {
+  return apiGet<ZoneStatisticsArtifact>(
+    `/api/analysis-runs/${encodeURIComponent(runId)}/zone-statistics`
+  );
+}
+
+function buildQueryString(params: AnalysisRunListParams): string {
+  const query = new URLSearchParams();
+  if (params.status) {
+    query.set("status", params.status);
+  }
+  if (params.video_id) {
+    query.set("video_id", params.video_id);
+  }
+  if (params.limit !== undefined) {
+    query.set("limit", String(params.limit));
+  }
+  if (params.offset !== undefined) {
+    query.set("offset", String(params.offset));
+  }
+  const serialized = query.toString();
+  return serialized ? `?${serialized}` : "";
 }

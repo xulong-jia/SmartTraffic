@@ -1,12 +1,24 @@
 import { useEffect, useState } from "react";
 
+import { listAnalysisRuns } from "../api/analysisRuns";
 import { listVideos, startVideoProcessing, uploadVideo } from "../api/videos";
-import type { DetectionProcessOptions, DetectionProcessResult, VideoRecord } from "../types";
+import type {
+  AnalysisRunSummary,
+  DetectionProcessOptions,
+  DetectionProcessResult,
+  VideoRecord
+} from "../types";
+import { getRunId } from "../utils/analysisRunMetrics";
 
 type ProcessMode = NonNullable<DetectionProcessOptions["mode"]>;
 
-export default function VideoCenterPage() {
+interface VideoCenterPageProps {
+  onOpenAnalysisRun?: (runId: string) => void;
+}
+
+export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPageProps) {
   const [videos, setVideos] = useState<VideoRecord[]>([]);
+  const [recentRuns, setRecentRuns] = useState<AnalysisRunSummary[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [lastRun, setLastRun] = useState<DetectionProcessResult | null>(null);
   const [processMode, setProcessMode] = useState<ProcessMode>("detection_tracking");
@@ -18,10 +30,13 @@ export default function VideoCenterPage() {
   const [dwellSpeedThreshold, setDwellSpeedThreshold] = useState(1);
   const [maxHistoryPoints, setMaxHistoryPoints] = useState("");
   const [error, setError] = useState("");
+  const [runsError, setRunsError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [runsLoading, setRunsLoading] = useState(false);
 
   useEffect(() => {
     refreshVideos();
+    refreshAnalysisRuns();
   }, []);
 
   function refreshVideos() {
@@ -68,11 +83,21 @@ export default function VideoCenterPage() {
       const result = await startVideoProcessing(videoId, options);
       setLastRun(result);
       refreshVideos();
+      refreshAnalysisRuns();
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Detection failed");
     } finally {
       setLoading(false);
     }
+  }
+
+  function refreshAnalysisRuns() {
+    setRunsLoading(true);
+    setRunsError("");
+    listAnalysisRuns({ limit: 5 })
+      .then((payload) => setRecentRuns(payload.items))
+      .catch((currentError: Error) => setRunsError(currentError.message))
+      .finally(() => setRunsLoading(false));
   }
 
   return (
@@ -230,6 +255,50 @@ export default function VideoCenterPage() {
           </table>
         )}
       </section>
+      <section className="panel">
+        <div className="section-heading-row">
+          <h3>Recent Analysis Runs</h3>
+          <button disabled={runsLoading} type="button" onClick={refreshAnalysisRuns}>
+            Refresh
+          </button>
+        </div>
+        {runsLoading ? <p className="muted">Loading analysis runs...</p> : null}
+        {runsError ? <p>{runsError}</p> : null}
+        {recentRuns.length === 0 && !runsLoading ? (
+          <p className="muted">No analysis runs found.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Run ID</th>
+                <th>Video ID</th>
+                <th>Status</th>
+                <th>Updated</th>
+                <th>Source</th>
+                {onOpenAnalysisRun ? <th>Action</th> : null}
+              </tr>
+            </thead>
+            <tbody>
+              {recentRuns.map((run) => (
+                <tr key={getRunId(run)}>
+                  <td>{getRunId(run)}</td>
+                  <td>{formatValue(run.video_id)}</td>
+                  <td>{formatValue(run.status)}</td>
+                  <td>{formatValue(run.updated_at || run.finished_at)}</td>
+                  <td>{formatValue(run.source)}</td>
+                  {onOpenAnalysisRun ? (
+                    <td>
+                      <button type="button" onClick={() => onOpenAnalysisRun(getRunId(run))}>
+                        Open
+                      </button>
+                    </td>
+                  ) : null}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
     </>
   );
 }
@@ -245,4 +314,11 @@ function parseOptionalPositiveInteger(value: string): number | null {
     return null;
   }
   return Math.max(1, parsed);
+}
+
+function formatValue(value: string | number | undefined | null): string {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+  return String(value);
 }

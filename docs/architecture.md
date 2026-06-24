@@ -28,7 +28,7 @@ video upload
   -> AlertService
   -> alert artifacts
   -> FastAPI query
-  -> React minimal dashboard
+  -> React Dashboard / Analysis Detail MVP
 ```
 
 The current process API runs EventService, the Stage 6C statistics writer, and
@@ -49,6 +49,7 @@ Currently implemented architecture includes:
 - process integration for event, traffic statistics, and alert artifact
   generation after trajectory
 - artifact-backed Analysis Runs list / summary API with directory scan fallback
+- Stage 6E frontend Dashboard / Video Center / Analysis Detail real run data MVP
 - minimal frontend tables in Analysis Detail and Alert Center
 
 The current implementation is useful for local validation, but it is not the
@@ -155,14 +156,17 @@ Implemented artifact query endpoints include:
 Stage 6B manifest/index support, Stage 6C statistics support, and Stage 6D
 Analysis Runs list / summary support are still artifact-backed. The list API can
 summarize runs from manifest, metadata, artifact index, in-memory registry, or
-directory scan fallback. The current database layer is not a complete production
-implementation. Local artifacts are the source of truth for trajectory, event,
-traffic statistics, and alert results at this stage.
+directory scan fallback. Stage 6E frontend views consume these APIs for run
+counts, artifact status, event/alert tables, and minimal flow / zone statistics
+tables. The current database layer is not a complete production implementation.
+Local artifacts are the source of truth for trajectory, event, traffic
+statistics, and alert results at this stage.
 
 ## Frontend Components
 
-- `frontend/src/pages/VideoCenterPage.tsx`: upload and process detection / tracking / trajectory modes.
-- `frontend/src/pages/AnalysisDetailPage.tsx`: minimal detection, tracking, trajectory, event, and alert query view.
+- `frontend/src/pages/DashboardPage.tsx`: run count, status distribution, artifact status summary, and recent runs from the Analysis Runs API.
+- `frontend/src/pages/VideoCenterPage.tsx`: upload and process detection / tracking / trajectory modes, plus recent analysis runs.
+- `frontend/src/pages/AnalysisDetailPage.tsx`: run summary, metadata / manifest / artifact index status, artifact summary, detection, tracking, trajectory, event, alert, flow count, and zone statistics query view.
 - `frontend/src/pages/AlertCenterPage.tsx`: minimal alert query and status workflow.
 
 Current frontend limitations:
@@ -170,7 +174,7 @@ Current frontend limitations:
 - no zone editor workflow
 - no video overlay for trajectories/events/alerts
 - no alert timeline
-- no full Stage 6E Dashboard / Analysis Detail real-data workflow
+- no complete traffic visualization dashboard or charts
 - no review workflow
 
 ## Boundaries And Limitations
@@ -184,7 +188,7 @@ Current limitations:
 - no video overlay
 - no complete Traffic Analysis Center
 - no DB-backed result index
-- no frontend flow statistics view
+- no frontend flow statistics chart
 - no frontend congestion chart
 - no database-backed flow or zone statistics persistence
 - no real-world speed / direction calibration

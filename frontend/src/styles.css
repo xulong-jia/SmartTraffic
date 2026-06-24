@@ -119,6 +119,7 @@ nav button.active {
   border: 1px solid #d9e0e7;
   border-radius: 8px;
   background: #ffffff;
+  overflow-x: auto;
   padding: 18px;
 }
 
@@ -150,6 +151,42 @@ nav button.active {
 .summary-strip h3,
 .summary-strip p {
   margin-bottom: 6px;
+}
+
+.section-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.section-heading-row h3 {
+  margin-bottom: 0;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.detail-grid div {
+  min-width: 0;
+}
+
+.detail-grid dt {
+  color: #657483;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.detail-grid dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
 }
 
 table {
@@ -194,6 +231,49 @@ button:disabled {
   color: #657483;
 }
 
+.status-pill {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  border: 1px solid #bcc8d4;
+  border-radius: 999px;
+  background: #eef2f6;
+  color: #273644;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.status-available,
+.status-completed {
+  border-color: #8fc5a1;
+  background: #e8f5ec;
+  color: #1f5d34;
+}
+
+.status-running {
+  border-color: #93b7df;
+  background: #e8f1fb;
+  color: #24517d;
+}
+
+.status-missing,
+.status-planned,
+.status-unknown {
+  border-color: #d5c187;
+  background: #fbf5de;
+  color: #705c14;
+}
+
+.status-error,
+.status-failed {
+  border-color: #dc9b9b;
+  background: #fbeaea;
+  color: #823333;
+}
+
 .video-frame {
   display: grid;
   min-height: 320px;
@@ -219,7 +299,8 @@ button:disabled {
   }
 
   .grid.two,
-  .metric-row {
+  .metric-row,
+  .detail-grid {
     grid-template-columns: 1fr;
   }
 }

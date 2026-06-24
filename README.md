@@ -4,7 +4,7 @@
 
 SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engine、Event Engine、artifact-based Alert Center MVP、FastAPI、React 和本地结果产物管理的智慧交通视频分析项目。
 
-当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 已完成 artifact-based / in-memory MVP，Stage 6B/6C/6D 已完成 artifact-based run manifest、artifact index、traffic statistics artifacts 和 Analysis Runs list / summary API MVP。当前实现仍不是数据库最终版，也不代表 Stage 6E 前端真实数据接入、Review Center、Bad Case、Evaluation Center 已完成。
+当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 已完成 artifact-based / in-memory MVP，Stage 6B/6C/6D/6E 已完成 artifact-based run manifest、artifact index、traffic statistics artifacts、Analysis Runs list / summary API 和前端真实 run 数据接入 MVP。当前实现仍不是数据库最终版，也不代表完整 Dashboard、Review Center、Bad Case、Evaluation Center 已完成。
 
 当前 Alert Center MVP 支持 `new`、`acknowledged`、`resolved` 和 `ignored` 基础状态流转；这些状态写回本地 alert artifacts，不是数据库持久化生命周期管理。
 
@@ -134,6 +134,7 @@ cp .env.example .env
 - Stage 6B Run manifest / artifact index completed
 - Stage 6C Traffic statistics artifacts MVP completed
 - Stage 6D Analysis Runs list / summary API completed
+- Stage 6E Analysis UI real run data integration MVP completed
 - Zone / Event Rule configuration API MVP, Event Evidence / Rule Execution artifacts, and Alert Center status workflow implemented
 
 `v0.5.0-event-alert-minimal` is an earlier minimal Event / Alert milestone tag and should not be moved to newer commits.
@@ -317,9 +318,9 @@ Event/Alert query endpoints are artifact-based MVP endpoints. They are not a ful
 
 `wrong_way_driving` 基于 `vehicle_lane` zone、`moving_angle`、`allowed_angle`、`angle_tolerance` 和 `min_speed_px_per_frame` 判断明显反向行驶。它使用 strict wrong-way 判断：`angle_diff = angle_difference(moving_angle, allowed_angle)`，并要求 `angle_diff >= 180 - angle_tolerance`。横向运动不会被误判为 wrong-way。该规则不是正式执法级方向判断，没有真实世界方向标定，也没有连续帧 wrong-way counter；`min_wrong_way_frames > 1` 当前不支持。
 
-`flow_counting` 是 Stage 5 EventEngine rule。它通过当前点和 previous point 判断 track segment 是否穿越 `rule.parameters.line` counting line，使用 `evidence_type=line_crossing`，支持 `direction=any / positive / negative` 和 `count_once_per_track`。Stage 6C 会基于生成的 `flow_counting` events / evidence 写出 artifact-based `flow_counts.json`，并提供 `GET /api/analysis-runs/{run_id}/flow-counts` 读取入口。当前仍不提供前端流量图表、持久化 counting line 配置、数据库聚合或真实世界流量标定。
+`flow_counting` 是 Stage 5 EventEngine rule。它通过当前点和 previous point 判断 track segment 是否穿越 `rule.parameters.line` counting line，使用 `evidence_type=line_crossing`，支持 `direction=any / positive / negative` 和 `count_once_per_track`。Stage 6C 会基于生成的 `flow_counting` events / evidence 写出 artifact-based `flow_counts.json`，并提供 `GET /api/analysis-runs/{run_id}/flow-counts` 读取入口。Stage 6E 仅提供前端最小表格展示；当前仍不提供前端流量图表、持久化 counting line 配置、数据库聚合或真实世界流量标定。
 
-`congestion` 是 Stage 5 aggregate EventEngine rule。它通过 aggregate callback 每帧按 zone 聚合车辆数量和平均像素速度，使用 `event_type=congestion`、`evidence_type=zone_statistics`、`rule_mode=aggregate` 和 `track_id=None`，基于 `vehicle_count`、`avg_speed_px_per_frame` 与 `min_congestion_frames` 生成事件。Stage 6C 会基于 trajectory zone 信息和 congestion evidence 写出 artifact-based `zone_statistics.json`，并提供 `GET /api/analysis-runs/{run_id}/zone-statistics` 读取入口。当前仍不提供前端拥堵图表、数据库区域统计持久化、真实世界拥堵标定或执法判断。
+`congestion` 是 Stage 5 aggregate EventEngine rule。它通过 aggregate callback 每帧按 zone 聚合车辆数量和平均像素速度，使用 `event_type=congestion`、`evidence_type=zone_statistics`、`rule_mode=aggregate` 和 `track_id=None`，基于 `vehicle_count`、`avg_speed_px_per_frame` 与 `min_congestion_frames` 生成事件。Stage 6C 会基于 trajectory zone 信息和 congestion evidence 写出 artifact-based `zone_statistics.json`，并提供 `GET /api/analysis-runs/{run_id}/zone-statistics` 读取入口。Stage 6E 仅提供前端最小表格展示；当前仍不提供前端拥堵图表、数据库区域统计持久化、真实世界拥堵标定或执法判断。
 
 对应提交：
 
@@ -417,7 +418,7 @@ results/traffic_analysis/<run_id>/
   keyframes/              # directory reserved; event snapshots are not generated yet
 ```
 
-Stage 6B adds `manifest.json` and `artifact_index.json` for each run so callers can distinguish available, missing, planned, empty, and error artifact states. Stage 6C adds artifact-based `flow_counts.json` and `zone_statistics.json` plus read APIs. Stage 6D enhances `GET /api/analysis-runs` and `GET /api/analysis-runs/{run_id}` so they can build summaries from manifest, metadata, artifact index, in-memory registry, or directory scan fallback. EventService 和 AlertService 基于上述 local artifacts 工作。当前 Traffic Analysis Center 是 artifact-based run result query，不是完整数据库结果中心。真实运行产物不提交到 Git。
+Stage 6B adds `manifest.json` and `artifact_index.json` for each run so callers can distinguish available, missing, planned, empty, and error artifact states. Stage 6C adds artifact-based `flow_counts.json` and `zone_statistics.json` plus read APIs. Stage 6D enhances `GET /api/analysis-runs` and `GET /api/analysis-runs/{run_id}` so they can build summaries from manifest, metadata, artifact index, in-memory registry, or directory scan fallback. Stage 6E connects Dashboard, Video Center, and Analysis Detail to those real run APIs with minimal tables and status panels. EventService 和 AlertService 基于上述 local artifacts 工作。当前 Traffic Analysis Center 是 artifact-based run result query，不是完整数据库结果中心。真实运行产物不提交到 Git。
 
 The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert milestone only.
 
@@ -427,7 +428,7 @@ The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert mile
 
 - frontend flow statistics chart
 - frontend congestion chart
-- Stage 6E frontend Analysis Detail / Dashboard real-data integration
+- complete Dashboard visualization workbench
 - Review Center 真实逻辑
 - Bad Case Center 真实逻辑
 - Evaluation Center 完整评测

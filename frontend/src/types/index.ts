@@ -17,46 +17,65 @@ export interface ProcessingTask {
   progress: number;
 }
 
-export interface AnalysisRun {
+export interface ArtifactAvailability {
+  available?: boolean;
+  path?: string;
+  status: string;
+  schema_version?: string | null;
+  error?: string;
+}
+
+export type ArtifactStatus = ArtifactAvailability;
+export type MetadataSummary = ArtifactAvailability;
+export type ManifestSummary = ArtifactAvailability;
+export type ArtifactIndexSummary = ArtifactAvailability;
+
+export interface ArtifactSummaryItem {
+  status: string;
+  path: string;
+  record_count: number;
+  [key: string]: string | number | boolean | null | undefined;
+}
+
+export type ArtifactSummary = Record<string, ArtifactSummaryItem>;
+
+export interface AnalysisRunSummary {
   id: string;
   run_id?: string;
-  video_id: string;
+  video_id?: string;
   status: string;
   mode?: string;
-  result_dir: string;
+  result_dir?: string;
   source?: string;
   schema_version?: string;
   created_at?: string;
   updated_at?: string;
   started_at?: string;
   finished_at?: string;
-  metadata?: ArtifactStatus;
-  manifest?: ArtifactStatus;
-  artifact_index: Record<string, string> | ArtifactStatus;
+  metadata?: MetadataSummary;
+  manifest?: ManifestSummary;
+  artifact_index?: ArtifactIndexSummary;
   artifact_paths?: Record<string, string>;
-  artifact_summary?: Record<string, ArtifactSummaryItem>;
+  artifact_summary?: ArtifactSummary;
 }
 
-export interface ArtifactStatus {
-  available?: boolean;
-  path: string;
-  status: string;
-  schema_version?: string | null;
-  error?: string;
+export type AnalysisRun = AnalysisRunSummary;
+
+export interface AnalysisRunListParams {
+  status?: string;
+  video_id?: string;
+  limit?: number;
+  offset?: number;
 }
 
-export interface ArtifactSummaryItem {
-  status: string;
-  path: string;
-  record_count: number;
-}
-
-export interface AnalysisRunsListResponse {
-  items: AnalysisRun[];
+export interface AnalysisRunListResponse {
+  items: AnalysisRunSummary[];
   total: number;
   limit: number;
   offset: number;
 }
+
+export type AnalysisRunsListResponse = AnalysisRunListResponse;
 
 export interface DetectionProcessOptions {
   mode?: "detection_only" | "detection_tracking" | "detection_tracking_trajectory";
@@ -223,7 +242,19 @@ export interface EventSummary {
   [key: string]: unknown;
 }
 
-export type EventRecord = Record<string, string | number | boolean | null | object | undefined>;
+export interface TrafficEvent {
+  [key: string]: string | number | boolean | null | object | undefined;
+  event_id?: string;
+  event_type?: string | null;
+  track_id?: number | null;
+  zone_id?: string | null;
+  start_frame?: number | null;
+  end_frame?: number | null;
+  severity?: string | null;
+  status?: string | null;
+}
+
+export type EventRecord = TrafficEvent;
 export type EventEvidenceRecord = Record<string, string | number | boolean | null | object | undefined>;
 export type RuleExecutionRecord = Record<string, string | number | boolean | null | object | undefined>;
 
@@ -280,6 +311,8 @@ export interface AlertRecord {
   created_at: string;
 }
 
+export type TrafficAlert = AlertRecord;
+
 export interface AlertsResponse {
   run_id: string;
   video_id?: string;
@@ -298,6 +331,105 @@ export interface GenerateAlertsResponse {
   total_alerts: number;
   alert_summary: AlertSummary;
   artifacts: Record<string, string>;
+}
+
+export interface FlowCountRecord {
+  [key: string]: string | number | null | undefined;
+  event_id?: string;
+  track_id?: number | null;
+  class_name?: string;
+  zone_id?: string;
+  counting_line_id?: string;
+  direction?: string;
+  frame_index?: number;
+  timestamp_ms?: number;
+}
+
+export interface FlowCountWindow {
+  [key: string]: string | number | string[] | number[] | null | undefined;
+  time_window_start_ms?: number;
+  time_window_end_ms?: number;
+  zone_id?: string;
+  counting_line_id?: string;
+  class_name?: string;
+  direction?: string;
+  in_count?: number;
+  out_count?: number;
+  unknown_direction_count?: number;
+  total_count?: number;
+  track_ids?: number[];
+  event_ids?: string[];
+}
+
+export interface FlowCountsSummary {
+  total_count?: number;
+  vehicle_count?: number;
+  person_count?: number;
+  by_class?: Record<string, number>;
+  by_zone?: Record<string, number>;
+  by_line?: Record<string, number>;
+  by_direction?: Record<string, number>;
+  [key: string]: unknown;
+}
+
+export interface FlowCountsArtifact {
+  schema_version?: string;
+  run_id: string;
+  video_id?: string;
+  generated_at?: string;
+  window_ms?: number;
+  source_artifacts?: Record<string, string>;
+  summary?: FlowCountsSummary;
+  windows?: FlowCountWindow[];
+  records?: FlowCountRecord[];
+}
+
+export interface ZoneStatisticsWindow {
+  [key: string]: string | number | number[] | Record<string, number> | null | undefined;
+  time_window_start_ms?: number;
+  time_window_end_ms?: number;
+  zone_id?: string;
+  vehicle_count?: number;
+  person_count?: number;
+  occupancy_count?: number;
+  avg_speed_px_per_frame?: number | null;
+  class_counts?: Record<string, number>;
+  track_ids?: number[];
+}
+
+export interface ZoneCongestionEvent {
+  [key: string]: string | number | number[] | Record<string, number> | null | undefined;
+  event_id?: string;
+  zone_id?: string;
+  frame_index?: number;
+  timestamp_ms?: number;
+  vehicle_count?: number;
+  avg_speed_px_per_frame?: number | null;
+  track_ids?: number[];
+  class_counts?: Record<string, number>;
+}
+
+export interface ZoneStatisticsSummary {
+  zone_count?: number;
+  total_windows?: number;
+  vehicle_count?: number;
+  person_count?: number;
+  max_vehicle_count?: number;
+  min_avg_speed_px_per_frame?: number | null;
+  congestion_event_count?: number;
+  [key: string]: unknown;
+}
+
+export interface ZoneStatisticsArtifact {
+  schema_version?: string;
+  run_id: string;
+  video_id?: string;
+  generated_at?: string;
+  window_ms?: number;
+  source_artifacts?: Record<string, string>;
+  summary?: ZoneStatisticsSummary;
+  windows?: ZoneStatisticsWindow[];
+  congestion_events?: ZoneCongestionEvent[];
 }
 
 export interface AlertCenterResponse {

@@ -200,6 +200,8 @@ Behavior:
 - Invalid JSON in one run's manifest does not make the whole list fail. The
   affected run can fall back to metadata or directory scan and marks that file
   status as `error`.
+- Stage 6E frontend Dashboard, Video Center, and Analysis Detail consume this
+  response for run counts, recent runs, and artifact status panels.
 
 ### Analysis Run Summary
 
@@ -378,6 +380,8 @@ Behavior:
 - Missing run returns 404.
 - Existing run without `flow_counting` events returns an empty artifact.
 - Direction values are normalized to `in`, `out`, or `unknown`.
+- Stage 6E Analysis Detail displays this payload as a minimal summary/table
+  view.
 - This is not a frontend chart, database aggregate, or real-world calibrated
   traffic volume system.
 
@@ -424,6 +428,8 @@ Behavior:
 - Missing run returns 404.
 - Existing run without zone data returns an empty artifact.
 - Congestion rule evidence is preserved as `congestion_events`.
+- Stage 6E Analysis Detail displays this payload as a minimal summary/table
+  view.
 - This is not a frontend congestion chart, database persistence layer, or
   real-world congestion calibration system.
 

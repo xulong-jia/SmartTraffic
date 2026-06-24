@@ -32,6 +32,12 @@ const pages: Array<{ key: PageKey; label: string }> = [
 
 export default function App() {
   const [activePage, setActivePage] = useState<PageKey>("dashboard");
+  const [selectedAnalysisRunId, setSelectedAnalysisRunId] = useState("");
+
+  function openAnalysisRun(runId: string) {
+    setSelectedAnalysisRunId(runId);
+    setActivePage("analysis");
+  }
 
   return (
     <div className="app-shell">
@@ -53,17 +59,23 @@ export default function App() {
           ))}
         </nav>
       </aside>
-      <main className="workspace">{renderPage(activePage)}</main>
+      <main className="workspace">
+        {renderPage(activePage, selectedAnalysisRunId, openAnalysisRun)}
+      </main>
     </div>
   );
 }
 
-function renderPage(page: PageKey) {
+function renderPage(
+  page: PageKey,
+  selectedAnalysisRunId: string,
+  openAnalysisRun: (runId: string) => void
+) {
   switch (page) {
     case "videos":
-      return <VideoCenterPage />;
+      return <VideoCenterPage onOpenAnalysisRun={openAnalysisRun} />;
     case "analysis":
-      return <AnalysisDetailPage />;
+      return <AnalysisDetailPage initialRunId={selectedAnalysisRunId} />;
     case "zones":
       return <ZoneRuleConfigPage />;
     case "alerts":
@@ -76,6 +88,6 @@ function renderPage(page: PageKey) {
       return <EvaluationCenterPage />;
     case "dashboard":
     default:
-      return <DashboardPage />;
+      return <DashboardPage onOpenAnalysisRun={openAnalysisRun} />;
   }
 }
