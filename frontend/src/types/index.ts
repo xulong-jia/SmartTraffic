@@ -86,10 +86,50 @@ export interface DetectionProcessOptions {
   max_frames?: number;
   conf_threshold?: number;
   iou_threshold?: number;
+  image_size?: number;
+  device?: string;
+  model_path?: string;
   write_preview?: boolean;
+  deepsort_max_age?: number;
+  deepsort_n_init?: number;
+  deepsort_max_iou_distance?: number;
+  deepsort_max_cosine_distance?: number;
+  tracking_min_confidence?: number;
+  tracking_target_classes?: string[];
   direction_window?: number;
   dwell_speed_threshold?: number;
   max_history_points?: number | null;
+  event_rules?: Array<Record<string, unknown>>;
+  zones?: Array<Record<string, unknown>>;
+  run_events?: boolean;
+  generate_alerts?: boolean;
+  record_not_matched?: boolean;
+}
+
+export interface DirectionConfig {
+  start_point?: number[] | null;
+  end_point?: number[] | null;
+  allowed_angle?: number | null;
+  reverse_angle_threshold?: number | null;
+}
+
+export interface CountingLineConfig {
+  start_point?: number[] | null;
+  end_point?: number[] | null;
+  in_direction?: string;
+  enabled?: boolean;
+}
+
+export interface ZoneRecord {
+  id: string;
+  name: string;
+  zone_type: string;
+  polygon: number[][];
+  direction?: DirectionConfig | null;
+  counting_line?: CountingLineConfig | null;
+  enabled: boolean;
+  video_id?: string | null;
+  camera_id?: string | null;
 }
 
 export interface DetectionProcessResult {
@@ -114,9 +154,9 @@ export interface DetectionProcessResult {
 }
 
 export interface DetectionSummary {
-  total_frames_processed: number;
-  total_detections: number;
-  per_class_counts: Record<string, number>;
+  total_frames_processed?: number;
+  total_detections?: number;
+  per_class_counts?: Record<string, number>;
 }
 
 export interface FrameDetectionResult {
@@ -140,11 +180,11 @@ export interface AnalysisRunDetections {
 }
 
 export interface TrackingSummary {
-  total_frames_processed: number;
-  total_tracks: number;
-  unique_track_ids: number;
-  per_class_track_counts: Record<string, number>;
-  track_state_counts: Record<string, number>;
+  total_frames_processed?: number;
+  total_tracks?: number;
+  unique_track_ids?: number;
+  per_class_track_counts?: Record<string, number>;
+  track_state_counts?: Record<string, number>;
 }
 
 export interface FrameTrackingResult {

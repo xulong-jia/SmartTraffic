@@ -5,9 +5,10 @@ completed Zone & Rule Config product module.
 
 Current state:
 
-- Zone and rule configuration is mainly provided through rule params / `zones`
-  arguments or documented contracts.
-- Implemented Stage 5 rules can read `zones` parameters.
+- Zone and rule configuration has artifact-based / in-memory MVP APIs under
+  `/api/zones` and `/api/event-rules`.
+- `POST /api/videos/{video_id}/process` can also receive per-run `zones` and
+  `event_rules` payloads, and implemented Stage 5 rules read those inputs.
 - Full Zone Editor, DirectionLineEditor, CountingLineEditor, persisted
   configuration, and per-run config snapshot are not complete.
 - The current frontend `ZoneEditor` is a placeholder shell and should not be

@@ -346,6 +346,7 @@ bddcd93 feat: add congestion rule
 当前主要 API：
 
 - `GET /health`
+- `GET /api/config`
 - `POST /api/videos/upload`
 - `GET /api/videos`
 - `GET /api/videos/{video_id}`
@@ -472,6 +473,7 @@ The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert mile
 - `docs/stage3_deepsort_tracking.md`
 - `docs/stage4_trajectory_engine.md`
 - `docs/stage5_event_alert_pipeline.md`
+- `docs/stage6_traffic_analysis_center_design.md`
 - `docs/architecture.md`
 - `docs/database_schema.md`
 

@@ -2,7 +2,19 @@ from pathlib import Path
 
 
 BLOCKED_SUFFIXES = {".pt", ".pth", ".onnx", ".engine", ".mp4", ".avi", ".mov", ".mkv", ".webm"}
-IGNORED_PARTS = {".git", ".venv", "node_modules", "dist", "__pycache__"}
+IGNORED_PARTS = {
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "dist",
+    "local_models",
+    "local_videos",
+    "node_modules",
+    "results",
+}
 
 
 def find_blocked_files(root: Path) -> list[Path]:

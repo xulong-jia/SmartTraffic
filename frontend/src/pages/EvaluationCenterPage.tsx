@@ -4,10 +4,10 @@ export default function EvaluationCenterPage() {
       <header className="page-header">
         <div>
           <h2>Evaluation Center</h2>
-          <p>评测结果</p>
+          <p>Stage 8 placeholder; evaluation workflow is not implemented in Stage 6.</p>
         </div>
       </header>
-      <section className="panel muted">Evaluation Center placeholder</section>
+      <section className="panel muted">Evaluation Center planned for a later stage.</section>
     </>
   );
 }

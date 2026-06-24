@@ -32,6 +32,7 @@ import type {
   TrajectoryPointsResponse,
   ZoneStatisticsArtifact
 } from "../types";
+import { formatDisplayValue as formatValue } from "../utils/format";
 import { getRunId } from "../utils/analysisRunMetrics";
 
 const trajectoryColumns: Array<keyof TrajectoryPointRow> = [
@@ -590,8 +591,8 @@ export default function AnalysisDetailPage({ initialRunId = "" }: AnalysisDetail
             {detections ? (
               <>
               <p>
-                {detections.summary.total_frames_processed} frames ·{" "}
-                {detections.summary.total_detections} detections
+                {formatValue(detections.summary.total_frames_processed, "0")} frames ·{" "}
+                {formatValue(detections.summary.total_detections, "0")} detections
               </p>
               <h3>Frame Results</h3>
               <table>
@@ -622,8 +623,9 @@ export default function AnalysisDetailPage({ initialRunId = "" }: AnalysisDetail
             {tracks ? (
               <>
               <p>
-                {tracks.summary.total_frames_processed} frames · {tracks.summary.total_tracks} track rows ·{" "}
-                {tracks.summary.unique_track_ids} unique IDs
+                {formatValue(tracks.summary.total_frames_processed, "0")} frames ·{" "}
+                {formatValue(tracks.summary.total_tracks, "0")} track rows ·{" "}
+                {formatValue(tracks.summary.unique_track_ids, "0")} unique IDs
               </p>
               <h3>Track Results</h3>
               <table>
@@ -1190,19 +1192,6 @@ function clampInteger(value: number, min: number, max: number): number {
     return min;
   }
   return Math.min(max, Math.max(min, Math.trunc(value)));
-}
-
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined || value === "") {
-    return "-";
-  }
-  if (typeof value === "number" && !Number.isFinite(value)) {
-    return "-";
-  }
-  if (Array.isArray(value) || typeof value === "object") {
-    return JSON.stringify(value);
-  }
-  return String(value);
 }
 
 function formatCountMap(value: Record<string, number> | undefined): string {

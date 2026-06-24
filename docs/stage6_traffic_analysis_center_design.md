@@ -261,7 +261,7 @@ Stage 6C 的必需产物建议为：
 - `keyframes/`
 - `evaluation_summary.json`
 
-可选产物必须在 manifest 中标记为 `missing`、`skipped` 或 `not_applicable`，不能通过缺文件让调用方自行猜测状态。
+可选产物必须在 manifest 中使用当前实现支持的状态标记，例如 `missing`、`planned`、`empty`、`missing_source_video` 或 `error`，不能通过缺文件让调用方自行猜测状态。
 
 ### 5.4 暂不实现产物
 
@@ -280,7 +280,7 @@ Stage 6A 不实现任何产物。后续 Stage 6B/6C/6F 仍应暂不实现：
 
 - 该 run 理论上有哪些产物。
 - 每个产物当前是否存在、是否可读、是否可下载。
-- 每个产物来自哪个 pipeline stage，是否有错误或跳过原因。
+- 每个产物来自哪个 pipeline stage，是否有错误原因或 visual artifact fallback 状态。
 
 ### 6.2 字段设计
 
@@ -320,14 +320,14 @@ Stage 6A 不实现任何产物。后续 Stage 6B/6C/6F 仍应暂不实现：
 
 ### 6.3 artifact 状态枚举
 
-建议状态：
+当前实现状态：
 
 - `available`: 文件或非空目录存在，并可读取。
 - `missing`: 该阶段理论要求存在，但当前缺失。
-- `reserved`: 设计预留，当前阶段不生成。
-- `skipped`: 因配置或运行条件主动跳过。
-- `failed`: 产物生成失败，有错误原因。
-- `not_applicable`: 对该 run 不适用，例如 detection-only run 不要求 trajectory。
+- `planned`: 设计预留或后续阶段产物，当前阶段不生成。
+- `empty`: 产物存在且可读，但记录数为 0。
+- `missing_source_video`: Stage 6F visual artifact 生成缺少源视频。
+- `error`: 产物状态或记录数读取失败，或生成过程记录了错误。
 
 ### 6.4 与 metadata.json 的关系
 
@@ -829,7 +829,7 @@ Artifact Panel 读取 manifest，展示：
 - size。
 - record count。
 - source stage。
-- error 或 skipped reason。
+- error reason 或 visual artifact fallback status。
 
 ### 13.5 Flow / Zone Statistics Panel
 
@@ -850,7 +850,7 @@ Flow / Zone Statistics Panel 读取：
 - `manifest.json` 写入。
 - `artifact_index.json` 写入。
 - 已存在产物的 `available` 状态。
-- 未生成但预留产物的 `reserved` 或 `missing` 状态。
+- 未生成但预留产物的 `planned` 或 `missing` 状态。
 - 空 `keyframes/` 不应被误判为 available。
 
 ### 14.2 Manifest 测试
@@ -881,7 +881,7 @@ Flow / Zone Statistics Panel 读取：
 
 - `npm run build`。
 - Analysis Detail 在缺失 flow / zone / keyframes / annotated_video 时不崩溃。
-- Artifact Panel 正确显示 missing / reserved / available。
+- Artifact Panel 正确显示 missing / planned / empty / missing_source_video / error / available。
 
 ### 14.5 回归测试
 
@@ -978,7 +978,7 @@ Stage 6 不应破坏已有 artifact 格式。
 - 对 README、API docs、architecture 和本设计文档做边界修正。
 - 确认 Stage 6 可视为 Traffic Analysis Center artifact-based MVP 完成。
 - 跑完整检查。
-- 不创建 tag，不 push；在用户明确要求后再创建 `v0.6.0-traffic-analysis-center-mvp`。
+- 确认现有 `v0.6.0-traffic-analysis-center-mvp` tag 仍指向 Stage 6 稳定节点；不创建、不移动、不 push tag。
 
 ## 16. 风险与规避
 
@@ -1023,4 +1023,4 @@ Stage 6D 已完成 artifact-backed Analysis Runs API 增强：
 
 Stage 6D 没有实现 Stage 6E 前端真实数据接入、keyframes、annotated video、Review、Bad Case、Evaluation、数据库 migration、DB-backed result index、前端统计图表或真实世界速度 / 流量标定。Stage 6E 已补齐前端真实 run 数据接入 MVP。Stage 6F 已补齐 artifact-based keyframes / annotated video visual artifacts pipeline MVP。Stage 6G 已完成收尾审计和文档边界修正，当前 Stage 6 可视为 Traffic Analysis Center artifact-based MVP 完成。
 
-Stage 6 完成后仍没有实现 Review、Bad Case、Evaluation、数据库 migration、DB-backed result index、完整前端统计图表、复杂视频 overlay editor、权限系统、实时流、生产部署或真实世界速度 / 流量标定。下一步建议先创建 `v0.6.0-traffic-analysis-center-mvp` annotated tag，再进入 Stage 7 Review Center。
+Stage 6 完成后仍没有实现 Review、Bad Case、Evaluation、数据库 migration、DB-backed result index、完整前端统计图表、复杂视频 overlay editor、权限系统、实时流、生产部署或真实世界速度 / 流量标定。当前 `v0.6.0-traffic-analysis-center-mvp` tag 是 Stage 6 artifact-based MVP 的稳定节点；后续可在不移动该 tag 的前提下进入 Stage 7 Review Center。

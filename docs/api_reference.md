@@ -583,6 +583,10 @@ implemented as working behavior yet:
 
 - `PATCH /api/events/{event_id}/status`
 - standalone `/api/events` full query
+- `GET /api/events/{event_id}`
+- `POST /api/review/comments`
+- `POST /api/bad-cases`
+- `POST /api/evaluation/run`
 - advanced filtering on flow counts and zone statistics
 - database-backed aggregate statistics APIs
 - full Review / Bad Case / Evaluation APIs
@@ -592,8 +596,16 @@ implemented as working behavior yet:
 - `GET /api/detections`
 - `GET /api/tracks`
 - `GET /api/zones`
+- `GET /api/events`
 - `GET /api/review/events`
 - `GET /api/bad-cases`
 - `GET /api/evaluation/results`
 
-These placeholder endpoints exist to preserve module boundaries. Standalone event and alert center APIs remain separate from the artifact-based `analysis-runs` list, summary, event, statistics, and alert endpoints documented above. Review, bad-case, and evaluation behavior belongs to later phases and is not implemented as completed logic.
+These placeholder endpoints exist to preserve module boundaries. The planned
+event detail endpoint and write endpoints for review comments, bad cases, and
+evaluation runs are not routed in the current Stage 6 MVP. Standalone event and
+alert center APIs remain
+separate from the artifact-based `analysis-runs` list, summary, event,
+statistics, and alert endpoints documented above. Review, bad-case, and
+evaluation behavior belongs to later phases and is not implemented as completed
+logic.

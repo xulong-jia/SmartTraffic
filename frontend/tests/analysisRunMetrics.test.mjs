@@ -17,6 +17,7 @@ execFileSync(
   path.join(repoRoot, "frontend/node_modules/.bin/tsc"),
   [
     path.join(repoRoot, "frontend/src/utils/analysisRunMetrics.ts"),
+    path.join(repoRoot, "frontend/src/utils/format.ts"),
     "--outDir",
     outDir,
     "--module",
@@ -36,6 +37,7 @@ execFileSync(
 );
 
 const metrics = await import(pathToFileURL(path.join(outDir, "utils/analysisRunMetrics.js")).href);
+const format = await import(pathToFileURL(path.join(outDir, "utils/format.js")).href);
 
 test("buildAnalysisRunOverview counts Stage 6D list totals and status buckets", () => {
   const overview = metrics.buildAnalysisRunOverview({
@@ -108,4 +110,14 @@ test("buildArtifactStatusCounts summarizes selected artifact availability", () =
     events: { available: 1, error: 1 },
     alerts: { missing: 1, available: 1 }
   });
+});
+
+test("formatDisplayValue avoids undefined text in empty metric summaries", () => {
+  assert.equal(format.formatDisplayValue(undefined), "-");
+  assert.equal(format.formatDisplayValue(null), "-");
+  assert.equal(format.formatDisplayValue("", "0"), "0");
+  assert.equal(format.formatDisplayValue(undefined, "0"), "0");
+  assert.equal(format.formatDisplayValue(12), "12");
+  assert.equal(format.formatDisplayValue(Number.NaN), "-");
+  assert.equal(format.formatDisplayValue({ status: "empty" }), "{\"status\":\"empty\"}");
 });

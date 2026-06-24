@@ -15,4 +15,4 @@ frontend-build:
 check: backend-test frontend-build
 
 danger-check:
-	find . \( -name '*.pt' -o -name '*.pth' -o -name '*.onnx' -o -name '*.mp4' -o -name '*.avi' -o -name '*.mov' -o -name '*.mkv' -o -name '*.webm' \) -not -path './frontend/node_modules/*' -print
+	python3 scripts/danger_check.py

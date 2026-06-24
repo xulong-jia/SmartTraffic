@@ -2,7 +2,7 @@
 
 Source project:
 
-`/Users/jiaxulong/Documents/yolov8-vehicle-pedestrian-detection`
+`<local-yolov8-vehicle-pedestrian-detection-project>`
 
 The source project was inspected in read-only mode. No files were modified, moved, or deleted.
 
