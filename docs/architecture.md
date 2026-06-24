@@ -13,7 +13,7 @@ React frontend
 ## Current Runnable Path
 
 The current runnable processing path can run detection / tracking / trajectory
-and then generate event / alert artifacts:
+and then generate event, traffic statistics, and alert artifacts:
 
 ```text
 video upload
@@ -24,15 +24,17 @@ video upload
   -> trajectory artifacts
   -> EventService / EventEngine
   -> event artifacts
+  -> traffic statistics artifacts
   -> AlertService
   -> alert artifacts
   -> FastAPI query
   -> React minimal dashboard
 ```
 
-The current process API runs EventService and AlertService after
-`mode=detection_tracking_trajectory`. Empty `event_rules` / `zones` produce
-stable empty event and alert artifacts rather than fake events.
+The current process API runs EventService, the Stage 6C statistics writer, and
+AlertService after `mode=detection_tracking_trajectory`. Empty `event_rules` /
+`zones` produce stable empty event, statistics, and alert artifacts rather than
+fake events.
 
 ## Current Implemented Architecture
 
@@ -44,7 +46,9 @@ Currently implemented architecture includes:
 - EventEngine with six callback-based rules
 - artifact-based EventService
 - artifact-based AlertService
-- process integration for event and alert artifact generation after trajectory
+- process integration for event, traffic statistics, and alert artifact
+  generation after trajectory
+- artifact-backed Analysis Runs list / summary API with directory scan fallback
 - minimal frontend tables in Analysis Detail and Alert Center
 
 The current implementation is useful for local validation, but it is not the
@@ -90,7 +94,7 @@ The execution manual still targets:
 - Bad Case Center
 - Evaluation Center
 - persisted Zone & Rule Config beyond the current in-memory MVP
-- aggregate flow counting and zone statistics
+- database-backed flow counting and zone statistics
 
 These modules are not complete in the current project state.
 
@@ -102,7 +106,7 @@ These modules are not complete in the current project state.
 - `backend/app/trajectory`: geometry utilities, trajectory feature helpers, and `TrajectoryEngine`.
 - `backend/app/events`: event contracts, evidence helpers, rule execution helpers, `EventEngine`, dedup helpers, and rule callbacks.
 - `backend/app/alerts`: minimal alert contract helpers.
-- `backend/app/analysis`: artifact writer for run directories, metadata, Stage 6B `manifest.json` / `artifact_index.json`, detections, tracks, trajectory outputs, event outputs, and alert outputs.
+- `backend/app/analysis`: artifact writer for run directories, metadata, Stage 6B `manifest.json` / `artifact_index.json`, detections, tracks, trajectory outputs, event outputs, traffic statistics outputs, and alert outputs.
 
 Implemented stage-five rule callbacks:
 
@@ -136,6 +140,8 @@ Center, but it is not a complete database-backed result center.
 
 Implemented artifact query endpoints include:
 
+- `GET /api/analysis-runs`
+- `GET /api/analysis-runs/{run_id}`
 - `GET /api/analysis-runs/{run_id}/manifest`
 - `GET /api/analysis-runs/{run_id}/detections`
 - `GET /api/analysis-runs/{run_id}/tracks`
@@ -146,8 +152,10 @@ Implemented artifact query endpoints include:
 - `POST /api/analysis-runs/{run_id}/alerts/generate`
 - `GET /api/analysis-runs/{run_id}/alerts`
 
-Stage 6B manifest/index support and Stage 6C statistics support are still
-artifact-backed. The current database layer is not a complete production
+Stage 6B manifest/index support, Stage 6C statistics support, and Stage 6D
+Analysis Runs list / summary support are still artifact-backed. The list API can
+summarize runs from manifest, metadata, artifact index, in-memory registry, or
+directory scan fallback. The current database layer is not a complete production
 implementation. Local artifacts are the source of truth for trajectory, event,
 traffic statistics, and alert results at this stage.
 
@@ -162,6 +170,7 @@ Current frontend limitations:
 - no zone editor workflow
 - no video overlay for trajectories/events/alerts
 - no alert timeline
+- no full Stage 6E Dashboard / Analysis Detail real-data workflow
 - no review workflow
 
 ## Boundaries And Limitations

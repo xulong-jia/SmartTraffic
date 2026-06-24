@@ -6,6 +6,15 @@ from pathlib import Path
 from app.analysis.artifact_writer import TrafficArtifactWriter
 
 
+STAGE6D_SCHEMA_VERSION = "stage6d.v1"
+IGNORED_RUN_DIR_NAMES = {
+    ".git",
+    ".pytest_cache",
+    "__pycache__",
+    "node_modules",
+}
+
+
 class TrafficAnalysisService:
     def __init__(self) -> None:
         self._runs: dict[str, dict[str, Any]] = {}
@@ -28,23 +37,154 @@ class TrafficAnalysisService:
         self._runs[run_id] = run
         return dict(run)
 
-    def list_runs(self) -> list[dict[str, Any]]:
-        return list(self._runs.values())
+    def list_runs(
+        self,
+        *,
+        status: str | None = None,
+        video_id: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        summaries_by_run_id: dict[str, dict[str, Any]] = {}
+        for run_dir in self.discover_run_directories():
+            summaries_by_run_id[run_dir.name] = self.build_run_summary(run_dir.name)
+
+        for run_id, registry_run in self._runs.items():
+            summaries_by_run_id.setdefault(
+                run_id,
+                self.build_run_summary(run_id, registry_run=registry_run),
+            )
+
+        summaries = [
+            summary
+            for summary in summaries_by_run_id.values()
+            if _summary_matches(summary, status=status, video_id=video_id)
+        ]
+        summaries.sort(
+            key=lambda summary: (_summary_sort_value(summary), str(summary["run_id"])),
+            reverse=True,
+        )
+        total = len(summaries)
+        safe_offset = max(offset, 0)
+        safe_limit = max(limit, 0)
+        return {
+            "items": summaries[safe_offset : safe_offset + safe_limit],
+            "total": total,
+            "limit": safe_limit,
+            "offset": safe_offset,
+        }
 
     def get_run(self, run_id: str) -> dict[str, Any]:
-        if run_id in self._runs:
-            return dict(self._runs[run_id])
-        metadata = self._load_metadata(run_id)
-        run = {
+        registry_run = self._runs.get(run_id)
+        return self.build_run_summary(run_id, registry_run=registry_run)
+
+    def discover_run_directories(self) -> list[Path]:
+        results_dir = self._results_dir()
+        if not results_dir.is_dir():
+            return []
+        return sorted(
+            child
+            for child in results_dir.iterdir()
+            if child.is_dir()
+            and not child.name.startswith(".")
+            and child.name not in IGNORED_RUN_DIR_NAMES
+        )
+
+    def build_run_summary(
+        self,
+        run_id: str,
+        *,
+        registry_run: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        run_dir = self._run_dir(run_id)
+        if not run_dir.exists() and registry_run is None:
+            raise KeyError(run_id)
+
+        metadata, metadata_state = _load_json_state(run_dir / "metadata.json")
+        manifest, manifest_state = _load_json_state(run_dir / "manifest.json")
+        artifact_index, artifact_index_state = _load_json_state(
+            run_dir / "artifact_index.json"
+        )
+        source = _summary_source(
+            manifest_state=manifest_state,
+            metadata_state=metadata_state,
+            artifact_index_state=artifact_index_state,
+            registry_run=registry_run,
+        )
+
+        video_id = _first_string(
+            _mapping_value(manifest, "video_id"),
+            _mapping_value(metadata, "video_id"),
+            _mapping_value(artifact_index, "video_id"),
+            _mapping_value(registry_run, "video_id"),
+            default="",
+        )
+        run_status = _first_string(
+            _mapping_value(manifest, "status"),
+            _mapping_value(metadata, "status"),
+            _mapping_value(registry_run, "status"),
+            default="completed",
+        )
+        result_dir = _public_result_dir(
+            run_id,
+            _mapping_value(manifest, "result_dir")
+            or _mapping_value(metadata, "result_dir")
+            or _mapping_value(artifact_index, "result_dir")
+            or _mapping_value(registry_run, "result_dir"),
+        )
+        artifact_summary = _artifact_summary(
+            run_dir=run_dir,
+            manifest=manifest,
+            metadata=metadata,
+            artifact_index=artifact_index,
+            registry_run=registry_run,
+        )
+        artifact_paths = _artifact_paths(
+            metadata=metadata,
+            artifact_index=artifact_index,
+            registry_run=registry_run,
+        )
+
+        return {
             "id": run_id,
-            "video_id": metadata.get("video_id", ""),
-            "status": "completed",
-            "result_dir": f"results/traffic_analysis/{run_id}",
-            "artifact_index": metadata.get("artifacts", {}),
-            "metadata": _public_metadata(metadata),
+            "run_id": run_id,
+            "video_id": video_id,
+            "status": run_status,
+            "mode": _first_string(_mapping_value(metadata, "mode"), default="offline"),
+            "result_dir": result_dir,
+            "created_at": _first_string(
+                _mapping_value(manifest, "created_at"),
+                _mapping_value(metadata, "created_at"),
+                default="",
+            ),
+            "updated_at": _first_string(
+                _mapping_value(manifest, "updated_at"),
+                _mapping_value(metadata, "updated_at"),
+                default="",
+            ),
+            "started_at": _first_string(
+                _mapping_value(metadata, "started_at"),
+                default="",
+            ),
+            "finished_at": _first_string(
+                _mapping_value(metadata, "finished_at"),
+                default="",
+            ),
+            "source": source,
+            "schema_version": STAGE6D_SCHEMA_VERSION,
+            "metadata": metadata_state,
+            "manifest": {
+                **manifest_state,
+                "schema_version": (
+                    str(manifest.get("schema_version"))
+                    if isinstance(manifest, dict) and manifest.get("schema_version")
+                    else None
+                ),
+            },
+            "artifact_index": artifact_index_state,
+            "artifact_paths": artifact_paths,
+            "artifact_summary": artifact_summary,
         }
-        self._runs[run_id] = run
-        return dict(run)
 
     def read_run_detections(self, run_id: str, limit: int = 100) -> dict[str, Any]:
         run_dir = self._run_dir(run_id)
@@ -333,9 +473,12 @@ class TrafficAnalysisService:
         self._runs.clear()
 
     def _run_dir(self, run_id: str) -> Path:
+        return self._results_dir() / run_id
+
+    def _results_dir(self) -> Path:
         from app.core.config import get_settings
 
-        return get_settings().results_dir / run_id
+        return get_settings().results_dir
 
     def _load_metadata(self, run_id: str) -> dict[str, Any]:
         metadata_path = self._run_dir(run_id) / "metadata.json"
@@ -369,6 +512,174 @@ def _public_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
     if input_video:
         public["input_video"] = Path(str(input_video)).name
     return public
+
+
+def _load_json_state(path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+    state = {
+        "available": False,
+        "path": path.name,
+        "status": "missing",
+    }
+    if not path.is_file():
+        return {}, state
+    try:
+        with path.open(encoding="utf-8") as file:
+            payload = json.load(file)
+    except (OSError, json.JSONDecodeError) as exc:
+        state["status"] = "error"
+        state["error"] = str(exc)
+        return {}, state
+    if not isinstance(payload, dict):
+        state["status"] = "error"
+        state["error"] = "json payload must be an object"
+        return {}, state
+    state["available"] = True
+    state["status"] = "available"
+    return payload, state
+
+
+def _summary_source(
+    *,
+    manifest_state: dict[str, Any],
+    metadata_state: dict[str, Any],
+    artifact_index_state: dict[str, Any],
+    registry_run: dict[str, Any] | None,
+) -> str:
+    if manifest_state["status"] == "available":
+        return "manifest"
+    if metadata_state["status"] == "available":
+        return "metadata"
+    if artifact_index_state["status"] == "available":
+        return "artifact_index"
+    if registry_run is not None:
+        return "in_memory_registry"
+    return "directory_scan"
+
+
+def _artifact_summary(
+    *,
+    run_dir: Path,
+    manifest: dict[str, Any],
+    metadata: dict[str, Any],
+    artifact_index: dict[str, Any],
+    registry_run: dict[str, Any] | None,
+) -> dict[str, dict[str, Any]]:
+    manifest_artifacts = manifest.get("artifacts")
+    if isinstance(manifest_artifacts, dict):
+        return {
+            str(key): _summary_artifact_record(value)
+            for key, value in manifest_artifacts.items()
+            if isinstance(value, dict)
+        }
+
+    metadata_summary = metadata.get("artifact_summary")
+    if isinstance(metadata_summary, dict):
+        return {
+            str(key): _summary_artifact_record(value)
+            for key, value in metadata_summary.items()
+            if isinstance(value, dict)
+        }
+
+    artifact_paths = _artifact_paths(
+        metadata=metadata,
+        artifact_index=artifact_index,
+        registry_run=registry_run,
+    )
+    return {
+        key: {
+            "status": "available" if (run_dir / path.rstrip("/")).exists() else "missing",
+            "path": path,
+            "record_count": 0,
+        }
+        for key, path in artifact_paths.items()
+    }
+
+
+def _summary_artifact_record(value: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "status": str(value.get("status", "unknown")),
+        "path": _safe_relative_path(value.get("path", "")),
+        "record_count": int(value.get("record_count") or 0),
+    }
+
+
+def _artifact_paths(
+    *,
+    metadata: dict[str, Any],
+    artifact_index: dict[str, Any],
+    registry_run: dict[str, Any] | None,
+) -> dict[str, str]:
+    indexed = artifact_index.get("artifacts")
+    if isinstance(indexed, dict):
+        return {
+            str(key): _safe_relative_path(value)
+            for key, value in indexed.items()
+            if value
+        }
+    metadata_artifacts = metadata.get("artifacts")
+    if isinstance(metadata_artifacts, dict):
+        return {
+            str(key): _safe_relative_path(value)
+            for key, value in metadata_artifacts.items()
+            if value
+        }
+    registry_artifacts = _mapping_value(registry_run, "artifact_index")
+    if isinstance(registry_artifacts, dict):
+        return {
+            str(key): _safe_relative_path(value)
+            for key, value in registry_artifacts.items()
+            if value
+        }
+    return {}
+
+
+def _mapping_value(value: Any, key: str) -> Any:
+    if isinstance(value, dict):
+        return value.get(key)
+    return None
+
+
+def _first_string(*values: Any, default: str) -> str:
+    for value in values:
+        if value is not None and value != "":
+            return str(value)
+    return default
+
+
+def _public_result_dir(run_id: str, value: Any) -> str:
+    if value:
+        path = Path(str(value))
+        if not path.is_absolute() and ".." not in path.parts:
+            return str(value)
+    return f"results/traffic_analysis/{run_id}"
+
+
+def _safe_relative_path(value: Any) -> str:
+    path = Path(str(value))
+    if path.is_absolute() or ".." in path.parts:
+        return path.name
+    return str(value)
+
+
+def _summary_matches(
+    summary: dict[str, Any],
+    *,
+    status: str | None,
+    video_id: str | None,
+) -> bool:
+    if status is not None and summary.get("status") != status:
+        return False
+    if video_id is not None and summary.get("video_id") != video_id:
+        return False
+    return True
+
+
+def _summary_sort_value(summary: dict[str, Any]) -> str:
+    for key in ("updated_at", "finished_at", "created_at"):
+        value = summary.get(key)
+        if value:
+            return str(value)
+    return ""
 
 
 def _track_id_matches(value: Any, track_id: int) -> bool:

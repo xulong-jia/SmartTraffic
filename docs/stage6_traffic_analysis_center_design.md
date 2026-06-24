@@ -48,11 +48,12 @@ Stage 6 的设计重点是结果管理和读取契约，不把 Stage 5 已有事
 - `TrafficArtifactWriter.write_event_outputs()` 会写入 `events.jsonl`、`event_evidence.jsonl`、`rule_executions.jsonl`、`event_summary.json`。
 - `TrafficArtifactWriter.write_alert_outputs()` 会写入 `alerts.jsonl`、`alert_summary.json`。
 - `backend/app/services/traffic_analysis_service.py` 已有 in-memory run registry，并可从 `metadata.json` 回读 run。
-- `TrafficAnalysisService` 已支持读取 detections、tracks、trajectory points、events、alerts。
+- `TrafficAnalysisService` 已支持读取 detections、tracks、trajectory points、events、traffic statistics、alerts，并在 Stage 6D 中支持 artifact-backed run list / summary。
 - Stage 6B 已新增 `manifest.json`、`artifact_index.json`、metadata `artifact_summary` / `manifest_path` / `artifact_index_path`。
 - Stage 6B 已新增 `GET /api/analysis-runs/{run_id}/manifest`。
 - Stage 6C 已新增 `flow_counts.json`、`zone_statistics.json` 生成与读取。
 - Stage 6C 已新增 `GET /api/analysis-runs/{run_id}/flow-counts` 和 `GET /api/analysis-runs/{run_id}/zone-statistics`。
+- Stage 6D 已增强 `GET /api/analysis-runs` 和 `GET /api/analysis-runs/{run_id}`，可从 manifest / metadata / artifact_index / in-memory registry / directory scan fallback 构建统一 summary。
 - `backend/app/api/analysis_runs.py` 已有 `GET /api/analysis-runs`、`GET /api/analysis-runs/{run_id}`、manifest、detections、tracks、trajectory-points、events、flow-counts、zone-statistics、alerts 查询 API。
 - `frontend/src/api/analysisRuns.ts` 已有 detections / tracks / trajectory / events / alerts API client；flow / zone statistics 前端接入留到 Stage 6E。
 - `frontend/src/pages/AnalysisDetailPage.tsx` 已能读取并显示 detections、tracks、trajectory、events、alerts 的基础数据。
@@ -77,7 +78,7 @@ Stage 6 的设计重点是结果管理和读取契约，不把 Stage 5 已有事
 
 ### 3.2 部分能力
 
-当前已有 Stage 6B manifest / artifact index 与 Stage 6C traffic statistics 的 artifact-backed MVP。
+当前已有 Stage 6B manifest / artifact index、Stage 6C traffic statistics 与 Stage 6D Analysis Runs summary 的 artifact-backed MVP。
 
 - `TrafficArtifactWriter.CORE_ARTIFACTS` 包含 detections、tracks、trajectory、events、alerts、`flow_counts.json`、`zone_statistics.json`、`evaluation_summary.json`、`annotated_video.mp4`、`keyframes/` 等候选产物名。
 - `TrafficArtifactWriter.artifact_index(run_id)` 只返回实际存在的文件或非空目录，因此候选产物不等于真实生成产物。
@@ -87,7 +88,7 @@ Stage 6 的设计重点是结果管理和读取契约，不把 Stage 5 已有事
 - `backend/app/analysis/run_index.py` 目前只有 `run_directory()` helper，不是 DB-backed result index，也不是完整运行索引服务。
 - `backend/app/models/`、`backend/app/repositories/`、`backend/app/db/` 仍是 placeholder 或基础骨架。
 - `keyframes/` 目录会被创建，但当前没有 snapshot 生成逻辑；空目录不会出现在 `artifact_index()`。
-- 前端 Analysis Detail 已经存在，但更像 artifact reader 页面，还没有完整 Traffic Analysis Center 的 run 详情、artifact panel、flow/zone 统计图表。
+- 前端 Analysis Detail 已经存在，但更像 artifact reader 页面；Stage 6D 只做了 API client 兼容，尚未实现完整 Traffic Analysis Center 的 run 详情、artifact panel、flow/zone 统计图表。
 
 ### 3.3 未实现能力
 
@@ -99,14 +100,14 @@ Stage 6 的设计重点是结果管理和读取契约，不把 Stage 5 已有事
 - `traffic_analysis_runs` 数据库表或 ORM model。
 - DB-backed result index。
 - flow / zone statistics 前端图表。
-- Dashboard 真实 run 指标读取。
+- Stage 6E Dashboard / Analysis Detail 真实数据接入。
 - Review Center、Bad Case Center、Evaluation Center。
 
 ### 3.4 当前风险
 
 - `metadata.json` 中的旧 `artifacts` 字段仍保留兼容，不应替代 Stage 6B `manifest.json` 作为产物状态来源。
 - `CORE_ARTIFACTS` 预留了尚未生成的产物名，若调用方直接读取 `metadata["artifacts"]` 而不校验文件存在，可能误判 Stage 6 产物已完成。
-- `list_runs()` 当前只返回进程内 registry，不会扫描历史 run 目录；服务重启后只有按 `run_id` 查询时才会回读 metadata。
+- Stage 6D list API 已支持扫描历史 run 目录，但仍是 artifact-based index，不是 DB-backed result index。
 - `keyframes/` 目录虽然被创建，但没有 snapshot 生成和事件关联契约，不能视为 keyframe 能力完成。
 - Stage 5 的 `flow_counting` 和 `congestion` 是规则层能力；Stage 6C 只消费它们的 artifacts 生成本地统计文件，不应被表述为数据库统计中心或前端统计图表完成。
 - 真实数据库层还未建立，不能把当前 artifact-based / in-memory MVP 表述为 database final version。
@@ -550,35 +551,54 @@ alerts 可以引用 event evidence，而不是重复保存 snapshot 信息。
 
 ### 12.1 Analysis Run Summary
 
-已有：
+Stage 6D 已增强：
 
 - `GET /api/analysis-runs`
 - `GET /api/analysis-runs/{run_id}`
 
-建议稳定字段：
+`GET /api/analysis-runs` 返回分页对象，支持 `status`、`video_id`、`limit`、`offset`。列表会合并 in-memory registry 与 `results/traffic_analysis/` 下可发现的 run 目录，并按 `run_id` 去重。
+
+`GET /api/analysis-runs/{run_id}` 返回单个统一 summary。summary 优先从 `manifest.json` 构建，manifest 缺失或损坏时可降级到 `metadata.json`、`artifact_index.json`、in-memory registry 或 directory scan fallback。损坏的单个 JSON 文件不会让整个 list API 500。
+
+当前稳定字段：
 
 ```json
 {
+  "schema_version": "stage6d.v1",
   "id": "run_abc123",
+  "run_id": "run_abc123",
   "video_id": "video_001",
   "status": "completed",
+  "mode": "offline",
   "result_dir": "results/traffic_analysis/run_abc123",
-  "stage": "stage_5_alert_center_mvp",
-  "summary": {
-    "total_frames_processed": 100,
-    "total_detections": 200,
-    "total_tracks": 30,
-    "total_events": 5,
-    "total_alerts": 3
+  "source": "manifest",
+  "metadata": {
+    "available": true,
+    "path": "metadata.json",
+    "status": "available"
+  },
+  "manifest": {
+    "available": true,
+    "path": "manifest.json",
+    "status": "available",
+    "schema_version": "stage6b.v1"
   },
   "artifact_index": {
-    "metadata": "metadata.json",
-    "manifest": "manifest.json"
+    "available": true,
+    "path": "artifact_index.json",
+    "status": "available"
+  },
+  "artifact_summary": {
+    "detections_csv": {
+      "status": "available",
+      "path": "detections.csv",
+      "record_count": 123
+    }
   }
 }
 ```
 
-当前 `list_runs()` 只返回 in-memory registry。Stage 6B 应考虑扫描已有 run 目录或建立持久索引。
+当前仍是 artifact-based result index，不是 DB-backed result index。
 
 ### 12.2 Artifact Manifest API
 
@@ -827,11 +847,13 @@ Stage 6 不应破坏已有 artifact 格式。
 
 ### 15.3 Stage 6D：Analysis Runs API 增强
 
-最小范围：
+已实现范围：
 
 - 统一 run summary schema。
 - 支持服务重启后扫描 run 目录。
-- 统一错误响应。
+- 支持 manifest / metadata / artifact_index / in-memory registry / directory scan fallback。
+- 支持 status、video_id、limit、offset。
+- 损坏 manifest 不导致 list API 整体 500。
 - 增加 artifact source 和 schema version。
 
 ### 15.4 Stage 6E：前端 Analysis Detail / Dashboard 真实数据接入
@@ -866,14 +888,14 @@ Stage 6 不应破坏已有 artifact 格式。
 | 风险 | 影响 | 规避 |
 | --- | --- | --- |
 | 把 `CORE_ARTIFACTS` 预留键当成真实产物 | 前端误判 Stage 6 完成 | 使用 manifest status，必须校验文件存在 |
-| in-memory registry 丢失历史 run | 服务重启后列表为空 | Stage 6D 扫描 run 目录或引入持久索引 |
+| in-memory registry 丢失历史 run | 服务重启后列表为空 | Stage 6D 已扫描 run 目录；DB-backed index 留到后续 |
 | flow_counting event 与 flow_counts 混淆 | 统计中心能力被夸大 | 文档、API、命名上明确 event vs aggregate artifact |
 | congestion evidence 与 zone statistics 混淆 | 区域统计能力被夸大 | `zone_statistics.json` 独立生成和读取 |
 | metadata 字段继续扩散 | 前端和后续模块难以依赖 | Stage 6B 固定 schema version |
 | 一次性引入数据库 | 范围过大，破坏 MVP | Stage 6 先保持 artifact-based，数据库留到后续明确阶段 |
 | keyframes / annotated video 过早实现 | 容易牵动视频渲染和存储细节 | Stage 6F 单独小步实现 |
 
-## 17. Stage 6B / 6C 完成状态与后续边界
+## 17. Stage 6B / 6C / 6D 完成状态与后续边界
 
 Stage 6B 已完成 run manifest 与 artifact index 加固：
 
@@ -893,4 +915,13 @@ Stage 6C 已完成 artifact-backed traffic statistics MVP：
 4. 新增 `GET /api/analysis-runs/{run_id}/zone-statistics`。
 5. 为 writer、manifest 状态和 API 增加后端测试。
 
-Stage 6C 没有实现 keyframes、annotated video、Review、Bad Case、Evaluation、数据库 migration、DB-backed result index、前端统计图表或真实世界速度 / 流量标定。下一步建议进入 Stage 6D：Analysis Runs API 增强和历史 run 目录扫描。
+Stage 6D 已完成 artifact-backed Analysis Runs API 增强：
+
+1. `GET /api/analysis-runs` 返回 `items` / `total` / `limit` / `offset` 分页对象。
+2. 支持从 manifest、metadata、artifact_index、in-memory registry 和 directory scan fallback 构建统一 run summary。
+3. 支持 `status`、`video_id`、`limit`、`offset`。
+4. summary 包含 metadata / manifest / artifact_index 状态和 artifact_summary。
+5. 损坏 manifest 不导致 list API 整体失败。
+6. 为 list、summary、过滤分页、降级来源和 404 增加后端测试。
+
+Stage 6D 没有实现 Stage 6E 前端真实数据接入、keyframes、annotated video、Review、Bad Case、Evaluation、数据库 migration、DB-backed result index、前端统计图表或真实世界速度 / 流量标定。下一步建议进入 Stage 6E：前端 Analysis Detail / Dashboard 真实数据接入。

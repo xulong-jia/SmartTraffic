@@ -2,6 +2,7 @@ import { apiGet, apiPost } from "./client";
 import type {
   AnalysisRun,
   AnalysisRunDetections,
+  AnalysisRunsListResponse,
   AnalysisRunTracks,
   AlertsResponse,
   EventsResponse,
@@ -10,7 +11,9 @@ import type {
 } from "../types";
 
 export function listAnalysisRuns(): Promise<AnalysisRun[]> {
-  return apiGet<AnalysisRun[]>("/api/analysis-runs");
+  return apiGet<AnalysisRun[] | AnalysisRunsListResponse>("/api/analysis-runs").then(
+    (payload) => (Array.isArray(payload) ? payload : payload.items)
+  );
 }
 
 export function getAnalysisRun(runId: string): Promise<AnalysisRun> {

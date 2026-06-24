@@ -8,8 +8,18 @@ router = APIRouter(prefix="/api/analysis-runs", tags=["analysis-runs"])
 
 
 @router.get("")
-def list_analysis_runs() -> list[dict]:
-    return traffic_analysis_service.list_runs()
+def list_analysis_runs(
+    run_status: str | None = Query(default=None, alias="status"),
+    video_id: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=0, le=1000),
+    offset: int = Query(default=0, ge=0),
+) -> dict:
+    return traffic_analysis_service.list_runs(
+        status=run_status,
+        video_id=video_id,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get("/{run_id}")

@@ -94,7 +94,7 @@ export default function AnalysisDetailPage() {
       .then((items) => {
         setRuns(items);
         if (items.length > 0) {
-          setSelectedRunId(items[items.length - 1].id);
+          setSelectedRunId(items[0].id);
         }
       })
       .catch((currentError: Error) => setError(currentError.message));

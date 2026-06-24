@@ -128,6 +128,94 @@ Supported `event_type` values:
 - `PATCH /api/alerts/{alert_id}/resolve`
 - `PATCH /api/alerts/{alert_id}/ignore`
 
+### Analysis Runs List
+
+`GET /api/analysis-runs`
+
+This Stage 6D endpoint returns an artifact-backed run list. It combines the
+in-memory processing registry with directories found under
+`results/traffic_analysis/`, de-duplicates by `run_id`, and builds summaries
+from the best available source in this order: `manifest.json`, `metadata.json`,
+`artifact_index.json`, in-memory registry, then directory scan fallback. It does
+not use a database.
+
+Query parameters:
+
+- `status`: optional run status filter.
+- `video_id`: optional video id filter.
+- `limit`: integer from 0 to 1000, default 50.
+- `offset`: integer greater than or equal to 0, default 0.
+
+Response shape:
+
+```json
+{
+  "items": [
+    {
+      "schema_version": "stage6d.v1",
+      "id": "run_xxx",
+      "run_id": "run_xxx",
+      "video_id": "video_xxx",
+      "status": "completed",
+      "mode": "offline",
+      "result_dir": "results/traffic_analysis/run_xxx",
+      "source": "manifest",
+      "metadata": {
+        "available": true,
+        "path": "metadata.json",
+        "status": "available"
+      },
+      "manifest": {
+        "available": true,
+        "path": "manifest.json",
+        "status": "available",
+        "schema_version": "stage6b.v1"
+      },
+      "artifact_index": {
+        "available": true,
+        "path": "artifact_index.json",
+        "status": "available"
+      },
+      "artifact_summary": {
+        "detections_csv": {
+          "status": "available",
+          "path": "detections.csv",
+          "record_count": 123
+        }
+      }
+    }
+  ],
+  "total": 1,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+Behavior:
+
+- Results are sorted by `updated_at`, `finished_at`, or `created_at`
+  descending, with `run_id` as a stable fallback.
+- Paths are relative or sanitized for frontend use; local absolute paths are
+  not exposed.
+- Invalid JSON in one run's manifest does not make the whole list fail. The
+  affected run can fall back to metadata or directory scan and marks that file
+  status as `error`.
+
+### Analysis Run Summary
+
+`GET /api/analysis-runs/{run_id}`
+
+This endpoint returns the same Stage 6D summary object used by the list API for
+one run. It preserves the legacy `id` field while also exposing `run_id`.
+
+Behavior:
+
+- Missing run returns 404.
+- Summary source can be `manifest`, `metadata`, `artifact_index`,
+  `in_memory_registry`, or `directory_scan`.
+- This endpoint is an artifact-based result index, not a DB-backed result
+  index.
+
 ### Manifest
 
 `GET /api/analysis-runs/{run_id}/manifest`
@@ -469,4 +557,4 @@ implemented as working behavior yet:
 - `GET /api/bad-cases`
 - `GET /api/evaluation/results`
 
-These placeholder endpoints exist to preserve module boundaries. Standalone event and alert center APIs remain separate from the artifact-based `analysis-runs` event and alert endpoints documented above. Review, bad-case, and evaluation behavior belongs to later phases and is not implemented as completed logic.
+These placeholder endpoints exist to preserve module boundaries. Standalone event and alert center APIs remain separate from the artifact-based `analysis-runs` list, summary, event, statistics, and alert endpoints documented above. Review, bad-case, and evaluation behavior belongs to later phases and is not implemented as completed logic.

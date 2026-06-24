@@ -19,10 +19,43 @@ export interface ProcessingTask {
 
 export interface AnalysisRun {
   id: string;
+  run_id?: string;
   video_id: string;
   status: string;
+  mode?: string;
   result_dir: string;
-  artifact_index: Record<string, string>;
+  source?: string;
+  schema_version?: string;
+  created_at?: string;
+  updated_at?: string;
+  started_at?: string;
+  finished_at?: string;
+  metadata?: ArtifactStatus;
+  manifest?: ArtifactStatus;
+  artifact_index: Record<string, string> | ArtifactStatus;
+  artifact_paths?: Record<string, string>;
+  artifact_summary?: Record<string, ArtifactSummaryItem>;
+}
+
+export interface ArtifactStatus {
+  available?: boolean;
+  path: string;
+  status: string;
+  schema_version?: string | null;
+  error?: string;
+}
+
+export interface ArtifactSummaryItem {
+  status: string;
+  path: string;
+  record_count: number;
+}
+
+export interface AnalysisRunsListResponse {
+  items: AnalysisRun[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export interface DetectionProcessOptions {
