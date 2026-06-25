@@ -191,7 +191,7 @@ Current frontend limitations:
 
 Current limitations:
 
-- no Review Center workflow
+- no Review Center API or frontend workflow; Stage 7B only provides local review artifact helpers and state models
 - no Bad Case Center workflow
 - no Evaluation Center workflow
 - no database-backed Zone / Rule / Alert persistence
@@ -204,4 +204,4 @@ Current limitations:
 - no real-world speed / direction calibration
 - no formal traffic enforcement conclusion
 
-Future phases should keep YOLOv8, DeepSORT, Trajectory Engine, Event Engine, Alert Center, Review Center, Bad Case Center, and Evaluation Center separate.
+Future phases should keep YOLOv8, DeepSORT, Trajectory Engine, Event Engine, Alert Center, Review Center, Bad Case Center, and Evaluation Center separate. Review artifacts such as `review_comments.jsonl`, `event_review_state.json`, and `false_negative_events.jsonl` are a Stage 7B local artifact layer; they are not database-backed review state, Bad Case records, or Evaluation reports.

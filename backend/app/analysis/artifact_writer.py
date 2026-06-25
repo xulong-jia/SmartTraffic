@@ -40,6 +40,12 @@ VISUAL_ARTIFACTS = {
     "annotated_video": "annotated_video.mp4",
 }
 
+REVIEW_ARTIFACTS = {
+    "review_comments": "review_comments.jsonl",
+    "event_review_state": "event_review_state.json",
+    "false_negative_events": "false_negative_events.jsonl",
+}
+
 CORE_ARTIFACTS = {
     "detections": "detections.csv",
     "detections_csv": "detections.csv",
@@ -184,6 +190,21 @@ STAGE6B_ARTIFACT_DEFINITIONS = {
     "keyframes_index": {
         "path": "keyframes/index.json",
         "format": "json",
+        "required": False,
+    },
+    "review_comments": {
+        "path": "review_comments.jsonl",
+        "format": "jsonl",
+        "required": False,
+    },
+    "event_review_state": {
+        "path": "event_review_state.json",
+        "format": "json",
+        "required": False,
+    },
+    "false_negative_events": {
+        "path": "false_negative_events.jsonl",
+        "format": "jsonl",
         "required": False,
     },
 }
@@ -1185,6 +1206,9 @@ def _artifact_record_count(
         if key == "keyframes_index":
             items = payload.get("items") if isinstance(payload, Mapping) else None
             return len(items) if isinstance(items, list) else 1
+        if key == "event_review_state":
+            events = payload.get("events") if isinstance(payload, Mapping) else None
+            return len(events) if isinstance(events, Mapping) else 0
         return 1
     if artifact_format == "directory":
         if not path.is_dir():

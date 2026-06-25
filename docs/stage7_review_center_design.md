@@ -1,6 +1,6 @@
 # Stage 7 Review Center 设计文档
 
-本文档记录 Stage 7A 的只读审计结论和 Stage 7 Review Center 设计草案。当前阶段只做设计，不实现后端 API、前端页面、测试、数据库 migration、Bad Case Center 或 Evaluation Center。
+本文档记录 Stage 7A 的只读审计结论、Stage 7 Review Center 设计草案，以及 Stage 7B artifact 与状态模型实现口径。当前已实现的是本地 review artifact helper / service，不代表 Review API MVP、Review Center 前端、数据库 migration、Bad Case Center 或 Evaluation Center 已完成。
 
 ## 1. 阶段目标
 
@@ -61,15 +61,18 @@ Stage 7 也不改变 Stage 5/6 的事件规则、告警生成、交通统计和�
 
 ### 3.2 部分能力
 
-当前已有一些 Stage 7 可复用但尚未形成 Review Center 的能力：
+当前已有一些 Stage 7 可复用但尚未形成完整 Review Center 的能力：
 
 - `backend/app/events/contracts.py` 已定义事件状态集合：`pending`、`confirmed`、`false_positive`、`false_negative`、`ignored`、`resolved`。
 - 新生成事件默认状态为 `pending`。
 - `frontend/src/types/index.ts` 中 `TrafficEvent` 已允许 `status` 字段，但没有独立 review state 类型。
 - `AlertRecord` 中存在 `event_id`，可建立 alert 到 event 的跳转关系。
 - Stage 6 manifest / artifact index 能表达 artifact 可用、缺失、空结果、错误和 planned 状态，可复用于 Review Center 的证据状态展示。
+- Stage 7B 已新增 `backend/app/schemas/review.py`，定义 review action、review status、review comment、event review state 和 false-negative record schema。
+- Stage 7B 已新增 `backend/app/analysis/review_artifacts.py`，支持 `review_comments.jsonl` append-only 写入、`event_review_state.json` 派生状态原子更新、`false_negative_events.jsonl` 漏报记录写入和最小状态转换校验。
+- Stage 7B 已将 review artifact summary 小范围接入 metadata，并在已有 manifest / artifact index 存在时更新对应 review artifact 条目。
 
-这些能力只代表 contract 或读取基础，不代表复核功能已经实现。
+这些能力代表 Stage 7B artifact 底座和既有读取基础，不代表 Review API、Review Center 前端或完整复核工作流已经实现。
 
 ### 3.3 未实现能力
 
@@ -77,13 +80,8 @@ Stage 7 也不改变 Stage 5/6 的事件规则、告警生成、交通统计和�
 
 - `/api/review/events` 真实查询逻辑。当前 `backend/app/api/review.py` 只返回 placeholder。
 - standalone `/api/events` 真实查询逻辑。当前 `backend/app/api/events.py` 只返回 placeholder。
-- `ReviewService` 真实业务逻辑。当前 `backend/app/services/review_service.py` 仍是 placeholder。
-- review schemas，例如 review event response、review action request、review comment response。
-- `review_comments.jsonl` artifact。
-- `review_state.json` 或 `event_review_state.json` 派生状态 artifact。
-- `false_negative_events.jsonl` artifact。
-- 事件确认、误报标记、漏报补充、忽略、解决和备注写入能力。
-- before/after status 审计留痕。
+- Review API response / request schemas，例如 review event response、review action request、review comment API response。
+- Review API 层的事件确认、误报标记、漏报补充、忽略、解决和备注写入能力。
 - Review Center 可用前端页面。当前 `ReviewCenterPage` 是 placeholder，并只渲染 `EventTable` contract。
 - Analysis Detail 中的 event review 入口、review status、comments count。
 - Alert Center 到关联 event review 的跳转。
@@ -262,7 +260,7 @@ Alert status 是告警处理状态，Event review status 是事件正确性状�
 results/traffic_analysis/{run_id}/review_comments.jsonl
 ```
 
-建议单条结构：
+Stage 7B 已实现 append-only 写入，单条结构：
 
 ```json
 {
@@ -276,10 +274,7 @@ results/traffic_analysis/{run_id}/review_comments.jsonl
   "comment": "Reviewer confirmed the event.",
   "reviewer": "local_reviewer",
   "created_at": "2026-06-25T00:00:00+00:00",
-  "source": "review_center",
-  "bad_case_id": null,
-  "bad_case_link": null,
-  "future_bad_case_candidate": false
+  "source": "review_center"
 }
 ```
 
@@ -298,25 +293,22 @@ results/traffic_analysis/{run_id}/review_comments.jsonl
 | `reviewer` | 是 | MVP 可使用本地输入值或 `local_reviewer` 默认值。 |
 | `created_at` | 是 | UTC ISO timestamp。 |
 | `source` | 是 | `review_center`、`analysis_detail` 或 `alert_center`。 |
-| `bad_case_id` | 否 | Stage 8 预留字段。 |
-| `bad_case_link` | 否 | Stage 8 预留字段。 |
-| `future_bad_case_candidate` | 否 | 是否建议后续进入 Bad Case。 |
 
 `review_comments.jsonl` 只追加，不覆盖。每次状态变更都必须追加一条记录。
 
 ### 6.2 review_state.json
 
-为避免破坏原始 `events.jsonl`，Stage 7 MVP 应引入派生状态 artifact。推荐文件名为：
+为避免破坏原始 `events.jsonl`，Stage 7B 已引入派生状态 artifact：
 
 ```text
 results/traffic_analysis/{run_id}/event_review_state.json
 ```
 
-也可命名为 `review_state.json`，但建议字段明确以 event 为 key：
+当前字段以 event 为 key：
 
 ```json
 {
-  "schema_version": "stage7_review_state.v1",
+  "schema_version": "stage7b.v1",
   "run_id": "run_...",
   "updated_at": "2026-06-25T00:00:00+00:00",
   "events": {
@@ -327,10 +319,7 @@ results/traffic_analysis/{run_id}/event_review_state.json
       "last_action": "confirm",
       "reviewer": "local_reviewer",
       "updated_at": "2026-06-25T00:00:00+00:00",
-      "comments_count": 2,
-      "linked_alert_ids": ["alert_abc"],
-      "bad_case_id": null,
-      "future_bad_case_candidate": false
+      "comment_count": 2
     }
   }
 }
@@ -340,7 +329,7 @@ results/traffic_analysis/{run_id}/event_review_state.json
 
 1. 读取 `events.jsonl` 原始事件。
 2. 读取 `event_review_state.json`。
-3. 对每个原始 event 用 review state 覆盖展示用 `status`、`comments_count`、`last_reviewed_at` 等字段。
+3. 对每个原始 event 用 review state 覆盖展示用 `status`、`comment_count`、`last_reviewed_at` 等字段。
 4. 原始 `events.jsonl` 不被覆盖。
 
 `event_review_state.json` 是当前状态索引，`review_comments.jsonl` 是审计历史。若两者不一致，应以 `review_comments.jsonl` 可重放结果为准，并在后续维护命令中重建 state。
@@ -353,29 +342,24 @@ results/traffic_analysis/{run_id}/event_review_state.json
 results/traffic_analysis/{run_id}/false_negative_events.jsonl
 ```
 
-建议单条结构：
+Stage 7B 已实现 append-only 写入，单条结构：
 
 ```json
 {
   "false_negative_id": "fn_...",
   "run_id": "run_...",
-  "event_type": "wrong_way_driving",
-  "status": "false_negative",
+  "expected_event_type": "wrong_way_driving",
   "track_id": 12,
   "zone_id": "zone_1",
   "start_frame": 100,
   "end_frame": 130,
   "start_time_ms": 4000,
   "end_time_ms": 5200,
-  "evidence": {
-    "description": "Manual reviewer observed wrong-way movement."
-  },
-  "comment": "Missed by current rule.",
+  "description": "Reviewer found a missed wrong-way event.",
   "reviewer": "local_reviewer",
   "created_at": "2026-06-25T00:00:00+00:00",
-  "source": "review_center",
-  "bad_case_id": null,
-  "future_bad_case_candidate": true
+  "status": "false_negative",
+  "source": "review_center"
 }
 ```
 
@@ -398,7 +382,7 @@ Review API 的展示层可以返回合并后的 `review_status` 或覆盖后的�
   "review_status": "confirmed",
   "status": "confirmed",
   "status_source": "event_review_state",
-  "comments_count": 1
+  "comment_count": 1
 }
 ```
 
@@ -498,7 +482,7 @@ Response schema：
       "review_status": "confirmed",
       "status": "confirmed",
       "status_source": "event_review_state",
-      "comments_count": 1,
+      "comment_count": 1,
       "linked_alert_count": 1,
       "last_reviewed_at": "2026-06-25T00:00:00+00:00",
       "is_false_negative": false
@@ -516,7 +500,7 @@ Response schema：
 - 从 `event_review_state.json` 合并派生状态。
 - 从 `false_negative_events.jsonl` 追加漏报记录。
 - 从 `alerts.jsonl` 汇总 linked alert count。
-- 从 `review_comments.jsonl` 计算 comments count。
+- 从 `review_comments.jsonl` 计算 `comment_count`。
 
 ### 7.2 GET /api/review/events/{event_id}
 
@@ -701,20 +685,16 @@ Request body：
 ```json
 {
   "run_id": "run_...",
-  "event_type": "wrong_way_driving",
+  "expected_event_type": "wrong_way_driving",
   "track_id": 12,
   "zone_id": "zone_1",
   "start_frame": 100,
   "end_frame": 130,
   "start_time_ms": 4000,
   "end_time_ms": 5200,
-  "evidence": {
-    "description": "Manual reviewer observed a missed event."
-  },
-  "comment": "Missed by current rule.",
+  "description": "Manual reviewer observed a missed event.",
   "reviewer": "local_reviewer",
-  "source": "review_center",
-  "future_bad_case_candidate": true
+  "source": "review_center"
 }
 ```
 
@@ -774,7 +754,7 @@ Response schema：
 - 校验 run 和 event 或 false-negative synthetic event 存在。
 - 获取当前派生状态。
 - 追加 `review_comments.jsonl` action=`comment`。
-- 更新 `event_review_state.json.comments_count` 和 `updated_at`。
+- 更新 `event_review_state.json.comment_count` 和 `updated_at`。
 
 ### 7.9 GET /api/review/comments
 
@@ -850,7 +830,7 @@ ReviewCenterPage 不应实现 Bad Case 管理表、Evaluation charts、规则重
 
 - Event 表格中每个 event 增加 `Review` 入口。
 - 显示 `review_status` 或合并后的 `status`。
-- 显示 `comments_count`。
+- 显示 `comment_count`。
 - 如果 keyframes / annotated video available，可提供跳转到 Review detail 的上下文。
 - 入口参数至少包含 `run_id` 和 `event_id`。
 
@@ -949,12 +929,15 @@ Stage 7 每个子阶段至少运行：
 
 ### 10.1 Stage 7B：Review artifact 与状态模型
 
-目标：
+状态：已完成 artifact-based MVP。
 
-- 新增 review artifact helper / service skeleton。
+已完成：
+
+- 新增 review artifact helper / service。
 - 定义 review record、review state、false negative record schema。
 - 支持 artifact read/write 的最小逻辑。
 - 不接入前端。
+- 支持 metadata、已有 manifest 和已有 artifact index 中的 review artifact summary 更新。
 
 验收：
 
@@ -1030,7 +1013,7 @@ Stage 7 每个子阶段至少运行：
 
 ## 12. Stage 7B 最小开发计划
 
-Stage 7B 建议采用小步实现：
+Stage 7B 已按以下最小范围实现：
 
 1. 新增 review artifact schema / constants，复用现有 event status 枚举。
 2. 新增 artifact path resolver，只定位 `results/traffic_analysis/{run_id}` 下的 review files。
@@ -1041,4 +1024,4 @@ Stage 7B 建议采用小步实现：
 7. 增加 artifact 单元测试，确认不修改 `events.jsonl`。
 8. 更新 Stage 7B 文档或 API reference 的 planned/implemented 边界。
 
-Stage 7B 完成后仍不需要实现前端 Review Center。前端应放到 Stage 7D，Analysis / Alert 联动应放到 Stage 7E。
+Stage 7B 完成后仍未实现 Review API 或前端 Review Center。Review API 应放到 Stage 7C，前端应放到 Stage 7D，Analysis / Alert 联动应放到 Stage 7E。

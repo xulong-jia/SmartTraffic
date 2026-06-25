@@ -576,6 +576,36 @@ Sets `status=acknowledged`, writes `acknowledged_by`, and writes
 These endpoints update the current artifact-backed MVP storage. They are not a
 database-backed workflow engine.
 
+## Review Artifacts
+
+Stage 7B implements Review Center artifact and state-model helpers only. No
+Review API MVP is routed yet.
+
+Per-run review artifact files:
+
+- `review_comments.jsonl`: append-only audit trail for `confirm`,
+  `mark_false_positive`, `add_false_negative`, `ignore`, `resolve`, and
+  `comment` actions.
+- `event_review_state.json`: derived current review state keyed by `event_id`.
+  It does not overwrite the original Event Engine `events.jsonl`.
+- `false_negative_events.jsonl`: local MVP records for manually added missed
+  events. These records are not Bad Case Center records and are not Evaluation
+  ground truth.
+
+Stage 7B helper behavior:
+
+- missing review artifact files load as empty comments, empty state, and empty
+  false-negative records;
+- review state defaults to `pending` when no derived state exists for an event;
+- minimal artifact-layer transitions are validated before writing;
+- review artifact paths are written into metadata and, when present, manifest /
+  artifact index summaries;
+- writes are local artifact writes, not database persistence.
+
+Stage 7C will define and route the Review API MVP. Stage 7D will implement the
+Review Center frontend. Bad Case Center and Evaluation Center remain Stage 8
+work.
+
 ## Not Implemented From The Manual Yet
 
 The following API capabilities are planned by the execution manual but are not
@@ -589,7 +619,7 @@ implemented as working behavior yet:
 - `POST /api/evaluation/run`
 - advanced filtering on flow counts and zone statistics
 - database-backed aggregate statistics APIs
-- full Review / Bad Case / Evaluation APIs
+- full Review / Bad Case / Evaluation APIs and frontend workflows
 
 ## Placeholders For Later Phases
 
