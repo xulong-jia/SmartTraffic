@@ -489,6 +489,7 @@ The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert mile
 - `docs/stage5_event_alert_pipeline.md`
 - `docs/stage6_traffic_analysis_center_design.md`
 - `docs/stage7_review_center_design.md`
+- `docs/stage8_bad_case_evaluation_design.md`
 - `docs/evaluation.md`
 - `docs/architecture.md`
 - `docs/database_schema.md`
