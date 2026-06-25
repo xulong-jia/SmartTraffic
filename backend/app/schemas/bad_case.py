@@ -104,6 +104,10 @@ class BadCaseCreateRequest(BaseModel):
         return _validate_snapshot_path(value)
 
 
+class BadCaseCreateApiRequest(BadCaseCreateRequest):
+    run_id: str
+
+
 class BadCaseUpdateRequest(BaseModel):
     status: BadCaseStatus | None = None
     root_cause: str | None = None
@@ -120,6 +124,23 @@ class BadCaseUpdateRequest(BaseModel):
         return _validate_snapshot_path(value)
 
 
+class BadCaseUpdateApiRequest(BadCaseUpdateRequest):
+    run_id: str | None = None
+
+
+class BadCaseFromReviewRequest(BaseModel):
+    run_id: str
+    event_id: str | None = None
+    review_id: str | None = None
+    case_type: BadCaseType | None = None
+    module: BadCaseModule = "review_center"
+    description: str | None = None
+    expected_result: str | None = None
+    actual_result: str | None = None
+    root_cause: str | None = None
+    tags: list[str] | None = None
+
+
 class BadCaseUpdateAuditRecord(BaseModel):
     run_id: str
     case_id: str
@@ -134,7 +155,20 @@ class BadCaseSummary(BaseModel):
     by_module: dict[str, int] = Field(default_factory=dict)
     by_status: dict[str, int] = Field(default_factory=dict)
     by_source: dict[str, int] = Field(default_factory=dict)
+    by_tag: dict[str, int] = Field(default_factory=dict)
     top_tags: dict[str, int] = Field(default_factory=dict)
+
+
+class BadCaseListResponse(BaseModel):
+    items: list[BadCaseRecord]
+    total: int
+    limit: int
+    offset: int
+    summary: BadCaseSummary
+
+
+class BadCaseDetailResponse(BadCaseRecord):
+    pass
 
 
 def _validate_snapshot_path(value: str | None) -> str | None:

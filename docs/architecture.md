@@ -66,6 +66,8 @@ Currently implemented architecture includes:
   MVP boundary
 - Stage 8B artifact-backed Bad Case schema, JSONL artifacts, service methods,
   manifest / metadata / artifact index summaries, and backend tests
+- Stage 8CD artifact-backed Bad Case API and React Bad Case Center MVP for
+  filters, list/detail, create, update, summary, and from-review creation
 
 The current implementation is useful for local validation, but it is not the
 complete database-backed manual architecture yet.
@@ -122,7 +124,7 @@ These modules are not complete in the current project state.
 - `backend/app/trajectory`: geometry utilities, trajectory feature helpers, and `TrajectoryEngine`.
 - `backend/app/events`: event contracts, evidence helpers, rule execution helpers, `EventEngine`, dedup helpers, and rule callbacks.
 - `backend/app/alerts`: minimal alert contract helpers.
-- `backend/app/analysis`: artifact writer for run directories, metadata, Stage 6B `manifest.json` / `artifact_index.json`, detections, tracks, trajectory outputs, event outputs, traffic statistics outputs, alert outputs, Stage 6F visual artifacts, Stage 7 review artifacts, and Stage 8B Bad Case artifacts.
+- `backend/app/analysis`: artifact writer for run directories, metadata, Stage 6B `manifest.json` / `artifact_index.json`, detections, tracks, trajectory outputs, event outputs, traffic statistics outputs, alert outputs, Stage 6F visual artifacts, Stage 7 review artifacts, and Stage 8B/8CD Bad Case artifacts.
 
 Implemented stage-five rule callbacks:
 
@@ -187,6 +189,7 @@ traffic statistics, alert, and visual review results at this stage.
 - `frontend/src/pages/AnalysisDetailPage.tsx`: run summary, metadata / manifest / artifact index status, artifact summary, visual artifact status, detection, tracking, trajectory, event, alert, flow count, zone statistics query view, and event Review links.
 - `frontend/src/pages/AlertCenterPage.tsx`: minimal alert query and status workflow plus linked event Review links.
 - `frontend/src/pages/ReviewCenterPage.tsx`: artifact-backed review event filters, URL query initialization, list/detail, comments, review actions, linked alert display, visual artifact references, and false-negative MVP form.
+- `frontend/src/pages/BadCaseCenterPage.tsx`: Stage 8CD artifact-backed Bad Case filters, list/detail, create form, status/root-cause/tag update, and summary cards.
 
 Current frontend limitations:
 
@@ -202,8 +205,7 @@ Current frontend limitations:
 Current limitations:
 
 - no database-backed Review Center workflow; Stage 7C/7D/7E provide artifact-backed Review API, frontend MVP, and navigation, and Stage 7F audits that as the local Review Center MVP only
-- no routed Bad Case API or Bad Case Center frontend workflow; Stage 8B only
-  provides backend artifact/schema/service support
+- no Evaluation-backed Bad Case regression workflow
 - no Evaluation Center workflow
 - no database-backed Zone / Rule / Alert persistence
 - no video overlay
@@ -215,4 +217,4 @@ Current limitations:
 - no real-world speed / direction calibration
 - no formal traffic enforcement conclusion
 
-Future phases should keep YOLOv8, DeepSORT, Trajectory Engine, Event Engine, Alert Center, Review Center, Bad Case Center, and Evaluation Center separate. Review artifacts such as `review_comments.jsonl`, `event_review_state.json`, and `false_negative_events.jsonl` plus the Stage 7C `/api/review` endpoints, Stage 7D/7E frontend, and Stage 7F audit are a local artifact-backed Review MVP; they are not database-backed review state or Evaluation reports. Stage 8B Bad Case artifacts such as `bad_cases.jsonl` and `bad_case_updates.jsonl` are local backend artifacts and do not yet imply routed API, frontend, database, or Evaluation Center completion.
+Future phases should keep YOLOv8, DeepSORT, Trajectory Engine, Event Engine, Alert Center, Review Center, Bad Case Center, and Evaluation Center separate. Review artifacts such as `review_comments.jsonl`, `event_review_state.json`, and `false_negative_events.jsonl` plus the Stage 7C `/api/review` endpoints, Stage 7D/7E frontend, and Stage 7F audit are a local artifact-backed Review MVP; they are not database-backed review state or Evaluation reports. Stage 8CD Bad Case behavior remains artifact-backed through `bad_cases.jsonl`, `bad_case_updates.jsonl`, `/api/bad-cases`, and the React Bad Case Center MVP; it does not imply database, Evaluation Center, failed case conversion, or regression workflow completion.

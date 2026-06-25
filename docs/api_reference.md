@@ -681,8 +681,9 @@ HTTP behavior:
 The Stage 7 frontend does not create Bad Case records, does not feed
 Evaluation Center, and Stage 7E navigation does not auto-sync Alert Center
 status with Event review status. Stage 8B adds backend artifact/schema/service
-support for Bad Case records, but the Review API and frontend do not call it
-yet.
+support for Bad Case records. Stage 8CD adds routed Bad Case API and a Bad
+Case Center frontend MVP. Review artifacts can be referenced by Bad Cases, but
+Review API actions still do not modify Bad Case records automatically.
 
 Stage 7E frontend URL query contract:
 
@@ -699,6 +700,41 @@ Detail only renders a Review link for events; Alert Center only renders a
 linked event Review link and keeps acknowledge / resolve / ignore behavior
 separate.
 
+## Bad Case API
+
+Stage 8CD implements an artifact-backed Bad Case API MVP. It reads and writes
+per-run `bad_cases.jsonl`, records auditable updates in `bad_case_updates.jsonl`,
+and refreshes manifest / metadata / artifact index summaries through the Stage
+8B artifact helper. It is not database-backed final Bad Case state.
+
+Implemented endpoints:
+
+- `GET /api/bad-cases?run_id=&case_type=&module=&status=&tag=&limit=50&offset=0`
+- `GET /api/bad-cases/{case_id}?run_id=`
+- `POST /api/bad-cases`
+- `PATCH /api/bad-cases/{case_id}`
+- `GET /api/bad-cases/summary?run_id=`
+- `POST /api/bad-cases/from-review`
+
+`GET /api/bad-cases` supports global discovery across run directories when
+`run_id` is omitted. Missing `bad_cases.jsonl` returns an empty list. Malformed
+Bad Case artifacts return `400` with a stable error message.
+
+`POST /api/bad-cases/from-review` creates a Bad Case that references
+`review_comments.jsonl.review_id` through `linked_review_id`; it does not
+overwrite `review_comments.jsonl`, `event_review_state.json`,
+`false_negative_events.jsonl`, or `events.jsonl`.
+
+HTTP behavior:
+
+- `400`: malformed Bad Case artifact or unsupported business update.
+- `404`: analysis run, Bad Case, or Review record not found.
+- `422`: request body validation error, including unsupported enum values.
+
+Evaluation APIs, Evaluation metrics, failed case conversion, Bad Case
+regression, and database-backed Bad Case state are not implemented in Stage
+8CD.
+
 ## Not Implemented From The Manual Yet
 
 The following API capabilities are planned by the execution manual but are not
@@ -707,13 +743,12 @@ implemented as working behavior yet:
 - `PATCH /api/events/{event_id}/status`
 - standalone `/api/events` full query
 - `GET /api/events/{event_id}`
-- `POST /api/bad-cases`
-- `GET /api/bad-cases` real list/detail/summary behavior
 - `POST /api/evaluation/run`
 - advanced filtering on flow counts and zone statistics
 - database-backed aggregate statistics APIs
 - database-backed Review Center workflow
-- full Bad Case / Evaluation APIs and frontend workflows
+- Evaluation APIs and frontend workflows
+- Bad Case regression and failed case conversion workflows
 
 ## Placeholders For Later Phases
 
@@ -729,9 +764,6 @@ implemented as working behavior yet:
 - `GET /api/events`: contract-only placeholder. Use
   `GET /api/analysis-runs/{run_id}/events` for current event artifacts, or
   `/api/review` for Stage 7 review event workflows.
-- `GET /api/bad-cases`: Stage 8C planned placeholder. Stage 8B has backend
-  artifact/schema/service support for `bad_cases.jsonl`, but no routed Bad
-  Case API behavior yet.
 - `GET /api/evaluation/results`: Stage 8 planned placeholder. Evaluation
   datasets, metrics, reports, regression, and `evaluation_summary.json`
   generation are not implemented.
@@ -742,8 +774,7 @@ not routed in the current Stage 7 artifact-backed MVP. Standalone event and aler
 separate from the artifact-based `analysis-runs` list, summary, event,
 statistics, and alert endpoints documented above. Review API MVP is available
 under `/api/review`, the Stage 7 Review Center frontend consumes it, and
-Stage 7F confirms the artifact-backed Review Center MVP boundary. Stage 8B
-Bad Case behavior is limited to backend artifacts and service methods; routed
-Bad Case APIs, Bad Case frontend workflows, Evaluation APIs, and Evaluation
-frontend behavior belong to later phases and are not implemented as completed
-logic.
+Stage 7F confirms the artifact-backed Review Center MVP boundary. Stage 8CD
+adds artifact-backed Bad Case APIs and frontend workflow. Evaluation APIs,
+Evaluation frontend behavior, failed case conversion, and regression workflow
+belong to later phases and are not implemented as completed logic.

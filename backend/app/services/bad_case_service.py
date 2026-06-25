@@ -72,6 +72,12 @@ class BadCaseService:
     def get_bad_case(self, *, run_id: str, case_id: str) -> dict[str, Any]:
         return get_bad_case(self._existing_run_dir(run_id), case_id)
 
+    def find_bad_case(self, *, case_id: str) -> dict[str, Any]:
+        for record in self.list_bad_cases():
+            if record["case_id"] == case_id:
+                return record
+        raise KeyError(case_id)
+
     def update_bad_case(
         self,
         *,
@@ -83,6 +89,9 @@ class BadCaseService:
 
     def summarize_bad_cases(self, *, run_id: str | None = None) -> dict[str, Any]:
         return summarize_bad_case_records(self.list_bad_cases(run_id=run_id))
+
+    def run_exists(self, run_id: str) -> bool:
+        return self._run_dir(run_id).is_dir()
 
     def create_bad_case_from_review(
         self,

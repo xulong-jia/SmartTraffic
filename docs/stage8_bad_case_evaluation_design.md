@@ -1,8 +1,8 @@
 # Stage 8 Bad Case 与 Evaluation Center 设计文档
 
-本文档起源于 Stage 8A 的只读审计与设计文档。Stage 8B 已补充 Bad Case artifact / schema / service 的后端底座；当前仍未实现 Bad Case API、Bad Case Center 前端、Evaluation Center、数据库迁移、真实评测指标、回归评测或生产化评测平台。
+本文档起源于 Stage 8A 的只读审计与设计文档。Stage 8B 已补充 Bad Case artifact / schema / service 的后端底座；Stage 8CD 已补充 Bad Case API 与 Bad Case Center 前端 MVP。当前仍未实现 Evaluation Center、数据库迁移、真实评测指标、Bad Case regression、回归评测或生产化评测平台。
 
-本文档定义 Stage 8 后续开发边界、artifact contract、API contract、前端页面草案、测试策略和子阶段拆分。除 Stage 8B 后端 artifact/schema/service 外，不代表 Stage 8 API、前端或 Evaluation 功能已经实现。
+本文档定义 Stage 8 后续开发边界、artifact contract、API contract、前端页面草案、测试策略和子阶段拆分。除 Stage 8B 后端 artifact/schema/service 与 Stage 8CD Bad Case API/UI MVP 外，不代表 Evaluation 或 Stage 8 整体已经完成。
 
 ## 1. 阶段目标
 
@@ -53,24 +53,24 @@ Stage 8 暂不做：
 - `backend/app/schemas/bad_case.py` 已定义 Stage 8B Bad Case schema/enums。
 - `backend/app/analysis/bad_case_artifacts.py` 已实现 `bad_cases.jsonl` 读取/追加、受控更新、`bad_case_updates.jsonl` 审计记录、summary 与 manifest / metadata / artifact_index 刷新。
 - `backend/app/services/bad_case_service.py` 已从 placeholder 变为 artifact-backed service，支持 create / list / detail / update / summary，以及从 Review artifacts 创建 Bad Case。
+- `backend/app/api/bad_cases.py` 已实现 Stage 8CD artifact-backed Bad Case API MVP。
+- `frontend/src/api/badCases.ts`、`frontend/src/utils/badCaseMetrics.ts` 与 `frontend/src/pages/BadCaseCenterPage.tsx` 已实现 Stage 8CD Bad Case Center 前端 MVP。
 - `docs/evaluation.md` 是 planned placeholder，列出 Evaluation Center 目标和边界，但不包含完整 Stage 8 实施拆分。
 - `scripts/run_evals.py` 是 Stage 8 planned evaluation runner placeholder，不运行真实评测。
 - `scripts/seed_demo_data.py` 是 Stage 9 planned demo seed placeholder，不生成真实 demo/eval 数据。
 - `backend/app/analysis/artifact_writer.py` 已将 `evaluation_summary.json` 作为 later-stage reserved artifact key，但没有真实生成逻辑。
 - `backend/app/schemas/review.py` 已定义 review status/action 与 false-negative schema，可作为 Bad Case 来源之一。
-- `frontend/src/App.tsx` 已暴露 `Bad Case Center (planned)` 和 `Evaluation Center (planned)` 导航入口。
+- `frontend/src/App.tsx` 已暴露 Bad Case Center 和 `Evaluation Center (planned)` 导航入口。
 
 ### 3.3 未实现能力
 
 当前未实现：
 
-- `/api/bad-cases` 真实查询、创建、更新、summary。
 - `/api/evaluation/results` 真实查询。
-- Bad Case API 和前端。
 - Evaluation dataset config、evaluation run registry、metrics、results、summary、failed cases。
 - `evaluation_summary.json` 真实生成。
 - failed case 转 Bad Case。
-- Review false-positive / false-negative 的 API / 前端自动派生 Bad Case。
+- Review false-positive / false-negative 的 Review 页面自动派生 Bad Case。
 - Bad Case regression。
 - 数据库模型、repository、migration。
 
@@ -286,7 +286,7 @@ Bad Case 不应修改：
 - `false_negative_events.jsonl`
 - `events.jsonl`
 
-Stage 8B 已支持 service 层从 `review_comments.jsonl` 创建 Bad Case：追加 `bad_cases.jsonl`，设置 `source=review_center` 与 `linked_review_id`，并且不修改 Review artifacts。是否在 Review detail 派生展示 `bad_case_id` 可由后续 API / 读取层 join 完成。
+Stage 8B 已支持 service 层从 `review_comments.jsonl` 创建 Bad Case；Stage 8CD 已通过 `POST /api/bad-cases/from-review` 暴露该能力。该接口追加 `bad_cases.jsonl`，设置 `source=review_center` 与 `linked_review_id`，并且不修改 Review artifacts。是否在 Review detail 派生展示 `bad_case_id` 可由后续 Review 页面联动完成。
 
 ### 5.6 与 Evaluation failed cases 的关系
 
@@ -1186,12 +1186,14 @@ python3 scripts/danger_check.py
 
 ### 12.3 Stage 8C：Bad Case API MVP
 
+状态：已实现。Stage 8C 与 Stage 8D 合并为 Stage 8CD 交付。
+
 最小范围：
 
-- 将 `backend/app/api/bad_cases.py` 从 placeholder 改为真实 API。
-- 实现 list、detail、create、patch、summary。
-- 实现 from-review API。
-- 补 API 文档和测试。
+- 已将 `backend/app/api/bad_cases.py` 从 placeholder 改为真实 API。
+- 已实现 list、detail、create、patch、summary。
+- 已实现 from-review API。
+- 已补 API 文档和测试。
 
 不做：
 
@@ -1200,13 +1202,15 @@ python3 scripts/danger_check.py
 
 ### 12.4 Stage 8D：Bad Case Center frontend MVP
 
+状态：已实现。Stage 8C 与 Stage 8D 合并为 Stage 8CD 交付。
+
 最小范围：
 
-- 新增 `frontend/src/api/badCases.ts`。
-- 新增 Bad Case types。
-- 替换 `BadCaseCenterPage` placeholder。
-- 实现 filters、list、detail、create form、status update、summary cards。
-- 增加 frontend utility tests。
+- 已新增 `frontend/src/api/badCases.ts`。
+- 已新增 Bad Case types。
+- 已替换 `BadCaseCenterPage` placeholder。
+- 已实现 filters、list、detail、create form、status update、summary cards。
+- 已增加 frontend utility tests。
 
 不做：
 
@@ -1304,7 +1308,7 @@ python3 scripts/danger_check.py
 | Bad Case 与 failed case 多对多过早复杂化 | API 和 UI 变重 | MVP 先一对一，后续再建索引 |
 | 前端把 placeholder 展示成已完成 | 用户误判阶段 | 页面和文档保留 MVP / planned / unsupported 文案 |
 
-## 14. Stage 8B 最小开发计划
+## 14. Stage 8B 最小开发计划与完成记录
 
 Stage 8B 建议只做 Bad Case artifact / schema / service，不做 API 和前端。
 
@@ -1319,7 +1323,7 @@ Stage 8B 建议只做 Bad Case artifact / schema / service，不做 API 和前�
 5. 新增 `backend/tests/test_stage8_bad_case_artifacts.py`。
 6. 在 `backend/tests/test_stage8_bad_case_artifacts.py` 覆盖 artifact helper 与 service 层行为。
 7. 运行 backend tests 和 danger check。
-8. 更新本设计文档的 Stage 8B 状态，但仍不声明 Bad Case Center 前端或 Evaluation 完成。
+8. 更新本设计文档的 Stage 8B 状态，但仍不声明 Evaluation 完成。
 
 Stage 8B 完成标准：
 
@@ -1328,3 +1332,31 @@ Stage 8B 完成标准：
 - 没有 API 路由变更。
 - 没有前端变更。
 - 没有 Evaluation 实现。
+
+## 15. Stage 8CD 完成记录
+
+Stage 8C 与 Stage 8D 已合并为 Stage 8CD 完成。
+
+已完成：
+
+- `backend/app/api/bad_cases.py` 提供 artifact-backed Bad Case API。
+- `GET /api/bad-cases` 支持 `run_id`、`case_type`、`module`、`status`、`tag`、`limit`、`offset`。
+- `GET /api/bad-cases/{case_id}` 支持 detail 查询，`run_id` 可选。
+- `POST /api/bad-cases` 支持手动创建 Bad Case。
+- `PATCH /api/bad-cases/{case_id}` 支持状态、root cause、tags、description 等受控更新。
+- `GET /api/bad-cases/summary` 返回 type、module、status、tag 统计。
+- `POST /api/bad-cases/from-review` 引用 Review artifacts 创建 Bad Case，不覆盖 Review artifacts。
+- `frontend/src/api/badCases.ts` 提供 Bad Case API client。
+- `frontend/src/types/index.ts` 补充 Bad Case 前端类型。
+- `frontend/src/utils/badCaseMetrics.ts` 提供前端统计和展示格式化工具。
+- `frontend/src/pages/BadCaseCenterPage.tsx` 提供 Bad Case Center MVP：filters、summary、list、detail、create、update。
+- `backend/tests/test_stage8_bad_case_api.py` 与 `frontend/tests/badCaseMetrics.test.mjs` 覆盖 Stage 8CD 行为。
+
+仍未完成：
+
+- Evaluation artifacts / metrics / API / frontend。
+- `run_evals.py` 真实评测逻辑。
+- Bad Case regression workflow。
+- failed case -> Bad Case 联动。
+- DB-backed Bad Case state。
+- 权限系统、实时流和生产部署。

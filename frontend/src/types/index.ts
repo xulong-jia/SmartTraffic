@@ -623,3 +623,122 @@ export interface FalseNegativeResponse {
   review: ReviewComment;
   state: Record<string, unknown>;
 }
+
+export type BadCaseType =
+  | "false_positive"
+  | "false_negative"
+  | "detection_miss"
+  | "detection_false_positive"
+  | "tracking_fragmentation"
+  | "id_switch"
+  | "trajectory_error"
+  | "event_rule_error"
+  | "annotation_error"
+  | "other";
+
+export type BadCaseModule =
+  | "detector"
+  | "tracker"
+  | "trajectory"
+  | "event_engine"
+  | "review_center"
+  | "visualization"
+  | "other";
+
+export type BadCaseStatus = "open" | "triaged" | "fixed" | "wont_fix";
+export type BadCaseSource = "manual" | "review_center" | "evaluation" | "import";
+
+export interface BadCaseRecord {
+  case_id: string;
+  run_id: string;
+  video_id?: string | null;
+  event_id?: string | null;
+  track_id?: number | null;
+  frame_index?: number | null;
+  case_type: BadCaseType | string;
+  module: BadCaseModule | string;
+  description: string;
+  expected_result: string;
+  actual_result: string;
+  root_cause: string;
+  snapshot_path?: string | null;
+  tags: string[];
+  status: BadCaseStatus | string;
+  source: BadCaseSource | string;
+  linked_review_id?: string | null;
+  linked_failed_case_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BadCaseSummary {
+  total: number;
+  by_type: Record<string, number>;
+  by_module: Record<string, number>;
+  by_status: Record<string, number>;
+  by_source?: Record<string, number>;
+  by_tag: Record<string, number>;
+  top_tags?: Record<string, number>;
+}
+
+export interface BadCaseListResponse {
+  items: BadCaseRecord[];
+  total: number;
+  limit: number;
+  offset: number;
+  summary: BadCaseSummary;
+}
+
+export interface BadCaseListParams {
+  run_id?: string;
+  case_type?: string;
+  module?: string;
+  status?: string;
+  tag?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface BadCaseCreateRequest {
+  run_id: string;
+  video_id?: string | null;
+  event_id?: string | null;
+  track_id?: number | null;
+  frame_index?: number | null;
+  case_type: BadCaseType | string;
+  module: BadCaseModule | string;
+  description?: string;
+  expected_result?: string;
+  actual_result?: string;
+  root_cause?: string;
+  snapshot_path?: string | null;
+  tags?: string[];
+  source?: BadCaseSource | string;
+  linked_review_id?: string | null;
+  linked_failed_case_id?: string | null;
+}
+
+export interface BadCaseUpdateRequest {
+  run_id?: string;
+  status?: BadCaseStatus | string;
+  root_cause?: string;
+  tags?: string[];
+  description?: string;
+  expected_result?: string;
+  actual_result?: string;
+  snapshot_path?: string | null;
+  linked_failed_case_id?: string | null;
+}
+
+export interface BadCaseFromReviewRequest {
+  run_id: string;
+  event_id?: string | null;
+  review_id?: string | null;
+  case_type?: BadCaseType | string | null;
+  module?: BadCaseModule | string;
+  description?: string | null;
+  expected_result?: string | null;
+  actual_result?: string | null;
+  root_cause?: string | null;
+  tags?: string[] | null;
+}

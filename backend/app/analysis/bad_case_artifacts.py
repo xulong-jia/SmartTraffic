@@ -144,6 +144,7 @@ def summarize_bad_case_records(records: list[dict[str, Any]]) -> dict[str, Any]:
         by_module=dict(Counter(str(record.get("module")) for record in records)),
         by_status=dict(Counter(str(record.get("status")) for record in records)),
         by_source=dict(Counter(str(record.get("source")) for record in records)),
+        by_tag=dict(tag_counts),
         top_tags=dict(tag_counts.most_common(20)),
     ).model_dump()
 
