@@ -479,3 +479,147 @@ export interface AlertCenterResponse {
   status?: string | null;
   level?: string | null;
 }
+
+export type ReviewStatus =
+  | "pending"
+  | "confirmed"
+  | "false_positive"
+  | "false_negative"
+  | "ignored"
+  | "resolved";
+
+export type ReviewAction =
+  | "confirm"
+  | "mark_false_positive"
+  | "add_false_negative"
+  | "ignore"
+  | "resolve"
+  | "comment";
+
+export interface ReviewComment {
+  review_id: string;
+  run_id: string;
+  event_id?: string | null;
+  alert_id?: string | null;
+  action: ReviewAction | string;
+  before_status?: ReviewStatus | string | null;
+  after_status: ReviewStatus | string;
+  comment: string;
+  reviewer: string;
+  created_at: string;
+  source?: string;
+}
+
+export interface ReviewEventSummary {
+  run_id: string;
+  event_id: string;
+  event_type?: string | null;
+  track_id?: number | null;
+  zone_id?: string | null;
+  severity?: string | null;
+  original_status: string;
+  review_status: ReviewStatus | string;
+  last_action?: ReviewAction | string | null;
+  comment_count: number;
+  linked_alert_ids: string[];
+  start_frame?: number | null;
+  end_frame?: number | null;
+  start_time_ms?: number | null;
+  end_time_ms?: number | null;
+}
+
+export interface ReviewEventListResponse {
+  items: ReviewEventSummary[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export type ReviewEventRecord = TrafficEvent & {
+  run_id?: string;
+  review_status?: ReviewStatus | string;
+  original_status?: string;
+  linked_alert_ids?: string[];
+  comment_count?: number;
+  last_action?: ReviewAction | string | null;
+};
+
+export interface ReviewEventDetail {
+  run_id: string;
+  event: ReviewEventRecord;
+  review_state?: Record<string, unknown> | null;
+  linked_alerts: AlertRecord[];
+  comments: ReviewComment[];
+  visual_artifacts: Record<string, unknown>;
+}
+
+export interface ReviewActionRequest {
+  run_id: string;
+  comment?: string;
+  reviewer?: string;
+  alert_id?: string | null;
+}
+
+export interface ReviewActionResponse {
+  run_id: string;
+  event_id: string;
+  status: ReviewStatus | string;
+  review_id: string;
+  review: ReviewComment;
+  state: Record<string, unknown>;
+}
+
+export interface ReviewCommentRequest {
+  run_id: string;
+  event_id: string;
+  comment: string;
+  reviewer?: string;
+  alert_id?: string | null;
+}
+
+export interface ReviewCommentsResponse {
+  run_id: string;
+  event_id?: string | null;
+  items: ReviewComment[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface FalseNegativeRequest {
+  run_id: string;
+  expected_event_type: string;
+  zone_id?: string | null;
+  track_id?: number | null;
+  start_frame?: number | null;
+  end_frame?: number | null;
+  start_time_ms?: number | null;
+  end_time_ms?: number | null;
+  description: string;
+  reviewer?: string;
+}
+
+export interface FalseNegativeRecord {
+  false_negative_id: string;
+  run_id: string;
+  expected_event_type: string;
+  zone_id?: string | null;
+  track_id?: number | null;
+  start_frame?: number | null;
+  end_frame?: number | null;
+  start_time_ms?: number | null;
+  end_time_ms?: number | null;
+  description: string;
+  reviewer: string;
+  created_at: string;
+  status: "false_negative" | string;
+  source?: string;
+}
+
+export interface FalseNegativeResponse {
+  run_id: string;
+  status: "false_negative";
+  false_negative: FalseNegativeRecord;
+  review: ReviewComment;
+  state: Record<string, unknown>;
+}

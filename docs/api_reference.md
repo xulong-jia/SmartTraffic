@@ -578,10 +578,12 @@ database-backed workflow engine.
 
 ## Review API
 
-Stage 7C implements the artifact-backed Review API MVP. It reads Stage 6 event,
-alert, and visual artifacts, then writes Stage 7B review artifacts. It is not a
-database-backed final review workflow and does not implement Review Center
-frontend behavior.
+Stage 7C implements the artifact-backed Review API MVP. Stage 7D adds a React
+Review Center MVP that consumes these endpoints for run filters, event
+list/detail, confirm, false-positive, ignore, resolve, comments, and
+false-negative creation. The API reads Stage 6 event, alert, and visual
+artifacts, then writes Stage 7B review artifacts. It is not a database-backed
+final review workflow.
 
 Per-run review artifact files used by these APIs:
 
@@ -669,8 +671,9 @@ HTTP behavior:
 - `404`: run or event not found.
 - `422`: request body validation error.
 
-Stage 7D will implement the Review Center frontend. Bad Case Center and
-Evaluation Center remain Stage 8 work.
+The Stage 7D frontend does not create Bad Case records, does not feed
+Evaluation Center, and does not implement Analysis Detail / Alert Center deep
+linking. Bad Case Center and Evaluation Center remain Stage 8 work.
 
 ## Not Implemented From The Manual Yet
 
@@ -684,7 +687,7 @@ implemented as working behavior yet:
 - `POST /api/evaluation/run`
 - advanced filtering on flow counts and zone statistics
 - database-backed aggregate statistics APIs
-- Review Center frontend workflow
+- Analysis Detail / Alert Center deep review linking
 - full Bad Case / Evaluation APIs and frontend workflows
 
 ## Placeholders For Later Phases
@@ -701,5 +704,6 @@ event detail endpoint and write endpoints for bad cases and evaluation runs are
 not routed in the current Stage 6/7C MVP. Standalone event and alert center APIs remain
 separate from the artifact-based `analysis-runs` list, summary, event,
 statistics, and alert endpoints documented above. Review API MVP is available
-under `/api/review`, while Review Center frontend, bad-case, and evaluation
-behavior belongs to later phases and is not implemented as completed logic.
+under `/api/review`, and the Stage 7D Review Center frontend consumes it.
+Bad-case and evaluation behavior belongs to later phases and is not implemented
+as completed logic.

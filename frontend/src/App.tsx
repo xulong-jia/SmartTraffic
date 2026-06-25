@@ -25,7 +25,7 @@ const pages: Array<{ key: PageKey; label: string }> = [
   { key: "analysis", label: "Analysis Detail" },
   { key: "zones", label: "Zone & Rules" },
   { key: "alerts", label: "Alert Center" },
-  { key: "review", label: "Review Center (planned)" },
+  { key: "review", label: "Review Center" },
   { key: "badCases", label: "Bad Case Center (planned)" },
   { key: "evaluation", label: "Evaluation Center (planned)" }
 ];

@@ -1,6 +1,6 @@
 # Stage 7 Review Center 设计文档
 
-本文档记录 Stage 7A 的只读审计结论、Stage 7 Review Center 设计草案、Stage 7B artifact 与状态模型实现口径，以及 Stage 7C Review API MVP 实现口径。当前已实现的是 artifact-backed Review API MVP，不代表 Review Center 前端、数据库 migration、Bad Case Center 或 Evaluation Center 已完成。
+本文档记录 Stage 7A 的只读审计结论、Stage 7 Review Center 设计草案、Stage 7B artifact 与状态模型实现口径、Stage 7C Review API MVP 实现口径，以及 Stage 7D Review Center 前端 MVP 实现口径。当前已实现的是 artifact-backed Review API + 前端 MVP，不代表 Stage 7E Analysis / Alert 深度联动、数据库 migration、Bad Case Center 或 Evaluation Center 已完成。
 
 ## 1. 阶段目标
 
@@ -56,7 +56,8 @@ Stage 7 也不改变 Stage 5/6 的事件规则、告警生成、交通统计和�
 - `GET /api/alerts`、`GET /api/alerts/{alert_id}`、`PATCH /api/alerts/{alert_id}/acknowledge`、`PATCH /api/alerts/{alert_id}/resolve`、`PATCH /api/alerts/{alert_id}/ignore` 已存在，并写回当前 artifact-backed alert storage。
 - 前端 `AnalysisDetailPage` 已展示 events、event evidence、rule executions 和 alerts。
 - 前端 `AlertCenterPage` 已支持 run/status/level 过滤和 acknowledge / resolve / ignore 告警操作。
-- 前端导航已有 `Review Center (planned)`、`Bad Case Center (planned)` 和 `Evaluation Center (planned)` 入口。
+- 前端导航已有 `Review Center`、`Bad Case Center (planned)` 和 `Evaluation Center (planned)` 入口。
+- Stage 7D 已将 Review Center placeholder 替换为 artifact-backed 前端 MVP，可读取 `/api/review` 事件列表/详情并执行基础复核动作。
 - Stage 6 visual artifacts 已包含 keyframes index、keyframe snapshots 和 `annotated_video.mp4` 的 manifest 状态，可作为人工复核证据入口。
 
 ### 3.2 部分能力
@@ -73,15 +74,15 @@ Stage 7 也不改变 Stage 5/6 的事件规则、告警生成、交通统计和�
 - Stage 7B 已将 review artifact summary 小范围接入 metadata，并在已有 manifest / artifact index 存在时更新对应 review artifact 条目。
 - Stage 7C 已将 `GET /api/review/events`、`GET /api/review/events/{event_id}`、confirm / false-positive / ignore / resolve、comments 和 false-negatives API 接入 Stage 7B artifact helper。
 - Stage 7C Review API 会读取 Stage 6 events / alerts / visual artifacts，并写入 review artifacts；它不覆盖原始 `events.jsonl`。
+- Stage 7D 已新增前端 review API client、review types、ReviewCenterPage 真实 API 接入和 review utility 测试。
 
-这些能力代表 Stage 7C artifact-backed Review API MVP 和既有读取基础，不代表 Review Center 前端或完整复核工作流已经实现。
+这些能力代表 Stage 7D artifact-backed Review Center MVP 和既有读取基础，不代表数据库最终版复核工作流、Stage 7E Analysis / Alert 深度联动或 Stage 8 Bad Case / Evaluation 已经实现。
 
 ### 3.3 未实现能力
 
 当前未实现：
 
 - standalone `/api/events` 真实查询逻辑。当前 `backend/app/api/events.py` 只返回 placeholder。
-- Review Center 可用前端页面。当前 `ReviewCenterPage` 是 placeholder，并只渲染 `EventTable` contract。
 - Analysis Detail 中的 event review 入口、review status、comments count。
 - Alert Center 到关联 event review 的跳转。
 - Bad Case 管理中心、Evaluation Center 和评测报告。
@@ -804,19 +805,18 @@ Response schema：
 
 ### 8.1 ReviewCenterPage
 
-ReviewCenterPage MVP 应是一个简单工作台，不做复杂 UI。
+ReviewCenterPage MVP 是一个简单工作台，不做复杂 UI。
 
-建议组成：
+Stage 7D 已实现：
 
-- 顶部筛选：`run_id` input、status select、event_type select、track_id input、Refresh。
-- Pending events 列表：默认 status=`pending`，展示 severity、event type、track、zone、frame/time、linked alert count、comments count、last reviewed。
+- 顶部筛选：`run_id` input、status select、event_type input、Refresh。
+- Events 列表：展示 event id、review status、original status、severity、event type、track、zone、frame、linked alert count、comments count。
 - Event detail panel / drawer：选择事件后展示详情，不需要新页面路由。
-- Evidence summary：展示 event evidence、rule execution 摘要和关键字段。
 - Linked alert summary：展示关联 alert 的 status、level、message 和 alert action 状态。
 - Visual artifact status：展示 keyframes / annotated video 是否 available、missing、planned、empty、error。
 - 操作按钮：Confirm、Mark false positive、Ignore、Resolve。
-- Comment form：reviewer、comment、source，提交后刷新 comments。
-- Add false negative form MVP：run_id、event_type、track_id、zone_id、frame/time、comment。
+- Comment form：reviewer、comment，提交后刷新 comments。
+- Add false negative form MVP：run_id、expected_event_type、description、track_id、zone_id、frame/time、reviewer。
 - 空状态：无事件、无 comments、无 visual artifacts 时给出简短说明。
 - 错误状态：API 请求失败或 artifact 缺失时显示错误，不隐藏当前筛选。
 - 加载状态：列表和 detail 独立 loading，避免整页闪烁。
@@ -959,10 +959,15 @@ Stage 7 每个子阶段至少运行：
 
 ### 10.3 Stage 7D：Review Center 前端 MVP
 
-目标：
+状态：已完成 artifact-backed frontend MVP。
+
+已完成：
 
 - 实现 ReviewCenterPage 的列表、详情、action 和 comment MVP。
 - 新增前端 review API client 和 types。
+- 新增 false negative MVP 表单，写入 `/api/review/false-negatives`。
+- 新增 review utility 测试，覆盖 status 计数、label 和列表展示摘要。
+- 文档同步 Stage 7D 当前边界。
 - 保持 UI 简洁，不做复杂视频编辑或 Bad Case 页面。
 
 验收：

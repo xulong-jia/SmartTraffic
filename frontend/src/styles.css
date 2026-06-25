@@ -16,12 +16,23 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
 input[type="number"] {
   width: 96px;
+}
+
+textarea {
+  width: 100%;
+  min-width: 260px;
+  border: 1px solid #aeb9c4;
+  border-radius: 6px;
+  color: #17212b;
+  padding: 8px 10px;
+  resize: vertical;
 }
 
 .app-shell {
@@ -142,6 +153,12 @@ nav button.active {
   align-items: center;
 }
 
+.stacked-control {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
 .summary-strip {
   border-block: 1px solid #d9e0e7;
   margin-bottom: 16px;
@@ -221,6 +238,19 @@ button:disabled {
   gap: 12px;
 }
 
+.review-metric-row {
+  margin-bottom: 16px;
+}
+
+.review-workspace {
+  align-items: start;
+  margin: 16px 0;
+}
+
+.metric-card {
+  padding: 12px;
+}
+
 .metric-value {
   display: block;
   font-size: 26px;
@@ -247,7 +277,9 @@ button:disabled {
 }
 
 .status-available,
-.status-completed {
+.status-completed,
+.status-confirmed,
+.status-resolved {
   border-color: #8fc5a1;
   background: #e8f5ec;
   color: #1f5d34;
@@ -262,17 +294,25 @@ button:disabled {
 .status-missing,
 .status-missing_source_video,
 .status-planned,
-.status-unknown {
+.status-unknown,
+.status-pending,
+.status-ignored {
   border-color: #d5c187;
   background: #fbf5de;
   color: #705c14;
 }
 
 .status-error,
-.status-failed {
+.status-failed,
+.status-false_positive,
+.status-false_negative {
   border-color: #dc9b9b;
   background: #fbeaea;
   color: #823333;
+}
+
+.selected-row {
+  background: #eef4fa;
 }
 
 .video-frame {
