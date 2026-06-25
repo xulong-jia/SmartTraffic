@@ -1,6 +1,6 @@
 # Stage 7 Review Center 设计文档
 
-本文档记录 Stage 7A 的只读审计结论、Stage 7 Review Center 设计草案、Stage 7B artifact 与状态模型实现口径、Stage 7C Review API MVP 实现口径、Stage 7D Review Center 前端 MVP 实现口径、Stage 7E Analysis / Alert 定位联动实现口径，以及 Stage 7F 收尾审计结论。当前已实现的是 artifact-backed Review API + 前端 MVP + 最小定位联动，并已达到 Review Center artifact-backed MVP 验收口径；这不代表已创建 Stage 7 tag、完成数据库 migration、Bad Case Center 或 Evaluation Center。
+本文档记录 Stage 7A 的只读审计结论、Stage 7 Review Center 设计草案、Stage 7B artifact 与状态模型实现口径、Stage 7C Review API MVP 实现口径、Stage 7D Review Center 前端 MVP 实现口径、Stage 7E Analysis / Alert 定位联动实现口径，以及 Stage 7F 收尾审计结论。当前已实现的是 artifact-backed Review API + 前端 MVP + 最小定位联动，并已达到 Review Center artifact-backed MVP 验收口径；`v0.7.0-review-center-mvp` tag 已在用户明确要求后创建且不得移动，但这不代表已完成数据库 migration、Bad Case Center 或 Evaluation Center。
 
 ## 1. 阶段目标
 
@@ -1006,14 +1006,14 @@ Stage 7 每个子阶段至少运行：
 
 ### 10.5 Stage 7F：Stage 7 收尾审计、文档、测试、tag
 
-状态：已完成 Stage 7 收尾审计与文档边界修正；是否创建 `v0.7.0-review-center-mvp` tag 需用户明确要求。
+状态：已完成 Stage 7 收尾审计与文档边界修正；`v0.7.0-review-center-mvp` annotated tag 已在用户明确要求后创建，后续不得移动。
 
 目标：
 
 - 完成 Stage 7 文档收尾。
 - 更新 README / API reference 的实现边界。
 - 跑全量回归。
-- 在用户明确要求时再创建 Stage 7 tag。
+- 已在用户明确要求后创建 Stage 7 tag，后续只读引用，不移动。
 
 验收：
 

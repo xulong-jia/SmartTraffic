@@ -291,6 +291,7 @@ button:disabled {
   color: #24517d;
 }
 
+.status-empty,
 .status-missing,
 .status-missing_source_video,
 .status-planned,

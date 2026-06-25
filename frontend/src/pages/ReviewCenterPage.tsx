@@ -358,7 +358,7 @@ export default function ReviewCenterPage({
       <header className="page-header">
         <div>
           <h2>Review Center</h2>
-          <p>Artifact-backed event review workflow for Stage 7D.</p>
+          <p>Artifact-backed event review workflow for the Stage 7 MVP.</p>
         </div>
       </header>
 

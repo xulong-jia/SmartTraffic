@@ -77,6 +77,8 @@ export default function DashboardPage({ onOpenAnalysisRun }: DashboardPageProps)
                       <th>Available</th>
                       <th>Missing</th>
                       <th>Planned</th>
+                      <th>Empty</th>
+                      <th>Missing source</th>
                       <th>Error</th>
                       <th>Other</th>
                     </tr>
@@ -88,6 +90,8 @@ export default function DashboardPage({ onOpenAnalysisRun }: DashboardPageProps)
                         <td>{formatCount(artifactCounts[artifactKey]?.available)}</td>
                         <td>{formatCount(artifactCounts[artifactKey]?.missing)}</td>
                         <td>{formatCount(artifactCounts[artifactKey]?.planned)}</td>
+                        <td>{formatCount(artifactCounts[artifactKey]?.empty)}</td>
+                        <td>{formatCount(artifactCounts[artifactKey]?.missing_source_video)}</td>
                         <td>{formatCount(artifactCounts[artifactKey]?.error)}</td>
                         <td>{formatOtherStatusCount(artifactCounts[artifactKey])}</td>
                       </tr>
@@ -154,7 +158,14 @@ function formatOtherStatusCount(counts: Record<string, number> | undefined): str
   if (!counts) {
     return "0";
   }
-  const known = new Set(["available", "missing", "planned", "error"]);
+  const known = new Set([
+    "available",
+    "missing",
+    "planned",
+    "empty",
+    "missing_source_video",
+    "error"
+  ]);
   const total = Object.entries(counts)
     .filter(([status]) => !known.has(status))
     .reduce((sum, [, count]) => sum + count, 0);

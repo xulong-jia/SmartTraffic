@@ -16,10 +16,11 @@ from app.core.config import get_settings
 
 
 class ReviewService:
-    """Stage 7B artifact-backed review state helper.
+    """Stage 7 artifact-backed review workflow helper.
 
-    This service intentionally does not expose Review API behavior yet. Stage 7C
-    will translate these artifact operations into HTTP contracts.
+    The service supports the Review API MVP by reading Stage 6 artifacts and
+    writing Stage 7 review artifacts. It is still not a database-backed final
+    review workflow.
     """
 
     def __init__(self, artifact_writer: TrafficArtifactWriter | None = None) -> None:

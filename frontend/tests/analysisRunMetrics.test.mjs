@@ -90,7 +90,8 @@ test("buildArtifactStatusCounts summarizes selected artifact availability", () =
         status: "completed",
         artifact_summary: {
           events: { status: "available", path: "events.jsonl", record_count: 2 },
-          alerts: { status: "missing", path: "alerts.jsonl", record_count: 0 }
+          alerts: { status: "missing", path: "alerts.jsonl", record_count: 0 },
+          keyframes: { status: "empty", path: "keyframes/", record_count: 0 }
         }
       },
       {
@@ -99,16 +100,22 @@ test("buildArtifactStatusCounts summarizes selected artifact availability", () =
         status: "completed",
         artifact_summary: {
           events: { status: "error", path: "events.jsonl", record_count: 0 },
-          alerts: { status: "available", path: "alerts.jsonl", record_count: 3 }
+          alerts: { status: "available", path: "alerts.jsonl", record_count: 3 },
+          keyframes: {
+            status: "missing_source_video",
+            path: "keyframes/index.json",
+            record_count: 0
+          }
         }
       }
     ],
-    ["events", "alerts"]
+    ["events", "alerts", "keyframes"]
   );
 
   assert.deepEqual(counts, {
     events: { available: 1, error: 1 },
-    alerts: { missing: 1, available: 1 }
+    alerts: { missing: 1, available: 1 },
+    keyframes: { empty: 1, missing_source_video: 1 }
   });
 });
 

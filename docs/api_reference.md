@@ -673,7 +673,7 @@ HTTP behavior:
 - `404`: run or event not found.
 - `422`: request body validation error.
 
-The Stage 7D frontend does not create Bad Case records, does not feed
+The Stage 7 frontend does not create Bad Case records, does not feed
 Evaluation Center, and Stage 7E navigation does not auto-sync Alert Center
 status with Event review status. Bad Case Center and Evaluation Center remain
 Stage 8 work.
@@ -719,10 +719,10 @@ implemented as working behavior yet:
 
 These placeholder endpoints exist to preserve module boundaries. The planned
 event detail endpoint and write endpoints for bad cases and evaluation runs are
-not routed in the current Stage 6/7C MVP. Standalone event and alert center APIs remain
+not routed in the current Stage 7 artifact-backed MVP. Standalone event and alert center APIs remain
 separate from the artifact-based `analysis-runs` list, summary, event,
 statistics, and alert endpoints documented above. Review API MVP is available
-under `/api/review`, the Stage 7D/7E Review Center frontend consumes it, and
+under `/api/review`, the Stage 7 Review Center frontend consumes it, and
 Stage 7F confirms the artifact-backed Review Center MVP boundary. Bad-case and
 evaluation behavior belongs to later phases and is not implemented as completed
 logic.
