@@ -1,8 +1,8 @@
 # Stage 8 Bad Case 与 Evaluation Center 设计文档
 
-本文档是 Stage 8A 的只读审计与设计文档。当前仓库仍停留在 Stage 7 artifact-backed MVP 之后，尚未实现 Bad Case Center、Evaluation Center、数据库迁移、真实评测指标、回归评测或生产化评测平台。
+本文档起源于 Stage 8A 的只读审计与设计文档。Stage 8B 已补充 Bad Case artifact / schema / service 的后端底座；当前仍未实现 Bad Case API、Bad Case Center 前端、Evaluation Center、数据库迁移、真实评测指标、回归评测或生产化评测平台。
 
-本文档只定义 Stage 8 后续开发边界、artifact contract、API contract、前端页面草案、测试策略和子阶段拆分，不代表任何 Stage 8 功能已经实现。
+本文档定义 Stage 8 后续开发边界、artifact contract、API contract、前端页面草案、测试策略和子阶段拆分。除 Stage 8B 后端 artifact/schema/service 外，不代表 Stage 8 API、前端或 Evaluation 功能已经实现。
 
 ## 1. 阶段目标
 
@@ -50,6 +50,9 @@ Stage 8 暂不做：
 
 当前已有但尚未形成 Stage 8 完整能力的部分：
 
+- `backend/app/schemas/bad_case.py` 已定义 Stage 8B Bad Case schema/enums。
+- `backend/app/analysis/bad_case_artifacts.py` 已实现 `bad_cases.jsonl` 读取/追加、受控更新、`bad_case_updates.jsonl` 审计记录、summary 与 manifest / metadata / artifact_index 刷新。
+- `backend/app/services/bad_case_service.py` 已从 placeholder 变为 artifact-backed service，支持 create / list / detail / update / summary，以及从 Review artifacts 创建 Bad Case。
 - `docs/evaluation.md` 是 planned placeholder，列出 Evaluation Center 目标和边界，但不包含完整 Stage 8 实施拆分。
 - `scripts/run_evals.py` 是 Stage 8 planned evaluation runner placeholder，不运行真实评测。
 - `scripts/seed_demo_data.py` 是 Stage 9 planned demo seed placeholder，不生成真实 demo/eval 数据。
@@ -63,11 +66,11 @@ Stage 8 暂不做：
 
 - `/api/bad-cases` 真实查询、创建、更新、summary。
 - `/api/evaluation/results` 真实查询。
-- Bad Case artifact helper、schema、service、API、前端。
+- Bad Case API 和前端。
 - Evaluation dataset config、evaluation run registry、metrics、results、summary、failed cases。
 - `evaluation_summary.json` 真实生成。
 - failed case 转 Bad Case。
-- Review false-positive / false-negative 自动派生 Bad Case。
+- Review false-positive / false-negative 的 API / 前端自动派生 Bad Case。
 - Bad Case regression。
 - 数据库模型、repository、migration。
 
@@ -95,8 +98,8 @@ Bad Case Center 负责管理错误样例资产。它不直接重新计算检测�
 - 查询 Bad Case。
 - 更新状态、root cause、tags 和备注字段。
 - 关联 `run_id`、`video_id`、`event_id`、`track_id`、`frame_index`、`snapshot_path`。
-- 支持 `false_positive`、`false_negative`、`id_switch`、`track_lost`、`rule_error`、`zone_config_error`。
-- 支持 `detector`、`tracker`、`trajectory`、`event_engine`、`zone_config`、`review`、`evaluation` 模块归因。
+- 支持 `false_positive`、`false_negative`、`detection_miss`、`detection_false_positive`、`tracking_fragmentation`、`id_switch`、`trajectory_error`、`event_rule_error`、`annotation_error`、`other`。
+- 支持 `detector`、`tracker`、`trajectory`、`event_engine`、`review_center`、`visualization`、`other` 模块归因。
 - 从 Review Center 的 false-positive / false-negative 派生或关联 Bad Case。
 - 从 Evaluation failed case 派生 Bad Case。
 - 提供按 `case_type`、`module`、`status`、`tags` 的统计。
@@ -169,6 +172,12 @@ Stage 8B 建议在 run directory 中新增：
 results/traffic_analysis/{run_id}/bad_cases.jsonl
 ```
 
+Stage 8B 同时新增受控更新审计文件：
+
+```text
+results/traffic_analysis/{run_id}/bad_case_updates.jsonl
+```
+
 也可在后续 Stage 8H 增加跨 run 索引：
 
 ```text
@@ -179,7 +188,7 @@ results/traffic_analysis/bad_case_index.json
 
 ```json
 {
-  "case_id": "bc_xxx",
+  "case_id": "badcase_xxx",
   "run_id": "run_xxx",
   "video_id": "video_xxx",
   "event_id": "event_xxx",
@@ -204,7 +213,7 @@ results/traffic_analysis/bad_case_index.json
 
 字段规则：
 
-- `case_id` 必填，建议稳定前缀 `bc_`。
+- `case_id` 必填，Stage 8B 使用稳定前缀 `badcase_`。
 - `run_id` 必填。
 - `video_id` 推荐必填；如果旧 run metadata 缺失，可从 run summary 派生。
 - `event_id`、`track_id`、`frame_index` 允许为空，但至少应有一个定位字段或 `description` 说明。
@@ -214,45 +223,51 @@ results/traffic_analysis/bad_case_index.json
 
 ### 5.2 Bad Case 类型
 
-Stage 8 MVP 支持以下 `case_type`：
+Stage 8B MVP 支持以下 `case_type`：
 
 | case_type | 含义 | 常见来源 |
 | --- | --- | --- |
 | `false_positive` | 系统产生结果，但人工或 expected output 认为不应成立 | Review / Evaluation |
 | `false_negative` | 实际存在目标或事件，但系统未产生对应结果 | Review / Evaluation |
+| `detection_miss` | 检测漏检 | Evaluation / Manual |
+| `detection_false_positive` | 检测误检 | Evaluation / Manual |
+| `tracking_fragmentation` | 轨迹碎片化 | Evaluation / Manual |
 | `id_switch` | 同一目标跟踪 ID 发生切换 | Evaluation |
-| `track_lost` | 目标轨迹中断或丢失 | Evaluation |
-| `rule_error` | 事件规则触发、阈值或状态逻辑错误 | Review / Evaluation |
-| `zone_config_error` | 区域、方向线或计数线配置导致错误 | Review / Evaluation |
+| `trajectory_error` | 轨迹特征、方向或速度诊断错误 | Review / Evaluation |
+| `event_rule_error` | 事件规则触发、阈值或状态逻辑错误 | Review / Evaluation |
+| `annotation_error` | 标注或人工输入错误 | Manual / Evaluation |
+| `other` | 其他错误样例 | Manual |
+
+Stage 8B `module` 支持 `detector`、`tracker`、`trajectory`、`event_engine`、`review_center`、`visualization`、`other`。
 
 ### 5.3 Bad Case 状态
 
-Stage 8 MVP 支持以下 `status`：
+Stage 8B MVP 支持以下 `status`：
 
 | status | 含义 |
 | --- | --- |
 | `open` | 已记录，尚未修复 |
+| `triaged` | 已归因或已进入处理队列 |
 | `fixed` | 已有修复或配置调整，待回归验证 |
-| `verified` | 回归评测或人工复核确认已修复 |
-| `ignored` | 低优先级、非目标场景或不纳入当前修复 |
+| `wont_fix` | 低优先级、非目标场景或不纳入当前修复 |
 
 状态流转建议：
 
 ```text
-open -> fixed -> verified
-open -> ignored
-fixed -> open      # 回归失败或复现
-ignored -> open    # 重新纳入
+open -> triaged -> fixed
+open -> wont_fix
+fixed -> open       # 回归失败或复现
+wont_fix -> open    # 重新纳入
 ```
 
 ### 5.4 Bad Case 来源
 
 `source` 建议支持：
 
-- `review_center`
-- `evaluation_center`
 - `manual`
-- `script`
+- `review_center`
+- `evaluation`
+- `import`
 
 来源字段只表示创建入口，不代表错误归因。归因由 `module` 字段表达。
 
@@ -271,7 +286,7 @@ Bad Case 不应修改：
 - `false_negative_events.jsonl`
 - `events.jsonl`
 
-如果从 Review 创建 Bad Case，建议追加 `bad_cases.jsonl`，并在 response 中返回 `case_id`。是否在 Review detail 派生展示 `bad_case_id` 可由读取层 join 完成。
+Stage 8B 已支持 service 层从 `review_comments.jsonl` 创建 Bad Case：追加 `bad_cases.jsonl`，设置 `source=review_center` 与 `linked_review_id`，并且不修改 Review artifacts。是否在 Review detail 派生展示 `bad_case_id` 可由后续 API / 读取层 join 完成。
 
 ### 5.6 与 Evaluation failed cases 的关系
 
@@ -538,7 +553,7 @@ Planned metrics：
 
 MVP 口径：
 
-- 读取 `bad_cases.jsonl` 中 `status=fixed` 或 `status=verified` 的 case。
+- 读取 `bad_cases.jsonl` 中 `status=fixed` 的 case。
 - 读取最新 evaluation failed cases。
 - 若 fixed case 的同类失败再次出现，可建议从 `fixed` 回到 `open`，但状态更新必须走 Bad Case API。
 - `regression_pass_rate = passed_fixed_cases / total_fixed_cases`，分母为 0 时返回 null。
@@ -641,7 +656,7 @@ Response：
 ```json
 {
   "status": "created",
-  "case_id": "bc_xxx",
+  "case_id": "badcase_xxx",
   "case": {}
 }
 ```
@@ -668,7 +683,7 @@ Response：
 ```json
 {
   "status": "updated",
-  "case_id": "bc_xxx",
+  "case_id": "badcase_xxx",
   "case": {}
 }
 ```
@@ -887,7 +902,7 @@ Response：
 ```json
 {
   "status": "created",
-  "case_id": "bc_xxx",
+  "case_id": "badcase_xxx",
   "case": {}
 }
 ```
@@ -916,7 +931,7 @@ Response：
 {
   "status": "created",
   "failed_case_id": "fail_xxx",
-  "case_id": "bc_xxx",
+  "case_id": "badcase_xxx",
   "case": {}
 }
 ```
@@ -929,12 +944,12 @@ Stage：8H。
 
 BadCaseCenterPage MVP 应包含：
 
-- Summary cards：total、open、fixed、verified、ignored、false_positive、false_negative、id_switch、track_lost、rule_error、zone_config_error。
+- Summary cards：total、open、triaged、fixed、wont_fix、false_positive、false_negative、tracking_fragmentation、id_switch、trajectory_error、event_rule_error。
 - Bad Case list：case_id、case_type、module、status、run_id、event_id、track_id、frame_index、tags、updated_at。
 - Filters：case_type、module、status、tag、run_id。
 - Detail panel：description、expected_result、actual_result、root_cause、snapshot_path、linked_review_id、linked_failed_case_id。
 - Create Bad Case form：支持手动输入 run/event/track/frame、case_type、module、description、expected/actual、root cause 和 tags。
-- Update status：open / fixed / verified / ignored。
+- Update status：open / triaged / fixed / wont_fix。
 - Link to Review：有 `run_id + event_id` 时跳转 `/review?run_id=&event_id=...`。
 - Link to Analysis Detail：有 `run_id` 时跳转 `/analysis?run_id=...`。
 
@@ -1150,14 +1165,18 @@ python3 scripts/danger_check.py
 
 ### 12.2 Stage 8B：Bad Case artifact / schema / service
 
+状态：已实现后端 artifact / schema / service；未实现 API、前端、Evaluation 或数据库。
+
 最小范围：
 
-- 新增 `backend/app/schemas/bad_case.py`。
-- 新增 `backend/app/analysis/bad_case_artifacts.py`。
-- 扩展 `backend/app/services/bad_case_service.py`，从 placeholder 变为 artifact-backed service。
-- 写 `bad_cases.jsonl`。
-- 支持 create / list / detail / update / summary 的 service 层。
-- 添加 backend tests。
+- 已新增 `backend/app/schemas/bad_case.py`。
+- 已新增 `backend/app/analysis/bad_case_artifacts.py`。
+- 已扩展 `backend/app/services/bad_case_service.py`，从 placeholder 变为 artifact-backed service。
+- 已写入 `bad_cases.jsonl`。
+- 已写入 `bad_case_updates.jsonl` 作为受控更新审计记录。
+- 已支持 create / list / detail / update / summary 的 service 层。
+- 已支持 service 层从 Review artifacts 创建 Bad Case。
+- 已添加 backend tests。
 
 不做：
 
@@ -1289,14 +1308,16 @@ python3 scripts/danger_check.py
 
 Stage 8B 建议只做 Bad Case artifact / schema / service，不做 API 和前端。
 
+当前状态：Stage 8B 后端 artifact / schema / service 已按该范围实现。以下计划项保留为完成记录和后续审计口径。
+
 最小开发步骤：
 
 1. 新增 `backend/app/schemas/bad_case.py`，定义 `BadCaseRecord`、`BadCaseCreateRequest`、`BadCaseUpdateRequest`、`BadCaseSummary`。
-2. 新增 `backend/app/analysis/bad_case_artifacts.py`，实现 `load_bad_cases`、`append_bad_case`、`update_bad_case`、`summarize_bad_cases`。
+2. 新增 `backend/app/analysis/bad_case_artifacts.py`，实现 `load_bad_cases`、`append_bad_case`、`update_bad_case`、`summarize_bad_case_records`。
 3. 更新 `backend/app/services/bad_case_service.py`，使用 artifact helper 提供 service 层方法。
 4. 将 `bad_cases.jsonl` artifact summary 小范围接入 manifest / metadata / artifact index，保持 optional。
 5. 新增 `backend/tests/test_stage8_bad_case_artifacts.py`。
-6. 新增 `backend/tests/test_bad_case_service.py`。
+6. 在 `backend/tests/test_stage8_bad_case_artifacts.py` 覆盖 artifact helper 与 service 层行为。
 7. 运行 backend tests 和 danger check。
 8. 更新本设计文档的 Stage 8B 状态，但仍不声明 Bad Case Center 前端或 Evaluation 完成。
 

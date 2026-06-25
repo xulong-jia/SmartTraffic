@@ -680,8 +680,9 @@ HTTP behavior:
 
 The Stage 7 frontend does not create Bad Case records, does not feed
 Evaluation Center, and Stage 7E navigation does not auto-sync Alert Center
-status with Event review status. Bad Case Center and Evaluation Center remain
-Stage 8 work.
+status with Event review status. Stage 8B adds backend artifact/schema/service
+support for Bad Case records, but the Review API and frontend do not call it
+yet.
 
 Stage 7E frontend URL query contract:
 
@@ -707,6 +708,7 @@ implemented as working behavior yet:
 - standalone `/api/events` full query
 - `GET /api/events/{event_id}`
 - `POST /api/bad-cases`
+- `GET /api/bad-cases` real list/detail/summary behavior
 - `POST /api/evaluation/run`
 - advanced filtering on flow counts and zone statistics
 - database-backed aggregate statistics APIs
@@ -727,8 +729,9 @@ implemented as working behavior yet:
 - `GET /api/events`: contract-only placeholder. Use
   `GET /api/analysis-runs/{run_id}/events` for current event artifacts, or
   `/api/review` for Stage 7 review event workflows.
-- `GET /api/bad-cases`: Stage 8 planned placeholder. Bad Case Center is not
-  implemented.
+- `GET /api/bad-cases`: Stage 8C planned placeholder. Stage 8B has backend
+  artifact/schema/service support for `bad_cases.jsonl`, but no routed Bad
+  Case API behavior yet.
 - `GET /api/evaluation/results`: Stage 8 planned placeholder. Evaluation
   datasets, metrics, reports, regression, and `evaluation_summary.json`
   generation are not implemented.
@@ -739,6 +742,8 @@ not routed in the current Stage 7 artifact-backed MVP. Standalone event and aler
 separate from the artifact-based `analysis-runs` list, summary, event,
 statistics, and alert endpoints documented above. Review API MVP is available
 under `/api/review`, the Stage 7 Review Center frontend consumes it, and
-Stage 7F confirms the artifact-backed Review Center MVP boundary. Bad-case and
-evaluation behavior belongs to later phases and is not implemented as completed
+Stage 7F confirms the artifact-backed Review Center MVP boundary. Stage 8B
+Bad Case behavior is limited to backend artifacts and service methods; routed
+Bad Case APIs, Bad Case frontend workflows, Evaluation APIs, and Evaluation
+frontend behavior belong to later phases and are not implemented as completed
 logic.

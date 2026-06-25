@@ -64,6 +64,8 @@ Currently implemented architecture includes:
   Review Center without alert/review status auto-sync
 - Stage 7F closeout audit confirming the local artifact-backed Review Center
   MVP boundary
+- Stage 8B artifact-backed Bad Case schema, JSONL artifacts, service methods,
+  manifest / metadata / artifact index summaries, and backend tests
 
 The current implementation is useful for local validation, but it is not the
 complete database-backed manual architecture yet.
@@ -120,7 +122,7 @@ These modules are not complete in the current project state.
 - `backend/app/trajectory`: geometry utilities, trajectory feature helpers, and `TrajectoryEngine`.
 - `backend/app/events`: event contracts, evidence helpers, rule execution helpers, `EventEngine`, dedup helpers, and rule callbacks.
 - `backend/app/alerts`: minimal alert contract helpers.
-- `backend/app/analysis`: artifact writer for run directories, metadata, Stage 6B `manifest.json` / `artifact_index.json`, detections, tracks, trajectory outputs, event outputs, traffic statistics outputs, alert outputs, and Stage 6F visual artifacts.
+- `backend/app/analysis`: artifact writer for run directories, metadata, Stage 6B `manifest.json` / `artifact_index.json`, detections, tracks, trajectory outputs, event outputs, traffic statistics outputs, alert outputs, Stage 6F visual artifacts, Stage 7 review artifacts, and Stage 8B Bad Case artifacts.
 
 Implemented stage-five rule callbacks:
 
@@ -200,7 +202,8 @@ Current frontend limitations:
 Current limitations:
 
 - no database-backed Review Center workflow; Stage 7C/7D/7E provide artifact-backed Review API, frontend MVP, and navigation, and Stage 7F audits that as the local Review Center MVP only
-- no Bad Case Center workflow
+- no routed Bad Case API or Bad Case Center frontend workflow; Stage 8B only
+  provides backend artifact/schema/service support
 - no Evaluation Center workflow
 - no database-backed Zone / Rule / Alert persistence
 - no video overlay
@@ -212,4 +215,4 @@ Current limitations:
 - no real-world speed / direction calibration
 - no formal traffic enforcement conclusion
 
-Future phases should keep YOLOv8, DeepSORT, Trajectory Engine, Event Engine, Alert Center, Review Center, Bad Case Center, and Evaluation Center separate. Review artifacts such as `review_comments.jsonl`, `event_review_state.json`, and `false_negative_events.jsonl` plus the Stage 7C `/api/review` endpoints, Stage 7D/7E frontend, and Stage 7F audit are a local artifact-backed Review MVP; they are not database-backed review state, Bad Case records, or Evaluation reports.
+Future phases should keep YOLOv8, DeepSORT, Trajectory Engine, Event Engine, Alert Center, Review Center, Bad Case Center, and Evaluation Center separate. Review artifacts such as `review_comments.jsonl`, `event_review_state.json`, and `false_negative_events.jsonl` plus the Stage 7C `/api/review` endpoints, Stage 7D/7E frontend, and Stage 7F audit are a local artifact-backed Review MVP; they are not database-backed review state or Evaluation reports. Stage 8B Bad Case artifacts such as `bad_cases.jsonl` and `bad_case_updates.jsonl` are local backend artifacts and do not yet imply routed API, frontend, database, or Evaluation Center completion.
