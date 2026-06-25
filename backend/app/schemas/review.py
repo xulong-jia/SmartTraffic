@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -84,3 +84,91 @@ class FalseNegativeEventRecord(BaseModel):
     created_at: str
     status: Literal["false_negative"] = "false_negative"
     source: str = "review_center"
+
+
+class ReviewActionRequest(BaseModel):
+    run_id: str
+    comment: str = ""
+    reviewer: str = "local_reviewer"
+    alert_id: str | None = None
+
+
+class ReviewCommentCreate(BaseModel):
+    run_id: str
+    event_id: str
+    comment: str
+    reviewer: str = "local_reviewer"
+    alert_id: str | None = None
+
+
+class FalseNegativeCreate(BaseModel):
+    run_id: str
+    expected_event_type: str
+    zone_id: str | None = None
+    track_id: int | None = None
+    start_frame: int | None = None
+    end_frame: int | None = None
+    start_time_ms: int | None = None
+    end_time_ms: int | None = None
+    description: str = ""
+    reviewer: str = "local_reviewer"
+
+
+class ReviewEventItem(BaseModel):
+    run_id: str
+    event_id: str
+    event_type: str | None = None
+    track_id: int | None = None
+    zone_id: str | None = None
+    severity: str | None = None
+    original_status: str
+    review_status: str
+    last_action: str | None = None
+    comment_count: int = 0
+    linked_alert_ids: list[str] = Field(default_factory=list)
+    start_frame: int | None = None
+    end_frame: int | None = None
+    start_time_ms: int | None = None
+    end_time_ms: int | None = None
+
+
+class ReviewEventListResponse(BaseModel):
+    items: list[ReviewEventItem]
+    total: int
+    limit: int
+    offset: int
+
+
+class ReviewEventDetailResponse(BaseModel):
+    run_id: str
+    event: dict[str, Any]
+    review_state: dict[str, Any] | None = None
+    linked_alerts: list[dict[str, Any]] = Field(default_factory=list)
+    comments: list[ReviewCommentRecord] = Field(default_factory=list)
+    visual_artifacts: dict[str, Any] = Field(default_factory=dict)
+
+
+class ReviewActionResponse(BaseModel):
+    run_id: str
+    event_id: str
+    status: str
+    review_id: str
+    review: ReviewCommentRecord
+    state: dict[str, Any]
+
+
+class ReviewCommentsResponse(BaseModel):
+    run_id: str
+    event_id: str | None = None
+    items: list[ReviewCommentRecord]
+    total: int
+    limit: int
+    offset: int
+
+
+class FalseNegativeResponse(BaseModel):
+    run_id: str
+    status: Literal["false_negative"]
+    false_negative: FalseNegativeEventRecord
+    review: ReviewCommentRecord
+    state: dict[str, Any]

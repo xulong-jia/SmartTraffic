@@ -576,12 +576,14 @@ Sets `status=acknowledged`, writes `acknowledged_by`, and writes
 These endpoints update the current artifact-backed MVP storage. They are not a
 database-backed workflow engine.
 
-## Review Artifacts
+## Review API
 
-Stage 7B implements Review Center artifact and state-model helpers only. No
-Review API MVP is routed yet.
+Stage 7C implements the artifact-backed Review API MVP. It reads Stage 6 event,
+alert, and visual artifacts, then writes Stage 7B review artifacts. It is not a
+database-backed final review workflow and does not implement Review Center
+frontend behavior.
 
-Per-run review artifact files:
+Per-run review artifact files used by these APIs:
 
 - `review_comments.jsonl`: append-only audit trail for `confirm`,
   `mark_false_positive`, `add_false_negative`, `ignore`, `resolve`, and
@@ -592,19 +594,83 @@ Per-run review artifact files:
   events. These records are not Bad Case Center records and are not Evaluation
   ground truth.
 
-Stage 7B helper behavior:
+Implemented endpoints:
 
-- missing review artifact files load as empty comments, empty state, and empty
-  false-negative records;
-- review state defaults to `pending` when no derived state exists for an event;
-- minimal artifact-layer transitions are validated before writing;
-- review artifact paths are written into metadata and, when present, manifest /
-  artifact index summaries;
-- writes are local artifact writes, not database persistence.
+- `GET /api/review/events?run_id=&status=&event_type=&limit=50&offset=0`
+- `GET /api/review/events/{event_id}?run_id=`
+- `POST /api/review/events/{event_id}/confirm`
+- `POST /api/review/events/{event_id}/false-positive`
+- `POST /api/review/events/{event_id}/ignore`
+- `POST /api/review/events/{event_id}/resolve`
+- `POST /api/review/comments`
+- `GET /api/review/comments?run_id=&event_id=&limit=50&offset=0`
+- `POST /api/review/false-negatives`
 
-Stage 7C will define and route the Review API MVP. Stage 7D will implement the
-Review Center frontend. Bad Case Center and Evaluation Center remain Stage 8
-work.
+`GET /api/review/events` requires `run_id`; this avoids ambiguous global
+`event_id` lookup across local artifact directories. Missing event artifacts for
+an existing run return an empty list. Missing review artifacts return empty
+comments/state. Malformed review artifacts return `400`.
+
+Review event list response shape:
+
+```json
+{
+  "items": [
+    {
+      "run_id": "run_xxx",
+      "event_id": "event_xxx",
+      "event_type": "danger_zone_intrusion",
+      "track_id": 17,
+      "zone_id": "zone_001",
+      "severity": "high",
+      "original_status": "pending",
+      "review_status": "confirmed",
+      "last_action": "confirm",
+      "comment_count": 1,
+      "linked_alert_ids": ["alert_xxx"],
+      "start_frame": 10,
+      "end_frame": 12,
+      "start_time_ms": 900,
+      "end_time_ms": 1000
+    }
+  ],
+  "total": 1,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+Review action request body:
+
+```json
+{
+  "run_id": "run_xxx",
+  "comment": "confirmed",
+  "reviewer": "local_reviewer",
+  "alert_id": null
+}
+```
+
+Action responses include the current review status, the appended review record,
+and the current event review state. Review actions do not overwrite
+`events.jsonl`.
+
+`POST /api/review/comments` appends a comment-only review record. It preserves
+the current status and increments `comment_count`.
+
+`POST /api/review/false-negatives` writes `false_negative_events.jsonl`, appends
+an `add_false_negative` review comment, and updates `event_review_state.json`.
+It does not create a Bad Case and does not feed Evaluation Center.
+
+HTTP behavior:
+
+- `400`: missing required `run_id`, invalid state transition, or malformed
+  review artifact.
+- `404`: run or event not found.
+- `422`: request body validation error.
+
+Stage 7D will implement the Review Center frontend. Bad Case Center and
+Evaluation Center remain Stage 8 work.
 
 ## Not Implemented From The Manual Yet
 
@@ -614,12 +680,12 @@ implemented as working behavior yet:
 - `PATCH /api/events/{event_id}/status`
 - standalone `/api/events` full query
 - `GET /api/events/{event_id}`
-- `POST /api/review/comments`
 - `POST /api/bad-cases`
 - `POST /api/evaluation/run`
 - advanced filtering on flow counts and zone statistics
 - database-backed aggregate statistics APIs
-- full Review / Bad Case / Evaluation APIs and frontend workflows
+- Review Center frontend workflow
+- full Bad Case / Evaluation APIs and frontend workflows
 
 ## Placeholders For Later Phases
 
@@ -627,15 +693,13 @@ implemented as working behavior yet:
 - `GET /api/tracks`
 - `GET /api/zones`
 - `GET /api/events`
-- `GET /api/review/events`
 - `GET /api/bad-cases`
 - `GET /api/evaluation/results`
 
 These placeholder endpoints exist to preserve module boundaries. The planned
-event detail endpoint and write endpoints for review comments, bad cases, and
-evaluation runs are not routed in the current Stage 6 MVP. Standalone event and
-alert center APIs remain
+event detail endpoint and write endpoints for bad cases and evaluation runs are
+not routed in the current Stage 6/7C MVP. Standalone event and alert center APIs remain
 separate from the artifact-based `analysis-runs` list, summary, event,
-statistics, and alert endpoints documented above. Review, bad-case, and
-evaluation behavior belongs to later phases and is not implemented as completed
-logic.
+statistics, and alert endpoints documented above. Review API MVP is available
+under `/api/review`, while Review Center frontend, bad-case, and evaluation
+behavior belongs to later phases and is not implemented as completed logic.

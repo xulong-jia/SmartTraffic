@@ -1,6 +1,6 @@
 # Stage 7 Review Center 设计文档
 
-本文档记录 Stage 7A 的只读审计结论、Stage 7 Review Center 设计草案，以及 Stage 7B artifact 与状态模型实现口径。当前已实现的是本地 review artifact helper / service，不代表 Review API MVP、Review Center 前端、数据库 migration、Bad Case Center 或 Evaluation Center 已完成。
+本文档记录 Stage 7A 的只读审计结论、Stage 7 Review Center 设计草案、Stage 7B artifact 与状态模型实现口径，以及 Stage 7C Review API MVP 实现口径。当前已实现的是 artifact-backed Review API MVP，不代表 Review Center 前端、数据库 migration、Bad Case Center 或 Evaluation Center 已完成。
 
 ## 1. 阶段目标
 
@@ -71,17 +71,16 @@ Stage 7 也不改变 Stage 5/6 的事件规则、告警生成、交通统计和�
 - Stage 7B 已新增 `backend/app/schemas/review.py`，定义 review action、review status、review comment、event review state 和 false-negative record schema。
 - Stage 7B 已新增 `backend/app/analysis/review_artifacts.py`，支持 `review_comments.jsonl` append-only 写入、`event_review_state.json` 派生状态原子更新、`false_negative_events.jsonl` 漏报记录写入和最小状态转换校验。
 - Stage 7B 已将 review artifact summary 小范围接入 metadata，并在已有 manifest / artifact index 存在时更新对应 review artifact 条目。
+- Stage 7C 已将 `GET /api/review/events`、`GET /api/review/events/{event_id}`、confirm / false-positive / ignore / resolve、comments 和 false-negatives API 接入 Stage 7B artifact helper。
+- Stage 7C Review API 会读取 Stage 6 events / alerts / visual artifacts，并写入 review artifacts；它不覆盖原始 `events.jsonl`。
 
-这些能力代表 Stage 7B artifact 底座和既有读取基础，不代表 Review API、Review Center 前端或完整复核工作流已经实现。
+这些能力代表 Stage 7C artifact-backed Review API MVP 和既有读取基础，不代表 Review Center 前端或完整复核工作流已经实现。
 
 ### 3.3 未实现能力
 
 当前未实现：
 
-- `/api/review/events` 真实查询逻辑。当前 `backend/app/api/review.py` 只返回 placeholder。
 - standalone `/api/events` 真实查询逻辑。当前 `backend/app/api/events.py` 只返回 placeholder。
-- Review API response / request schemas，例如 review event response、review action request、review comment API response。
-- Review API 层的事件确认、误报标记、漏报补充、忽略、解决和备注写入能力。
 - Review Center 可用前端页面。当前 `ReviewCenterPage` 是 placeholder，并只渲染 `EventTable` contract。
 - Analysis Detail 中的 event review 入口、review status、comments count。
 - Alert Center 到关联 event review 的跳转。
@@ -947,10 +946,10 @@ Stage 7 每个子阶段至少运行：
 
 ### 10.2 Stage 7C：Review API MVP
 
-目标：
+状态：已完成 artifact-backed API MVP。
 
-- 实现本设计中的 Review API MVP。
-- 与 Stage 6 events / alerts / visual artifacts 读取打通。
+- 已实现本设计中的 Review API MVP。
+- 已与 Stage 6 events / alerts / visual artifacts 读取打通。
 - 保持 Bad Case / Evaluation 不实现。
 
 验收：
@@ -1024,4 +1023,4 @@ Stage 7B 已按以下最小范围实现：
 7. 增加 artifact 单元测试，确认不修改 `events.jsonl`。
 8. 更新 Stage 7B 文档或 API reference 的 planned/implemented 边界。
 
-Stage 7B 完成后仍未实现 Review API 或前端 Review Center。Review API 应放到 Stage 7C，前端应放到 Stage 7D，Analysis / Alert 联动应放到 Stage 7E。
+Stage 7B 完成后仍未实现 Review API 或前端 Review Center。Stage 7C 已补齐 Review API MVP。前端应放到 Stage 7D，Analysis / Alert 联动应放到 Stage 7E。
