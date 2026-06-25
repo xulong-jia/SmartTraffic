@@ -582,8 +582,9 @@ Stage 7C implements the artifact-backed Review API MVP. Stage 7D adds a React
 Review Center MVP that consumes these endpoints for run filters, event
 list/detail, confirm, false-positive, ignore, resolve, comments, and
 false-negative creation. Stage 7E adds frontend URL navigation into Review
-Center from Analysis Detail and Alert Center. The API reads Stage 6 event,
-alert, and visual artifacts, then writes Stage 7B review artifacts. It is not a
+Center from Analysis Detail and Alert Center. Stage 7F audits this as the
+Review Center artifact-backed MVP boundary. The API reads Stage 6 event, alert,
+and visual artifacts, then writes Stage 7B review artifacts. It is not a
 database-backed final review workflow.
 
 Per-run review artifact files used by these APIs:
@@ -721,6 +722,7 @@ event detail endpoint and write endpoints for bad cases and evaluation runs are
 not routed in the current Stage 6/7C MVP. Standalone event and alert center APIs remain
 separate from the artifact-based `analysis-runs` list, summary, event,
 statistics, and alert endpoints documented above. Review API MVP is available
-under `/api/review`, and the Stage 7D/7E Review Center frontend consumes it.
-Bad-case and evaluation behavior belongs to later phases and is not implemented
-as completed logic.
+under `/api/review`, the Stage 7D/7E Review Center frontend consumes it, and
+Stage 7F confirms the artifact-backed Review Center MVP boundary. Bad-case and
+evaluation behavior belongs to later phases and is not implemented as completed
+logic.

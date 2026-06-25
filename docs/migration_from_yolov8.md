@@ -26,7 +26,7 @@ The source project was inspected in read-only mode. No files were modified, move
 | `app.py` and `app/streamlit_video_demo.py` | Streamlit demo is not part of the new SmartTraffic architecture. |
 | ByteTrack runtime files under `src/tracking/` and tracking CLIs | SmartTraffic stage three uses a new DeepSORT adapter boundary instead of directly migrating the old ByteTrack runtime. |
 | `src/analytics/*` event/counting runtime | SmartTraffic implements new trajectory, event, and alert layers with its own contracts instead of directly migrating the old analytics runtime. |
-| Bad Case and evaluation services/docs as implemented in the old project | SmartTraffic will implement these later under its own Review/Bad Case/Evaluation Center boundaries. |
+| Bad Case and evaluation services/docs as implemented in the old project | SmartTraffic will implement these later under its own Bad Case / Evaluation Center boundaries. Review Center is implemented as a SmartTraffic-native artifact-backed MVP, not migrated from the old project. |
 | Old README product claims and release history | New README must reflect SmartTraffic scope and phase-one status. |
 | `frontend/dist`, `frontend/node_modules`, `.pytest_cache`, `__pycache__` | Generated caches/build outputs are not migrated. |
 
@@ -73,7 +73,7 @@ Still not migrated or implemented:
 
 - Old event/counting/ROI analytics runtime.
 - Event Engine rules.
-- Alert, Review, Bad Case, and Evaluation Center complete logic.
+- Database-backed Alert / Review final workflows, Bad Case Center, and Evaluation Center complete logic.
 
 Boundary difference:
 
@@ -107,7 +107,7 @@ Still not migrated or implemented:
 - Old event/counting/ROI analytics runtime.
 - Event/counting implementations from the old project.
 - Congestion rule and full aggregate flow-counting analytics.
-- Full Alert, Review, Bad Case, and Evaluation Center logic.
+- Full database-backed Alert / Review final workflows, Bad Case Center, and Evaluation Center logic.
 
 Boundary difference:
 
@@ -157,7 +157,7 @@ Still not migrated or implemented:
   `zone_statistics.json` read API.
 - Frontend flow / congestion charts and long-term database aggregates.
 - Database-backed alert lifecycle persistence and notification delivery.
-- Review, Bad Case, and Evaluation Center complete logic.
+- Database-backed Review Center final workflow, Bad Case Center, and Evaluation Center complete logic.
 - Real-world speed calibration.
 - Law-enforcement-grade traffic violation judgment.
 
@@ -187,7 +187,7 @@ What changed:
 Still not migrated or implemented:
 
 - Database-backed result index or database migrations.
-- Review Center, Bad Case Center, or Evaluation Center workflows.
+- Database-backed Review Center final workflow, Bad Case Center, or Evaluation Center workflows.
 - Production permissions, realtime streams, model training, or deployment.
 - Real-world speed calibration or law-enforcement-grade conclusions.
 
@@ -196,3 +196,27 @@ Boundary difference:
 The Stage 6 Traffic Analysis Center is complete at the artifact-based MVP
 boundary. It is not the final database-backed Traffic Analysis Center from the
 execution manual.
+
+## Stage 7 Review Center MVP
+
+Stage seven is a SmartTraffic-native review layer over Stage 5/6 event, alert,
+and visual artifacts. It is not migrated from the old YOLOv8 project.
+
+What changed:
+
+- `review_comments.jsonl` stores append-only review actions and comments.
+- `event_review_state.json` stores derived review state without overwriting
+  `events.jsonl`.
+- `false_negative_events.jsonl` stores manual missed-event MVP records. These
+  records are not Bad Case records and are not Evaluation ground truth.
+- `/api/review` exposes artifact-backed review event list/detail, confirm,
+  false-positive, ignore, resolve, comments, and false-negative endpoints.
+- React Review Center consumes the Review API and supports minimal navigation
+  from Analysis Detail and Alert Center by `run_id`, `event_id`, and `alert_id`.
+
+Still not migrated or implemented:
+
+- Database-backed Review Center final workflow or migrations.
+- Bad Case Center and Evaluation Center.
+- Multi-user permissions, production-grade audit compliance, rule reruns,
+  production deployment, or law-enforcement-grade conclusions.

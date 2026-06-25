@@ -1,6 +1,6 @@
 # Stage 7 Review Center 设计文档
 
-本文档记录 Stage 7A 的只读审计结论、Stage 7 Review Center 设计草案、Stage 7B artifact 与状态模型实现口径、Stage 7C Review API MVP 实现口径、Stage 7D Review Center 前端 MVP 实现口径，以及 Stage 7E Analysis / Alert 定位联动实现口径。当前已实现的是 artifact-backed Review API + 前端 MVP + 最小定位联动，不代表 Stage 7F 收尾审计 / tag、数据库 migration、Bad Case Center 或 Evaluation Center 已完成。
+本文档记录 Stage 7A 的只读审计结论、Stage 7 Review Center 设计草案、Stage 7B artifact 与状态模型实现口径、Stage 7C Review API MVP 实现口径、Stage 7D Review Center 前端 MVP 实现口径、Stage 7E Analysis / Alert 定位联动实现口径，以及 Stage 7F 收尾审计结论。当前已实现的是 artifact-backed Review API + 前端 MVP + 最小定位联动，并已达到 Review Center artifact-backed MVP 验收口径；这不代表已创建 Stage 7 tag、完成数据库 migration、Bad Case Center 或 Evaluation Center。
 
 ## 1. 阶段目标
 
@@ -78,7 +78,7 @@ Stage 7 也不改变 Stage 5/6 的事件规则、告警生成、交通统计和�
 - Stage 7D 已新增前端 review API client、review types、ReviewCenterPage 真实 API 接入和 review utility 测试。
 - Stage 7E 已新增 `reviewNavigation` utility，用于构建 `/review?run_id=&event_id=&alert_id=&status=&event_type=` 链接和解析 query。
 
-这些能力代表 Stage 7E artifact-backed Review Center MVP 和既有读取基础，不代表数据库最终版复核工作流、Stage 7F 收尾审计或 Stage 8 Bad Case / Evaluation 已经实现。
+这些能力经过 Stage 7F 收尾审计后代表 Stage 7 Review Center artifact-backed MVP 和既有读取基础，不代表数据库最终版复核工作流、已创建 tag 或 Stage 8 Bad Case / Evaluation 已经实现。
 
 ### 3.3 未实现能力
 
@@ -212,14 +212,14 @@ Stage 7 MVP 建议支持以下 action：
 
 | action | before_status | after_status | 说明 |
 | --- | --- | --- | --- |
-| `confirm` | `pending` / `ignored` / `false_positive` / `resolved` | `confirmed` | 人工确认事件。 |
-| `mark_false_positive` | `pending` / `confirmed` / `resolved` | `false_positive` | 标记误报。 |
+| `confirm` | `pending` | `confirmed` | 人工确认事件。 |
+| `mark_false_positive` | `pending` | `false_positive` | 标记误报。 |
 | `add_false_negative` | null | `false_negative` | 补充系统漏报记录。 |
-| `ignore` | `pending` / `confirmed` / `false_positive` | `ignored` | 忽略事件。 |
-| `resolve` | `pending` / `confirmed` / `false_positive` / `ignored` | `resolved` | 标记复核处理已闭环。 |
+| `ignore` | `pending` | `ignored` | 忽略事件。 |
+| `resolve` | `confirmed` / `false_positive` / `ignored` | `resolved` | 标记复核处理已闭环。 |
 | `comment` | current status | current status | 只添加备注，不改变状态。 |
 
-状态流转规则在 MVP 中可以保持宽松，但必须记录 before/after。若请求的 before status 与当前派生状态不一致，API 应返回 409，避免覆盖他人操作或旧页面提交。
+状态流转规则在 MVP 中保持最小校验，并在 `review_comments.jsonl` 中记录 before/after。当前 Stage 7C 不接受 request-level `before_status` 字段；不支持的状态流转返回 400。
 
 ### 5.3 Alert status 与 Event review status 的关系
 
@@ -331,7 +331,7 @@ results/traffic_analysis/{run_id}/event_review_state.json
 
 1. 读取 `events.jsonl` 原始事件。
 2. 读取 `event_review_state.json`。
-3. 对每个原始 event 用 review state 覆盖展示用 `status`、`comment_count`、`last_reviewed_at` 等字段。
+3. 对每个原始 event 合并展示用 `review_status`、`last_action`、`comment_count` 和 linked alert ids。
 4. 原始 `events.jsonl` 不被覆盖。
 
 `event_review_state.json` 是当前状态索引，`review_comments.jsonl` 是审计历史。若两者不一致，应以 `review_comments.jsonl` 可重放结果为准，并在后续维护命令中重建 state。
@@ -375,20 +375,19 @@ Stage 7B 已实现 append-only 写入，单条结构：
 
 `events.jsonl` 是 Event Engine 原始输出。Stage 7 不应直接修改它。
 
-Review API 的展示层可以返回合并后的 `review_status` 或覆盖后的展示 `status`，但 response 中应保留原始状态来源：
+Review API 的展示层返回原始状态和派生复核状态两个字段。当前 Stage 7C response 使用 `original_status` 与 `review_status`，不覆盖 `events.jsonl`，也不额外返回早期设计中的 `status_source` 字段：
 
 ```json
 {
   "event_id": "event_...",
   "original_status": "pending",
   "review_status": "confirmed",
-  "status": "confirmed",
-  "status_source": "event_review_state",
+  "last_action": "confirm",
   "comment_count": 1
 }
 ```
 
-这样可以同时满足 UI 简洁展示和审计可追溯。
+这样可以同时满足 UI 简洁展示和审计可追溯；如后续 DB final version 需要更细来源说明，可再增加显式 source 字段。
 
 ### 6.5 与 alerts.jsonl 的关系
 
@@ -445,7 +444,6 @@ MVP 只需展示 artifact status 和可用路径，不实现复杂视频 overlay
 | --- | --- |
 | 400 | request 参数非法、status/action 不支持、必填字段缺失。 |
 | 404 | run、event、alert 或 review record 不存在。 |
-| 409 | `before_status` 与当前派生状态不一致，或重复创建冲突。 |
 | 422 | schema validation failed。 |
 | 500 | artifact 读取/写入失败。 |
 
@@ -460,19 +458,16 @@ Query parameters：
 - `run_id`: required。
 - `status`: optional，支持 `pending`、`confirmed`、`false_positive`、`false_negative`、`ignored`、`resolved`。
 - `event_type`: optional。
-- `track_id`: optional integer。
-- `alert_id`: optional，用于从告警跳转定位。
-- `include_false_negatives`: optional boolean，默认 true。
-- `limit`: optional integer，默认 100。
+- `limit`: optional integer，默认 50。
 - `offset`: optional integer，默认 0。
 
 Response schema：
 
 ```json
 {
-  "run_id": "run_...",
   "items": [
     {
+      "run_id": "run_...",
       "event_id": "event_...",
       "event_type": "wrong_way_driving",
       "severity": "high",
@@ -482,16 +477,15 @@ Response schema：
       "end_frame": 130,
       "original_status": "pending",
       "review_status": "confirmed",
-      "status": "confirmed",
-      "status_source": "event_review_state",
+      "last_action": "confirm",
       "comment_count": 1,
-      "linked_alert_count": 1,
-      "last_reviewed_at": "2026-06-25T00:00:00+00:00",
-      "is_false_negative": false
+      "linked_alert_ids": ["alert_..."],
+      "start_time_ms": 1000,
+      "end_time_ms": 1300
     }
   ],
   "total": 1,
-  "limit": 100,
+  "limit": 50,
   "offset": 0
 }
 ```
@@ -500,9 +494,9 @@ Response schema：
 
 - 从 Stage 6 `events.jsonl` 读取原始事件。
 - 从 `event_review_state.json` 合并派生状态。
-- 从 `false_negative_events.jsonl` 追加漏报记录。
-- 从 `alerts.jsonl` 汇总 linked alert count。
+- 从 `alerts.jsonl` 汇总 `linked_alert_ids`。
 - 从 `review_comments.jsonl` 计算 `comment_count`。
+- `false_negative_events.jsonl` 由 `POST /api/review/false-negatives` 写入，并通过 review artifacts / comments 留痕；它不回写或伪装成原始 `events.jsonl`。
 
 ### 7.2 GET /api/review/events/{event_id}
 
@@ -511,9 +505,6 @@ Response schema：
 Query parameters：
 
 - `run_id`: required。
-- `include_comments`: optional boolean，默认 true。
-- `include_alerts`: optional boolean，默认 true。
-- `include_visual_artifacts`: optional boolean，默认 true。
 
 Response schema：
 
@@ -525,12 +516,9 @@ Response schema：
     "event_type": "wrong_way_driving",
     "original_status": "pending",
     "review_status": "confirmed",
-    "status": "confirmed",
-    "evidence": {},
-    "rule_execution_ids": []
+    "linked_alert_ids": ["alert_..."],
+    "comment_count": 1
   },
-  "event_evidence": [],
-  "rule_executions": [],
   "linked_alerts": [],
   "comments": [],
   "visual_artifacts": {
@@ -550,19 +538,14 @@ Response schema：
 
 用途：确认已有事件。
 
-Query parameters：
-
-- `run_id`: required。
-
 Request body：
 
 ```json
 {
-  "before_status": "pending",
+  "run_id": "run_...",
   "comment": "Confirmed after checking keyframes.",
   "reviewer": "local_reviewer",
-  "alert_id": null,
-  "source": "review_center"
+  "alert_id": null
 }
 ```
 
@@ -574,8 +557,14 @@ Response schema：
   "event_id": "event_...",
   "status": "confirmed",
   "review_id": "review_...",
-  "comment": "Confirmed after checking keyframes.",
-  "updated_at": "2026-06-25T00:00:00+00:00"
+  "review": {
+    "action": "confirm",
+    "before_status": "pending",
+    "after_status": "confirmed"
+  },
+  "state": {
+    "status": "confirmed"
+  }
 }
 ```
 
@@ -583,7 +572,7 @@ Response schema：
 
 - 校验 event 存在于 `events.jsonl`。
 - 读取当前派生状态。
-- 校验 `before_status`。
+- 校验最小状态流转。
 - 追加 `review_comments.jsonl` action=`confirm`。
 - 更新 `event_review_state.json`。
 
@@ -591,20 +580,14 @@ Response schema：
 
 用途：标记已有事件为误报。
 
-Query parameters：
-
-- `run_id`: required。
-
 Request body：
 
 ```json
 {
-  "before_status": "pending",
+  "run_id": "run_...",
   "comment": "Vehicle did not enter the configured zone.",
   "reviewer": "local_reviewer",
-  "alert_id": "alert_...",
-  "source": "review_center",
-  "future_bad_case_candidate": true
+  "alert_id": "alert_..."
 }
 ```
 
@@ -616,7 +599,13 @@ Response schema：
   "event_id": "event_...",
   "status": "false_positive",
   "review_id": "review_...",
-  "future_bad_case_candidate": true
+  "review": {
+    "action": "mark_false_positive",
+    "after_status": "false_positive"
+  },
+  "state": {
+    "status": "false_positive"
+  }
 }
 ```
 
@@ -631,10 +620,8 @@ Request body：
 ```json
 {
   "run_id": "run_...",
-  "before_status": "pending",
   "comment": "Scene is outside review scope.",
-  "reviewer": "local_reviewer",
-  "source": "review_center"
+  "reviewer": "local_reviewer"
 }
 ```
 
@@ -645,7 +632,14 @@ Response schema：
   "run_id": "run_...",
   "event_id": "event_...",
   "status": "ignored",
-  "review_id": "review_..."
+  "review_id": "review_...",
+  "review": {
+    "action": "ignore",
+    "after_status": "ignored"
+  },
+  "state": {
+    "status": "ignored"
+  }
 }
 ```
 
@@ -658,10 +652,8 @@ Request body：
 ```json
 {
   "run_id": "run_...",
-  "before_status": "confirmed",
   "comment": "Review is complete.",
-  "reviewer": "local_reviewer",
-  "source": "review_center"
+  "reviewer": "local_reviewer"
 }
 ```
 
@@ -672,7 +664,14 @@ Response schema：
   "run_id": "run_...",
   "event_id": "event_...",
   "status": "resolved",
-  "review_id": "review_..."
+  "review_id": "review_...",
+  "review": {
+    "action": "resolve",
+    "after_status": "resolved"
+  },
+  "state": {
+    "status": "resolved"
+  }
 }
 ```
 
@@ -695,8 +694,7 @@ Request body：
   "start_time_ms": 4000,
   "end_time_ms": 5200,
   "description": "Manual reviewer observed a missed event.",
-  "reviewer": "local_reviewer",
-  "source": "review_center"
+  "reviewer": "local_reviewer"
 }
 ```
 
@@ -705,17 +703,24 @@ Response schema：
 ```json
 {
   "run_id": "run_...",
-  "false_negative_id": "fn_...",
-  "event_id": "fn_...",
   "status": "false_negative",
-  "review_id": "review_..."
+  "false_negative": {
+    "false_negative_id": "fn_...",
+    "status": "false_negative"
+  },
+  "review": {
+    "action": "add_false_negative",
+    "after_status": "false_negative"
+  },
+  "state": {
+    "status": "false_negative"
+  }
 }
 ```
 
 写入逻辑：
 
 - 校验 run 存在。
-- 可选校验 frame/time 范围在 run metadata 中可解释。
 - 追加 `false_negative_events.jsonl`。
 - 追加 `review_comments.jsonl` action=`add_false_negative`。
 - 更新 `event_review_state.json` synthetic event state。
@@ -732,8 +737,7 @@ Request body：
   "event_id": "event_...",
   "alert_id": null,
   "comment": "Need second reviewer later.",
-  "reviewer": "local_reviewer",
-  "source": "review_center"
+  "reviewer": "local_reviewer"
 }
 ```
 
@@ -741,13 +745,19 @@ Response schema：
 
 ```json
 {
-  "review_id": "review_...",
   "run_id": "run_...",
   "event_id": "event_...",
-  "action": "comment",
-  "before_status": "confirmed",
-  "after_status": "confirmed",
-  "created_at": "2026-06-25T00:00:00+00:00"
+  "status": "confirmed",
+  "review_id": "review_...",
+  "review": {
+    "action": "comment",
+    "before_status": "confirmed",
+    "after_status": "confirmed"
+  },
+  "state": {
+    "status": "confirmed",
+    "comment_count": 2
+  }
 }
 ```
 
@@ -766,10 +776,7 @@ Query parameters：
 
 - `run_id`: required。
 - `event_id`: optional。
-- `alert_id`: optional。
-- `action`: optional。
-- `reviewer`: optional。
-- `limit`: optional integer，默认 100。
+- `limit`: optional integer，默认 50。
 - `offset`: optional integer，默认 0。
 
 Response schema：
@@ -792,7 +799,7 @@ Response schema：
     }
   ],
   "total": 1,
-  "limit": 100,
+  "limit": 50,
   "offset": 0
 }
 ```
@@ -800,7 +807,7 @@ Response schema：
 读取逻辑：
 
 - 从 `review_comments.jsonl` 读取。
-- 支持按 event、alert、action、reviewer 过滤。
+- 当前 Stage 7C 支持按 event 过滤。
 - 只返回当前 run 的数据。
 
 ## 8. 前端页面草案
@@ -879,12 +886,12 @@ Stage 7B 应先覆盖 artifact 层：
 API 测试应覆盖：
 
 - `GET /api/review/events?run_id=...` 合并原始 events 和 review state。
-- status / event_type / track_id / alert_id filters。
-- `GET /api/review/events/{event_id}` 返回 evidence、rule executions、linked alerts、comments 和 visual artifact status。
+- status / event_type filters。
+- `GET /api/review/events/{event_id}` 返回 event detail、linked alerts、comments 和 visual artifact status。
 - confirm / false-positive / ignore / resolve 写接口。
 - false-negative create。
 - comments create/list。
-- 404 run not found、404 event not found、409 before_status mismatch、400 unsupported status/action。
+- 404 run not found、404 event not found、400 invalid transition / malformed review artifact。
 
 ### 9.3 Event status transition 测试
 
@@ -895,7 +902,7 @@ API 测试应覆盖：
 - confirmed -> resolved。
 - pending -> ignored。
 - comment 保持当前 status。
-- before_status 不匹配时拒绝。
+- unsupported transition 拒绝并保留既有 audit/state。
 - false_negative synthetic event 不要求存在于 `events.jsonl`。
 
 MVP 可以允许较宽松的状态切换，但必须测试所有 action 的 before/after 审计记录。
@@ -958,7 +965,7 @@ Stage 7 每个子阶段至少运行：
 
 验收：
 
-- Review API 测试覆盖读取、写入、错误状态和 before_status conflict。
+- Review API 测试覆盖读取、写入、错误状态和 invalid transition。
 - `/api/review/events` 不再是 placeholder。
 
 ### 10.3 Stage 7D：Review Center 前端 MVP
@@ -999,6 +1006,8 @@ Stage 7 每个子阶段至少运行：
 
 ### 10.5 Stage 7F：Stage 7 收尾审计、文档、测试、tag
 
+状态：已完成 Stage 7 收尾审计与文档边界修正；是否创建 `v0.7.0-review-center-mvp` tag 需用户明确要求。
+
 目标：
 
 - 完成 Stage 7 文档收尾。
@@ -1012,6 +1021,16 @@ Stage 7 每个子阶段至少运行：
 - Bad Case / Evaluation 仍标记为后续阶段。
 - 旧 tag 不移动。
 
+审计结果：
+
+| 验收项 | Stage 7F 结论 |
+| --- | --- |
+| Review artifacts | 已有 `review_comments.jsonl` append-only audit trail、`event_review_state.json` 派生状态、`false_negative_events.jsonl` 人工漏报 MVP 记录、action/status schema、最小状态转换校验、metadata / manifest / artifact index 接入和后端测试。 |
+| Review API | 已实现 `GET /api/review/events`、`GET /api/review/events/{event_id}`、confirm、false-positive、ignore、resolve、comments 和 false-negatives endpoints；数据来源为 Stage 6 event / alert / visual artifacts 与 Stage 7 review artifacts。 |
+| Review Center frontend | 已接入真实 `/api/review`，支持 run/status/event_type 过滤、event list/detail、linked alerts、comments、visual artifact references、confirm / false-positive / ignore / resolve、add comment、add false negative MVP，以及 loading / empty / error / submitting / success 状态。 |
+| Analysis / Alert 联动 | Analysis Detail 已提供 event Review link；Alert Center 已提供 linked event Review link；Review Center 支持 `run_id`、`event_id`、`alert_id`、`status`、`event_type` query 初始化、自动加载 event detail 和 alert context 高亮。 |
+| 边界 | 当前是 artifact-backed MVP，不是 DB final version；不做 Bad Case Center、Evaluation Center、DB-backed review state、多用户权限、规则重跑、生产级审计合规、实时流、生产部署或执法级判断。 |
+
 ## 11. 风险与规避
 
 | 风险 | 规避 |
@@ -1021,7 +1040,7 @@ Stage 7 每个子阶段至少运行：
 | false_negative 缺少原始 event | 使用 `false_negative_events.jsonl` 和 synthetic ID。 |
 | Stage 7 被误认为 Bad Case/Evaluation 完成 | 只预留 future link，不创建 Bad Case lifecycle，不计算 metrics。 |
 | JSONL 追加失败或 state 写坏 | 写入时先追加 audit，再原子更新 state；失败时可通过 audit replay 重建 state。 |
-| 多窗口重复提交 | request 带 `before_status`，不一致返回 409。 |
+| 多窗口重复提交 | 当前 MVP 通过最小状态转换校验降低误操作风险；生产级并发控制留到 DB final version。 |
 | generated artifacts 被提交 | danger check 和 forbidden file scan 保持为每阶段收尾项。 |
 
 ## 12. Stage 7B 最小开发计划
@@ -1037,4 +1056,4 @@ Stage 7B 已按以下最小范围实现：
 7. 增加 artifact 单元测试，确认不修改 `events.jsonl`。
 8. 更新 Stage 7B 文档或 API reference 的 planned/implemented 边界。
 
-Stage 7B 完成后仍未实现 Review API 或前端 Review Center。Stage 7C 已补齐 Review API MVP。前端应放到 Stage 7D，Analysis / Alert 联动应放到 Stage 7E。
+Stage 7B 完成后曾暂未实现 Review API 或前端 Review Center；Stage 7C 已补齐 Review API MVP，Stage 7D 已补齐前端 Review Center MVP，Stage 7E 已补齐 Analysis / Alert 联动。

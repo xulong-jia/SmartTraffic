@@ -62,6 +62,8 @@ Currently implemented architecture includes:
   review actions, comments, and false-negative records
 - Stage 7E minimal URL navigation from Analysis Detail and Alert Center into
   Review Center without alert/review status auto-sync
+- Stage 7F closeout audit confirming the local artifact-backed Review Center
+  MVP boundary
 
 The current implementation is useful for local validation, but it is not the
 complete database-backed manual architecture yet.
@@ -197,7 +199,7 @@ Current frontend limitations:
 
 Current limitations:
 
-- no database-backed Review Center workflow; Stage 7C/7D/7E provide artifact-backed Review API, frontend MVP, and navigation only
+- no database-backed Review Center workflow; Stage 7C/7D/7E provide artifact-backed Review API, frontend MVP, and navigation, and Stage 7F audits that as the local Review Center MVP only
 - no Bad Case Center workflow
 - no Evaluation Center workflow
 - no database-backed Zone / Rule / Alert persistence
@@ -210,4 +212,4 @@ Current limitations:
 - no real-world speed / direction calibration
 - no formal traffic enforcement conclusion
 
-Future phases should keep YOLOv8, DeepSORT, Trajectory Engine, Event Engine, Alert Center, Review Center, Bad Case Center, and Evaluation Center separate. Review artifacts such as `review_comments.jsonl`, `event_review_state.json`, and `false_negative_events.jsonl` plus the Stage 7C `/api/review` endpoints and Stage 7D/7E frontend are a local artifact-backed Review MVP; they are not database-backed review state, Bad Case records, or Evaluation reports.
+Future phases should keep YOLOv8, DeepSORT, Trajectory Engine, Event Engine, Alert Center, Review Center, Bad Case Center, and Evaluation Center separate. Review artifacts such as `review_comments.jsonl`, `event_review_state.json`, and `false_negative_events.jsonl` plus the Stage 7C `/api/review` endpoints, Stage 7D/7E frontend, and Stage 7F audit are a local artifact-backed Review MVP; they are not database-backed review state, Bad Case records, or Evaluation reports.
