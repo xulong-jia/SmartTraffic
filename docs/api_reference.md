@@ -342,6 +342,11 @@ This endpoint is an artifact-based run event query. It reads `events.jsonl`,
 local run directory. It is not the execution manual's final standalone
 `/api/events` Event Center implementation.
 
+The standalone `GET /api/events` route currently remains contract-only /
+placeholder. Real event reads in the Stage 7 MVP should use this
+`/api/analysis-runs/{run_id}/events` endpoint for run artifacts, or the Review
+API under `/api/review` for review-oriented event list/detail behavior.
+
 Query parameters:
 
 - `limit`: integer from 0 to 1000, default 100.
@@ -710,12 +715,23 @@ implemented as working behavior yet:
 
 ## Placeholders For Later Phases
 
-- `GET /api/detections`
-- `GET /api/tracks`
-- `GET /api/zones`
-- `GET /api/events`
-- `GET /api/bad-cases`
-- `GET /api/evaluation/results`
+- `GET /api/detections`: contract-only placeholder. Use
+  `GET /api/analysis-runs/{run_id}/detections` for current artifact-backed
+  detection reads.
+- `GET /api/tracks`: contract-only placeholder. Use
+  `GET /api/analysis-runs/{run_id}/tracks` for current artifact-backed tracking
+  reads.
+- `GET /api/trajectories`: contract-only placeholder. Use
+  `GET /api/analysis-runs/{run_id}/trajectory-points` for current
+  artifact-backed trajectory reads.
+- `GET /api/events`: contract-only placeholder. Use
+  `GET /api/analysis-runs/{run_id}/events` for current event artifacts, or
+  `/api/review` for Stage 7 review event workflows.
+- `GET /api/bad-cases`: Stage 8 planned placeholder. Bad Case Center is not
+  implemented.
+- `GET /api/evaluation/results`: Stage 8 planned placeholder. Evaluation
+  datasets, metrics, reports, regression, and `evaluation_summary.json`
+  generation are not implemented.
 
 These placeholder endpoints exist to preserve module boundaries. The planned
 event detail endpoint and write endpoints for bad cases and evaluation runs are
