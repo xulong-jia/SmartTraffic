@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { type MouseEvent, useEffect, useState } from "react";
 
 import {
   acknowledgeAlert,
@@ -7,8 +7,13 @@ import {
   resolveAlert
 } from "../api/alerts";
 import type { AlertCenterResponse, AlertRecord } from "../types";
+import { buildReviewLink } from "../utils/reviewNavigation";
 
-export default function AlertCenterPage() {
+interface AlertCenterPageProps {
+  onOpenReview?: (href: string) => void;
+}
+
+export default function AlertCenterPage({ onOpenReview }: AlertCenterPageProps) {
   const [runId, setRunId] = useState("");
   const [status, setStatus] = useState("");
   const [level, setLevel] = useState("");
@@ -161,6 +166,30 @@ export default function AlertCenterPage() {
                       >
                         Ignore
                       </button>
+                      {alert.event_id ? (
+                        <a
+                          href={buildReviewLink(
+                            alert.run_id,
+                            alert.event_id,
+                            alert.alert_id || alert.id
+                          )}
+                          onClick={(clickEvent) =>
+                            openReviewLink(
+                              clickEvent,
+                              buildReviewLink(
+                                alert.run_id,
+                                alert.event_id,
+                                alert.alert_id || alert.id
+                              ),
+                              onOpenReview
+                            )
+                          }
+                        >
+                          Review linked event
+                        </a>
+                      ) : (
+                        <span className="muted">No linked event</span>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -180,4 +209,16 @@ function normalizeOptionalString(value: string): string | null {
 
 function formatNullable(value: string | number | null | undefined): string {
   return value === null || value === undefined || value === "" ? "-" : String(value);
+}
+
+function openReviewLink(
+  event: MouseEvent<HTMLAnchorElement>,
+  href: string,
+  onOpenReview?: (href: string) => void
+) {
+  if (!onOpenReview || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+    return;
+  }
+  event.preventDefault();
+  onOpenReview(href);
 }

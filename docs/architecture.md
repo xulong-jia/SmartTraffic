@@ -60,6 +60,8 @@ Currently implemented architecture includes:
 - Stage 7C artifact-backed Review API MVP
 - Stage 7D React Review Center MVP for review filters, event list/detail,
   review actions, comments, and false-negative records
+- Stage 7E minimal URL navigation from Analysis Detail and Alert Center into
+  Review Center without alert/review status auto-sync
 
 The current implementation is useful for local validation, but it is not the
 complete database-backed manual architecture yet.
@@ -178,9 +180,9 @@ traffic statistics, alert, and visual review results at this stage.
 
 - `frontend/src/pages/DashboardPage.tsx`: run count, status distribution, artifact status summary, and recent runs from the Analysis Runs API.
 - `frontend/src/pages/VideoCenterPage.tsx`: upload and process detection / tracking / trajectory modes, plus recent analysis runs.
-- `frontend/src/pages/AnalysisDetailPage.tsx`: run summary, metadata / manifest / artifact index status, artifact summary, visual artifact status, detection, tracking, trajectory, event, alert, flow count, and zone statistics query view.
-- `frontend/src/pages/AlertCenterPage.tsx`: minimal alert query and status workflow.
-- `frontend/src/pages/ReviewCenterPage.tsx`: artifact-backed review event filters, list/detail, comments, review actions, linked alert display, visual artifact references, and false-negative MVP form.
+- `frontend/src/pages/AnalysisDetailPage.tsx`: run summary, metadata / manifest / artifact index status, artifact summary, visual artifact status, detection, tracking, trajectory, event, alert, flow count, zone statistics query view, and event Review links.
+- `frontend/src/pages/AlertCenterPage.tsx`: minimal alert query and status workflow plus linked event Review links.
+- `frontend/src/pages/ReviewCenterPage.tsx`: artifact-backed review event filters, URL query initialization, list/detail, comments, review actions, linked alert display, visual artifact references, and false-negative MVP form.
 
 Current frontend limitations:
 
@@ -189,13 +191,13 @@ Current frontend limitations:
 - no alert timeline
 - no complete traffic visualization dashboard or charts
 - no complex video overlay editor
-- no Analysis Detail / Alert Center deep review linking
+- no full review workflow embedded inside Analysis Detail or Alert Center
 
 ## Boundaries And Limitations
 
 Current limitations:
 
-- no database-backed Review Center workflow; Stage 7C/7D provide artifact-backed Review API and frontend MVPs only
+- no database-backed Review Center workflow; Stage 7C/7D/7E provide artifact-backed Review API, frontend MVP, and navigation only
 - no Bad Case Center workflow
 - no Evaluation Center workflow
 - no database-backed Zone / Rule / Alert persistence
@@ -208,4 +210,4 @@ Current limitations:
 - no real-world speed / direction calibration
 - no formal traffic enforcement conclusion
 
-Future phases should keep YOLOv8, DeepSORT, Trajectory Engine, Event Engine, Alert Center, Review Center, Bad Case Center, and Evaluation Center separate. Review artifacts such as `review_comments.jsonl`, `event_review_state.json`, and `false_negative_events.jsonl` plus the Stage 7C `/api/review` endpoints and Stage 7D frontend are a local artifact-backed Review MVP; they are not database-backed review state, Bad Case records, or Evaluation reports.
+Future phases should keep YOLOv8, DeepSORT, Trajectory Engine, Event Engine, Alert Center, Review Center, Bad Case Center, and Evaluation Center separate. Review artifacts such as `review_comments.jsonl`, `event_review_state.json`, and `false_negative_events.jsonl` plus the Stage 7C `/api/review` endpoints and Stage 7D/7E frontend are a local artifact-backed Review MVP; they are not database-backed review state, Bad Case records, or Evaluation reports.

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { getAlert } from "../api/alerts";
 import {
   addFalseNegative,
   addReviewComment,
@@ -23,6 +24,12 @@ import {
   formatReviewStatusLabel,
   normalizeReviewValue
 } from "../utils/reviewMetrics";
+import {
+  buildReviewLink,
+  normalizeReviewFiltersFromQuery,
+  parseReviewQuery,
+  type ReviewFilterState
+} from "../utils/reviewNavigation";
 
 type ReviewSubmitAction = "confirm" | "false-positive" | "ignore" | "resolve";
 type SubmittingState = ReviewSubmitAction | "comment" | "false-negative" | null;
@@ -40,6 +47,10 @@ interface FalseNegativeFormState {
   reviewer: string;
 }
 
+interface ReviewCenterPageProps {
+  locationSearch?: string;
+}
+
 const emptyFalseNegativeForm: FalseNegativeFormState = {
   run_id: "",
   expected_event_type: "",
@@ -53,12 +64,17 @@ const emptyFalseNegativeForm: FalseNegativeFormState = {
   reviewer: "local_reviewer"
 };
 
-export default function ReviewCenterPage() {
-  const [runId, setRunId] = useState("");
-  const [status, setStatus] = useState("");
-  const [eventType, setEventType] = useState("");
+export default function ReviewCenterPage({
+  locationSearch = currentLocationSearch()
+}: ReviewCenterPageProps) {
+  const initialNavigation = normalizeReviewFiltersFromQuery(parseReviewQuery(locationSearch));
+  const [runId, setRunId] = useState(initialNavigation.runId ?? "");
+  const [status, setStatus] = useState(initialNavigation.status ?? "");
+  const [eventType, setEventType] = useState(initialNavigation.eventType ?? "");
   const [eventsData, setEventsData] = useState<ReviewEventListResponse | null>(null);
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(
+    initialNavigation.eventId ?? null
+  );
   const [detail, setDetail] = useState<ReviewEventDetail | null>(null);
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -68,16 +84,120 @@ export default function ReviewCenterPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [reviewer, setReviewer] = useState("local_reviewer");
   const [comment, setComment] = useState("");
+  const [openedAlertId, setOpenedAlertId] = useState<string | null>(
+    initialNavigation.alertId ?? null
+  );
   const [falseNegativeForm, setFalseNegativeForm] =
-    useState<FalseNegativeFormState>(emptyFalseNegativeForm);
+    useState<FalseNegativeFormState>({
+      ...emptyFalseNegativeForm,
+      run_id: initialNavigation.runId ?? ""
+    });
 
   const events = eventsData?.items ?? [];
   const counts = buildReviewStatusCounts(events);
 
-  async function loadEvents(preferredEventId?: string) {
-    const normalizedRunId = runId.trim();
+  useEffect(() => {
+    const navigation = normalizeReviewFiltersFromQuery(parseReviewQuery(locationSearch));
+    setRunId(navigation.runId ?? "");
+    setStatus(navigation.status ?? "");
+    setEventType(navigation.eventType ?? "");
+    setSelectedEventId(navigation.eventId ?? null);
+    setOpenedAlertId(navigation.alertId ?? null);
+    setFalseNegativeForm((current) => ({
+      ...current,
+      run_id: navigation.runId ?? ""
+    }));
+
+    if (navigation.alertId && (!navigation.runId || !navigation.eventId)) {
+      resolveAlertContext(navigation.alertId, navigation);
+      return;
+    }
+    if (navigation.runId) {
+      loadEvents(navigation.eventId, {
+        runId: navigation.runId,
+        status: navigation.status ?? "",
+        eventType: navigation.eventType ?? "",
+        alertId: navigation.alertId ?? null
+      });
+      return;
+    }
+
+    setEventsData(null);
+    setDetail(null);
+    setError("");
+    setDetailError("");
+  }, [locationSearch]);
+
+  async function resolveAlertContext(alertId: string, navigation: ReviewFilterState) {
+    setDetailError("");
+    try {
+      const alert = await getAlert(alertId);
+      const resolvedRunId = navigation.runId || alert.run_id;
+      const resolvedEventId = navigation.eventId || alert.event_id;
+      setRunId(resolvedRunId);
+      setOpenedAlertId(alertId);
+      if (resolvedEventId) {
+        setSelectedEventId(resolvedEventId);
+      }
+      if (!resolvedRunId) {
+        setDetailError(`Alert ${alertId} does not include a run_id.`);
+        return;
+      }
+      if (!resolvedEventId) {
+        await loadEvents(undefined, {
+          runId: resolvedRunId,
+          status: navigation.status ?? "",
+          eventType: navigation.eventType ?? "",
+          alertId
+        });
+        setDetailError(`Alert ${alertId} does not include a linked event_id.`);
+        return;
+      }
+      await loadEvents(resolvedEventId, {
+        runId: resolvedRunId,
+        status: navigation.status ?? "",
+        eventType: navigation.eventType ?? "",
+        alertId
+      });
+    } catch (currentError) {
+      setDetailError(
+        currentError instanceof Error
+          ? `Unable to load alert context ${alertId}: ${currentError.message}`
+          : `Unable to load alert context ${alertId}.`
+      );
+      if (navigation.runId) {
+        await loadEvents(navigation.eventId, {
+          runId: navigation.runId,
+          status: navigation.status ?? "",
+          eventType: navigation.eventType ?? "",
+          alertId
+        });
+      }
+    }
+  }
+
+  async function loadEvents(
+    preferredEventId?: string,
+    overrides: {
+      runId?: string;
+      status?: string;
+      eventType?: string;
+      alertId?: string | null;
+    } = {}
+  ) {
+    const normalizedRunId = (overrides.runId ?? runId).trim();
+    const nextStatus = overrides.status ?? status;
+    const nextEventType = overrides.eventType ?? eventType;
+    const nextAlertId = overrides.alertId !== undefined ? overrides.alertId : openedAlertId;
     setSuccessMessage("");
     setDetailError("");
+    syncReviewUrl({
+      runId: normalizedRunId,
+      eventId: normalizedRunId ? preferredEventId ?? selectedEventId : undefined,
+      alertId: nextAlertId,
+      status: nextStatus,
+      eventType: nextEventType
+    });
     if (!normalizedRunId) {
       setError("Enter a run_id to load review events.");
       setEventsData(null);
@@ -91,13 +211,13 @@ export default function ReviewCenterPage() {
     try {
       const payload = await listReviewEvents({
         run_id: normalizedRunId,
-        status: normalizeOptionalString(status),
-        event_type: normalizeOptionalString(eventType),
+        status: normalizeOptionalString(nextStatus),
+        event_type: normalizeOptionalString(nextEventType),
         limit: 100,
         offset: 0
       });
       setEventsData(payload);
-      const nextEventId = chooseNextEventId(payload.items, preferredEventId ?? selectedEventId);
+      const nextEventId = preferredEventId || chooseNextEventId(payload.items, selectedEventId);
       setSelectedEventId(nextEventId);
       if (nextEventId) {
         await loadEventDetail(nextEventId, normalizedRunId);
@@ -144,7 +264,7 @@ export default function ReviewCenterPage() {
       run_id: normalizedRunId,
       comment: comment.trim(),
       reviewer: reviewer.trim() || "local_reviewer",
-      alert_id: null
+      alert_id: openedAlertId
     };
     const actionMap = {
       confirm: confirmReviewEvent,
@@ -190,7 +310,7 @@ export default function ReviewCenterPage() {
         event_id: currentEventId,
         comment: trimmedComment,
         reviewer: reviewer.trim() || "local_reviewer",
-        alert_id: null
+        alert_id: openedAlertId
       });
       setComment("");
       setSuccessMessage("Comment added.");
@@ -346,7 +466,7 @@ export default function ReviewCenterPage() {
           ) : null}
           {detail ? (
             <>
-              <ReviewEventDetailPanel detail={detail} />
+              <ReviewEventDetailPanel detail={detail} openedAlertId={openedAlertId} />
               <section className="summary-strip">
                 <h3>Review Actions</h3>
                 <div className="toolbar compact">
@@ -539,10 +659,19 @@ function ReviewEventRow({
   );
 }
 
-function ReviewEventDetailPanel({ detail }: { detail: ReviewEventDetail }) {
+function ReviewEventDetailPanel({
+  detail,
+  openedAlertId
+}: {
+  detail: ReviewEventDetail;
+  openedAlertId: string | null;
+}) {
   const event = detail.event;
   return (
     <>
+      {openedAlertId ? (
+        <p className="muted">Opened from alert: {openedAlertId}</p>
+      ) : null}
       <dl className="detail-grid">
         <DetailItem label="Event ID" value={event.event_id} />
         <DetailItem label="Run ID" value={detail.run_id} />
@@ -576,7 +705,10 @@ function ReviewEventDetailPanel({ detail }: { detail: ReviewEventDetail }) {
             </thead>
             <tbody>
               {detail.linked_alerts.map((alert) => (
-                <tr key={alert.alert_id || alert.id}>
+                <tr
+                  className={isOpenedAlert(alert, openedAlertId) ? "selected-row" : ""}
+                  key={alert.alert_id || alert.id}
+                >
                   <td>{alert.alert_id || alert.id}</td>
                   <td>{alert.status}</td>
                   <td>{alert.level}</td>
@@ -740,4 +872,43 @@ function artifactField(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function syncReviewUrl({
+  runId,
+  eventId,
+  alertId,
+  status,
+  eventType
+}: {
+  runId?: string | null;
+  eventId?: string | null;
+  alertId?: string | null;
+  status?: string | null;
+  eventType?: string | null;
+}) {
+  if (window.location.pathname !== "/review") {
+    return;
+  }
+  const href = buildReviewLink(runId, eventId, alertId, {
+    status,
+    event_type: eventType
+  });
+  if (`${window.location.pathname}${window.location.search}` !== href) {
+    window.history.replaceState(null, "", href);
+  }
+}
+
+function isOpenedAlert(
+  alert: { alert_id?: string | null; id?: string | null },
+  openedAlertId: string | null
+): boolean {
+  if (!openedAlertId) {
+    return false;
+  }
+  return alert.alert_id === openedAlertId || alert.id === openedAlertId;
+}
+
+function currentLocationSearch(): string {
+  return window.location.search;
 }

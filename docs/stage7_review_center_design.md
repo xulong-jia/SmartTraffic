@@ -1,6 +1,6 @@
 # Stage 7 Review Center 设计文档
 
-本文档记录 Stage 7A 的只读审计结论、Stage 7 Review Center 设计草案、Stage 7B artifact 与状态模型实现口径、Stage 7C Review API MVP 实现口径，以及 Stage 7D Review Center 前端 MVP 实现口径。当前已实现的是 artifact-backed Review API + 前端 MVP，不代表 Stage 7E Analysis / Alert 深度联动、数据库 migration、Bad Case Center 或 Evaluation Center 已完成。
+本文档记录 Stage 7A 的只读审计结论、Stage 7 Review Center 设计草案、Stage 7B artifact 与状态模型实现口径、Stage 7C Review API MVP 实现口径、Stage 7D Review Center 前端 MVP 实现口径，以及 Stage 7E Analysis / Alert 定位联动实现口径。当前已实现的是 artifact-backed Review API + 前端 MVP + 最小定位联动，不代表 Stage 7F 收尾审计 / tag、数据库 migration、Bad Case Center 或 Evaluation Center 已完成。
 
 ## 1. 阶段目标
 
@@ -58,6 +58,7 @@ Stage 7 也不改变 Stage 5/6 的事件规则、告警生成、交通统计和�
 - 前端 `AlertCenterPage` 已支持 run/status/level 过滤和 acknowledge / resolve / ignore 告警操作。
 - 前端导航已有 `Review Center`、`Bad Case Center (planned)` 和 `Evaluation Center (planned)` 入口。
 - Stage 7D 已将 Review Center placeholder 替换为 artifact-backed 前端 MVP，可读取 `/api/review` 事件列表/详情并执行基础复核动作。
+- Stage 7E 已支持 `/review` URL query 初始化，并从 Analysis Detail / Alert Center 定位到 Review Center。
 - Stage 6 visual artifacts 已包含 keyframes index、keyframe snapshots 和 `annotated_video.mp4` 的 manifest 状态，可作为人工复核证据入口。
 
 ### 3.2 部分能力
@@ -75,16 +76,17 @@ Stage 7 也不改变 Stage 5/6 的事件规则、告警生成、交通统计和�
 - Stage 7C 已将 `GET /api/review/events`、`GET /api/review/events/{event_id}`、confirm / false-positive / ignore / resolve、comments 和 false-negatives API 接入 Stage 7B artifact helper。
 - Stage 7C Review API 会读取 Stage 6 events / alerts / visual artifacts，并写入 review artifacts；它不覆盖原始 `events.jsonl`。
 - Stage 7D 已新增前端 review API client、review types、ReviewCenterPage 真实 API 接入和 review utility 测试。
+- Stage 7E 已新增 `reviewNavigation` utility，用于构建 `/review?run_id=&event_id=&alert_id=&status=&event_type=` 链接和解析 query。
 
-这些能力代表 Stage 7D artifact-backed Review Center MVP 和既有读取基础，不代表数据库最终版复核工作流、Stage 7E Analysis / Alert 深度联动或 Stage 8 Bad Case / Evaluation 已经实现。
+这些能力代表 Stage 7E artifact-backed Review Center MVP 和既有读取基础，不代表数据库最终版复核工作流、Stage 7F 收尾审计或 Stage 8 Bad Case / Evaluation 已经实现。
 
 ### 3.3 未实现能力
 
 当前未实现：
 
 - standalone `/api/events` 真实查询逻辑。当前 `backend/app/api/events.py` 只返回 placeholder。
-- Analysis Detail 中的 event review 入口、review status、comments count。
-- Alert Center 到关联 event review 的跳转。
+- Analysis Detail 中直接执行复核动作、展示完整 review form。
+- Alert Center 与 event review status 的自动同步。
 - Bad Case 管理中心、Evaluation Center 和评测报告。
 
 ### 3.4 当前风险
@@ -820,27 +822,28 @@ Stage 7D 已实现：
 - 空状态：无事件、无 comments、无 visual artifacts 时给出简短说明。
 - 错误状态：API 请求失败或 artifact 缺失时显示错误，不隐藏当前筛选。
 - 加载状态：列表和 detail 独立 loading，避免整页闪烁。
+- URL query 初始化：支持 `run_id`、`event_id`、`alert_id`、`status`、`event_type`。
+- `event_id + run_id` 定位：页面加载时可自动加载并选中事件详情。
+- `alert_id` context：页面可显示 `Opened from alert` 并高亮匹配 linked alert。
 
 ReviewCenterPage 不应实现 Bad Case 管理表、Evaluation charts、规则重跑或视频编辑器。
 
 ### 8.2 AnalysisDetailPage review 入口
 
-未来增强：
+Stage 7E 已实现：
 
 - Event 表格中每个 event 增加 `Review` 入口。
-- 显示 `review_status` 或合并后的 `status`。
-- 显示 `comment_count`。
-- 如果 keyframes / annotated video available，可提供跳转到 Review detail 的上下文。
 - 入口参数至少包含 `run_id` 和 `event_id`。
+- 入口链接格式为 `/review?run_id=<run_id>&event_id=<event_id>`。
 
-Analysis Detail 仍主要负责结果浏览，不应复制完整 Review Center 工作台。
+Analysis Detail 仍主要负责结果浏览，不复制完整 Review Center 工作台，也不执行复核动作。
 
 ### 8.3 AlertCenterPage 跳转 review
 
-未来增强：
+Stage 7E 已实现：
 
-- Alert 行增加 `Review event` 入口，使用 `run_id + event_id` 定位 Review Center detail。
-- Alert detail 可展示当前 event review status。
+- Alert 行增加 `Review linked event` 入口，使用 `run_id + event_id + alert_id` 定位 Review Center detail。
+- Review Center 根据 `alert_id` 显示 alert context 并高亮匹配 linked alert。
 - Alert resolve 与 event review status 保持边界：alert resolve 不自动确认事件，event false_positive 不自动关闭告警。
 - 如果 alert 缺少 event_id，应显示不可跳转状态。
 
@@ -902,6 +905,7 @@ MVP 可以允许较宽松的状态切换，但必须测试所有 action 的 befo
 前端测试建议：
 
 - Review API client query params 构建。
+- Review navigation link 构建和 query 解析。
 - ReviewCenterPage 空 run、loading、error、empty states。
 - 事件列表渲染 status、linked alert count、comments count。
 - action button 调用对应 client 并刷新列表。
@@ -977,11 +981,16 @@ Stage 7 每个子阶段至少运行：
 
 ### 10.4 Stage 7E：Analysis / Alert 联动
 
-目标：
+状态：已完成最小定位联动 MVP。
 
-- AnalysisDetailPage 增加 Review 入口、review status、comments count。
+已完成：
+
+- AnalysisDetailPage 增加 Review 入口，不在 Analysis Detail 内执行复核动作。
 - AlertCenterPage 增加关联 event review 跳转。
 - 明确 alert status 与 event review status 不自动联动。
+- ReviewCenterPage 支持 URL query 初始化 `run_id`、`event_id`、`alert_id`、`status`、`event_type`。
+- ReviewCenterPage 支持 selected event 自动 detail 加载和 alert context 显示。
+- 新增 `reviewNavigation` utility 和轻量测试。
 
 验收：
 

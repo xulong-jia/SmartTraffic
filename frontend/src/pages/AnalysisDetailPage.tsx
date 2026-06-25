@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { type MouseEvent, useEffect, useState } from "react";
 
 import {
   generateAlerts,
@@ -34,6 +34,7 @@ import type {
 } from "../types";
 import { formatDisplayValue as formatValue } from "../utils/format";
 import { getRunId } from "../utils/analysisRunMetrics";
+import { buildReviewLink } from "../utils/reviewNavigation";
 
 const trajectoryColumns: Array<keyof TrajectoryPointRow> = [
   "frame_index",
@@ -76,9 +77,13 @@ const alertColumns = [
 
 interface AnalysisDetailPageProps {
   initialRunId?: string;
+  onOpenReview?: (href: string) => void;
 }
 
-export default function AnalysisDetailPage({ initialRunId = "" }: AnalysisDetailPageProps) {
+export default function AnalysisDetailPage({
+  initialRunId = "",
+  onOpenReview
+}: AnalysisDetailPageProps) {
   const [runs, setRuns] = useState<AnalysisRunSummary[]>([]);
   const [selectedRunId, setSelectedRunId] = useState("");
   const [runsLoading, setRunsLoading] = useState(false);
@@ -502,7 +507,7 @@ export default function AnalysisDetailPage({ initialRunId = "" }: AnalysisDetail
             </div>
             {eventsLoading ? <p className="muted">Loading events...</p> : null}
             {eventsError ? <p>{eventsError}</p> : null}
-            {eventsData ? <EventsDetail data={eventsData} /> : null}
+            {eventsData ? <EventsDetail data={eventsData} onOpenReview={onOpenReview} /> : null}
           </section>
           <section className="panel">
             <h3>Alert Query</h3>
@@ -909,7 +914,13 @@ function TrajectoryDetail({ data }: { data: TrajectoryPointsResponse }) {
   );
 }
 
-function EventsDetail({ data }: { data: EventsResponse }) {
+function EventsDetail({
+  data,
+  onOpenReview
+}: {
+  data: EventsResponse;
+  onOpenReview?: (href: string) => void;
+}) {
   const eventPreview = data.events.slice(0, 20);
   const evidencePreview = data.event_evidence.slice(0, 20);
   const executionPreview = data.rule_executions.slice(0, 20);
@@ -932,7 +943,43 @@ function EventsDetail({ data }: { data: EventsResponse }) {
       {eventPreview.length === 0 ? (
         <p className="muted">暂无 events</p>
       ) : (
-        <RecordTable columns={eventColumns} rows={eventPreview} />
+        <table>
+          <thead>
+            <tr>
+              {eventColumns.map((column) => (
+                <th key={column}>{column}</th>
+              ))}
+              <th>Review</th>
+            </tr>
+          </thead>
+          <tbody>
+            {eventPreview.map((event, index) => {
+              const eventId = normalizeOptionalRecordValue(event.event_id);
+              const href = buildReviewLink(data.run_id, eventId);
+              return (
+                <tr key={`${eventId || "event"}-${index}`}>
+                  {eventColumns.map((column) => (
+                    <td key={column}>{formatValue(event[column])}</td>
+                  ))}
+                  <td>
+                    {eventId ? (
+                      <a
+                        href={href}
+                        onClick={(clickEvent) =>
+                          openReviewLink(clickEvent, href, onOpenReview)
+                        }
+                      >
+                        Review
+                      </a>
+                    ) : (
+                      <span className="muted">No event_id</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       )}
       <h3>Event Evidence</h3>
       {evidencePreview.length === 0 ? (
@@ -948,6 +995,22 @@ function EventsDetail({ data }: { data: EventsResponse }) {
       )}
     </>
   );
+}
+
+function openReviewLink(
+  event: MouseEvent<HTMLAnchorElement>,
+  href: string,
+  onOpenReview?: (href: string) => void
+) {
+  if (!onOpenReview || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+    return;
+  }
+  event.preventDefault();
+  onOpenReview(href);
+}
+
+function normalizeOptionalRecordValue(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 function AlertsDetail({ data }: { data: AlertsResponse }) {
