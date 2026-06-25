@@ -742,3 +742,119 @@ export interface BadCaseFromReviewRequest {
   root_cause?: string | null;
   tags?: string[] | null;
 }
+
+export type EvaluationType =
+  | "event"
+  | "flow_counting"
+  | "trajectory"
+  | "detection"
+  | "tracking"
+  | "regression";
+
+export interface EvaluationDatasetRecord {
+  dataset_id: string;
+  name: string;
+  dataset_type: EvaluationType | string;
+  source: string;
+  annotation_path?: string | null;
+  expected_events_path?: string | null;
+  expected_counts_path?: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface EvaluationDatasetCreateRequest {
+  dataset_id: string;
+  name: string;
+  dataset_type: EvaluationType | string;
+  source?: string;
+  annotation_path?: string | null;
+  expected_events_path?: string | null;
+  expected_counts_path?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+export interface EvaluationDatasetListResponse {
+  schema_version: string;
+  datasets: EvaluationDatasetRecord[];
+}
+
+export interface EvaluationRunRecord {
+  evaluation_run_id: string;
+  dataset_id?: string | null;
+  run_id: string;
+  evaluation_type: EvaluationType | string;
+  status: string;
+  started_at: string;
+  finished_at: string;
+  config: Record<string, unknown>;
+}
+
+export interface EvaluationResultRecord {
+  evaluation_result_id: string;
+  evaluation_run_id: string;
+  run_id: string;
+  dataset_id?: string | null;
+  evaluation_type: EvaluationType | string;
+  metric_name: string;
+  metric_value?: number | string | null;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface EvaluationFailedCaseRecord {
+  failed_case_id: string;
+  evaluation_run_id: string;
+  run_id: string;
+  dataset_id?: string | null;
+  failure_type: string;
+  module: string;
+  expected: Record<string, unknown>;
+  actual: Record<string, unknown>;
+  frame_range: Record<string, number | null | undefined>;
+  suggested_bad_case_type?: string | null;
+  created_at: string;
+}
+
+export interface EvaluationSummaryArtifact {
+  schema_version: string;
+  run_id: string;
+  generated_at?: string | null;
+  summary: Record<string, unknown>;
+  failed_cases: EvaluationFailedCaseRecord[];
+}
+
+export interface EvaluationRunRequest {
+  run_id: string;
+  dataset_id?: string | null;
+  evaluation_type: EvaluationType | string;
+  config?: Record<string, unknown>;
+}
+
+export interface EvaluationRunResponse {
+  evaluation_run: EvaluationRunRecord;
+  results: EvaluationResultRecord[];
+  summary: EvaluationSummaryArtifact;
+  failed_cases: EvaluationFailedCaseRecord[];
+}
+
+export interface EvaluationRunListResponse {
+  items: EvaluationRunRecord[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface EvaluationResultListResponse {
+  items: EvaluationResultRecord[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface EvaluationFailedCaseListResponse {
+  items: EvaluationFailedCaseRecord[];
+  total: number;
+  limit: number;
+  offset: number;
+}

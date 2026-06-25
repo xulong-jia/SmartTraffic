@@ -731,9 +731,33 @@ HTTP behavior:
 - `404`: analysis run, Bad Case, or Review record not found.
 - `422`: request body validation error, including unsupported enum values.
 
-Evaluation APIs, Evaluation metrics, failed case conversion, Bad Case
-regression, and database-backed Bad Case state are not implemented in Stage
-8CD.
+Stage 8EFG adds artifact-backed Evaluation APIs and MVP metrics. Failed case
+conversion, Bad Case regression, industrial mAP / IDF1 / MOTA, and
+database-backed Bad Case / Evaluation state are still not implemented.
+
+## Evaluation API
+
+Stage 8EFG implements an artifact-backed Evaluation API MVP. It stores
+dataset registry data under `evals/datasets/evaluation_datasets.json`, run and
+result indexes under `evals/results/`, and writes per-run
+`evaluation_summary.json` into the analysis run directory.
+
+Available endpoints:
+
+- `GET /api/evaluation/datasets`
+- `POST /api/evaluation/datasets`
+- `GET /api/evaluation/runs`
+- `POST /api/evaluation/run`
+- `GET /api/evaluation/results`
+- `GET /api/evaluation/summary/{run_id}`
+- `GET /api/evaluation/failed-cases`
+
+`POST /api/evaluation/run` accepts `event`, `flow_counting`, `trajectory`,
+`detection`, `tracking`, and `regression`. Event / flow / trajectory are MVP
+artifact comparisons. Detection and tracking return `not_applicable` unless
+future annotation-backed metrics are added. Regression returns `planned`; it
+does not execute Stage 8H Bad Case regression or convert failed cases into Bad
+Cases.
 
 ## Not Implemented From The Manual Yet
 
@@ -743,12 +767,11 @@ implemented as working behavior yet:
 - `PATCH /api/events/{event_id}/status`
 - standalone `/api/events` full query
 - `GET /api/events/{event_id}`
-- `POST /api/evaluation/run`
 - advanced filtering on flow counts and zone statistics
 - database-backed aggregate statistics APIs
 - database-backed Review Center workflow
-- Evaluation APIs and frontend workflows
 - Bad Case regression and failed case conversion workflows
+- industrial mAP / IDF1 / MOTA evaluation
 
 ## Placeholders For Later Phases
 
@@ -764,17 +787,14 @@ implemented as working behavior yet:
 - `GET /api/events`: contract-only placeholder. Use
   `GET /api/analysis-runs/{run_id}/events` for current event artifacts, or
   `/api/review` for Stage 7 review event workflows.
-- `GET /api/evaluation/results`: Stage 8 planned placeholder. Evaluation
-  datasets, metrics, reports, regression, and `evaluation_summary.json`
-  generation are not implemented.
+Stage 8EFG Evaluation APIs are routed under `/api/evaluation` and documented
+above. Bad Case regression and failed case conversion remain later work.
 
-These placeholder endpoints exist to preserve module boundaries. The planned
-event detail endpoint and write endpoints for bad cases and evaluation runs are
-not routed in the current Stage 7 artifact-backed MVP. Standalone event and alert center APIs remain
-separate from the artifact-based `analysis-runs` list, summary, event,
-statistics, and alert endpoints documented above. Review API MVP is available
-under `/api/review`, the Stage 7 Review Center frontend consumes it, and
-Stage 7F confirms the artifact-backed Review Center MVP boundary. Stage 8CD
-adds artifact-backed Bad Case APIs and frontend workflow. Evaluation APIs,
-Evaluation frontend behavior, failed case conversion, and regression workflow
-belong to later phases and are not implemented as completed logic.
+These placeholder endpoints exist to preserve module boundaries. Standalone
+event and alert center APIs remain separate from the artifact-based
+`analysis-runs` list, summary, event, statistics, and alert endpoints
+documented above. Review API MVP is available under `/api/review`, the Stage 7
+Review Center frontend consumes it, and Stage 7F confirms the artifact-backed
+Review Center MVP boundary. Stage 8CD adds artifact-backed Bad Case APIs and
+frontend workflow. Stage 8EFG adds artifact-backed Evaluation APIs and frontend
+workflow. Failed case conversion and regression workflow belong to later phases.

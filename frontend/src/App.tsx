@@ -27,7 +27,7 @@ const pages: Array<{ key: PageKey; label: string }> = [
   { key: "alerts", label: "Alert Center" },
   { key: "review", label: "Review Center" },
   { key: "badCases", label: "Bad Case Center" },
-  { key: "evaluation", label: "Evaluation Center (planned)" }
+  { key: "evaluation", label: "Evaluation Center" }
 ];
 
 const pagePaths: Record<PageKey, string> = {
