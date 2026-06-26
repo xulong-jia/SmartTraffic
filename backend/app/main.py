@@ -11,6 +11,7 @@ from app.api import (
     events,
     health,
     processing,
+    reports,
     review,
     tracks,
     trajectories,
@@ -46,6 +47,7 @@ def create_app() -> FastAPI:
     app.include_router(review.router)
     app.include_router(bad_cases.router)
     app.include_router(evaluation.router)
+    app.include_router(reports.router)
     return app
 
 

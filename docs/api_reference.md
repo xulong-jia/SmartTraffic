@@ -167,6 +167,55 @@ workflows while preserving artifact fallback.
 - `PATCH /api/alerts/{alert_id}/resolve`
 - `PATCH /api/alerts/{alert_id}/ignore`
 
+## Reports
+
+Full Stage 6AB adds a DB-first / artifact-compatible Report Center API for
+CSV and JSON export. It aggregates existing analysis, event, alert, flow,
+zone, bad case, and evaluation records. Reports are for analysis and review
+only; they are not traffic-enforcement artifacts.
+
+- `GET /api/reports/runs`
+- `GET /api/reports/{run_id}/summary`
+- `GET /api/reports/{run_id}/export.json`
+- `GET /api/reports/{run_id}/export.csv?section=events`
+
+Supported CSV `section` values:
+
+- `events`
+- `alerts`
+- `flow_counts`
+- `zone_statistics`
+- `bad_cases`
+- `evaluation_results`
+
+`GET /api/reports/{run_id}/summary` returns the selected run summary, section
+counts, event / alert / bad-case breakdowns, flow totals, evaluation metric
+summary, available export sections, and the non-enforcement note.
+
+`GET /api/reports/{run_id}/export.json` returns a structured JSON report:
+
+```json
+{
+  "metadata": {
+    "schema_version": "full_stage_6ab.report.v1",
+    "note": "SmartTraffic reports are for analysis and review only; not for traffic enforcement.",
+    "available_exports": ["events", "alerts"]
+  },
+  "run": {},
+  "events": [],
+  "alerts": [],
+  "flow_counts": [],
+  "zone_statistics": [],
+  "bad_cases": [],
+  "evaluation_results": []
+}
+```
+
+CSV exports always include a stable header row, even when the selected section
+has no rows. Local absolute paths are sanitized before report payloads are
+returned. PDF export, MP4 / annotated video export generation, keyframe summary,
+permissions, and realtime reporting are intentionally outside Full Stage 6AB.
+
 ### Analysis Runs List
 
 `GET /api/analysis-runs`
@@ -878,7 +927,7 @@ implemented as working behavior yet:
 - database-backed aggregate statistics APIs
 - complete video-level Bad Case rerun pipeline
 - COCO official mAP / TrackEval official evaluation
-- Report Center remains for Full Stage 6
+- PDF report export and report bundle generation remain for later Full Stage 6 work
 - Realtime / Security remain for Full Stage 7
 - Full final release hardening and `v1.0.0` remain for Full Stage 8
 

@@ -5,6 +5,7 @@ import AnalysisDetailPage from "./pages/AnalysisDetailPage";
 import BadCaseCenterPage from "./pages/BadCaseCenterPage";
 import DashboardPage from "./pages/DashboardPage";
 import EvaluationCenterPage from "./pages/EvaluationCenterPage";
+import ReportCenterPage from "./pages/ReportCenterPage";
 import ReviewCenterPage from "./pages/ReviewCenterPage";
 import VideoCenterPage from "./pages/VideoCenterPage";
 import ZoneRuleConfigPage from "./pages/ZoneRuleConfigPage";
@@ -17,7 +18,8 @@ type PageKey =
   | "alerts"
   | "review"
   | "badCases"
-  | "evaluation";
+  | "evaluation"
+  | "reports";
 
 const pages: Array<{ key: PageKey; label: string }> = [
   { key: "dashboard", label: "Dashboard" },
@@ -27,7 +29,8 @@ const pages: Array<{ key: PageKey; label: string }> = [
   { key: "alerts", label: "Alert Center" },
   { key: "review", label: "Review Center" },
   { key: "badCases", label: "Bad Case Center" },
-  { key: "evaluation", label: "Evaluation Center" }
+  { key: "evaluation", label: "Evaluation Center" },
+  { key: "reports", label: "Report Center" }
 ];
 
 const pagePaths: Record<PageKey, string> = {
@@ -38,7 +41,8 @@ const pagePaths: Record<PageKey, string> = {
   alerts: "/alerts",
   review: "/review",
   badCases: "/bad-cases",
-  evaluation: "/evaluation"
+  evaluation: "/evaluation",
+  reports: "/reports"
 };
 
 export default function App() {
@@ -128,6 +132,8 @@ function renderPage(
       return <BadCaseCenterPage />;
     case "evaluation":
       return <EvaluationCenterPage />;
+    case "reports":
+      return <ReportCenterPage />;
     case "dashboard":
     default:
       return <DashboardPage onOpenAnalysisRun={openAnalysisRun} />;
@@ -150,6 +156,8 @@ function pageFromPath(pathname: string): PageKey {
       return "badCases";
     case "/evaluation":
       return "evaluation";
+    case "/reports":
+      return "reports";
     case "/":
     default:
       return "dashboard";

@@ -77,6 +77,58 @@ export interface AnalysisRunListResponse {
 
 export type AnalysisRunsListResponse = AnalysisRunListResponse;
 
+export type ReportExportSection =
+  | "events"
+  | "alerts"
+  | "flow_counts"
+  | "zone_statistics"
+  | "bad_cases"
+  | "evaluation_results";
+
+export interface ReportSummaryCounts {
+  detections_count: number;
+  tracks_count: number;
+  trajectory_points_count: number;
+  events_count: number;
+  alerts_count: number;
+  flow_count_records: number;
+  zone_statistics_records: number;
+  bad_cases_count: number;
+  evaluation_results_count: number;
+}
+
+export interface ReportSummaryResponse {
+  run_id: string;
+  run: AnalysisRunSummary;
+  counts: ReportSummaryCounts;
+  artifact_index: Record<string, unknown>;
+  artifact_summary: Record<string, unknown>;
+  top_event_types: Record<string, number>;
+  alert_status_counts: Record<string, number>;
+  flow_totals: Record<string, unknown>;
+  bad_case_status_counts: Record<string, number>;
+  bad_case_type_counts: Record<string, number>;
+  evaluation_metric_summary: Record<string, unknown>;
+  available_exports: ReportExportSection[];
+  note: string;
+}
+
+export interface ReportJsonExportResponse {
+  metadata: {
+    generated_at: string;
+    schema_version: string;
+    note: string;
+    available_exports: ReportExportSection[];
+  };
+  run: AnalysisRunSummary;
+  events: TrafficEvent[];
+  alerts: AlertRecord[];
+  flow_counts: Array<Record<string, unknown>>;
+  zone_statistics: Array<Record<string, unknown>>;
+  bad_cases: BadCaseRecord[];
+  evaluation_results: EvaluationResultRecord[];
+}
+
 export interface DetectionProcessOptions {
   mode?: "detection_only" | "detection_tracking" | "detection_tracking_trajectory";
   dry_run?: boolean;
