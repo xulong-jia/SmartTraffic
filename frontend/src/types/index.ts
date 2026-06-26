@@ -339,6 +339,8 @@ export interface ZonePayload {
 
 export type ZoneUpdatePayload = Partial<ZonePayload>;
 
+export type EventRuleSeverity = "low" | "medium" | "high";
+
 export interface EventRuleRecord {
   id: string;
   name: string;
@@ -348,7 +350,7 @@ export interface EventRuleRecord {
   target_classes: string[];
   parameters: Record<string, unknown>;
   cooldown_seconds: number;
-  severity: string;
+  severity: EventRuleSeverity;
   version: number;
   min_track_length: number;
 }
@@ -362,7 +364,7 @@ export interface EventRulePayload {
   target_classes: string[];
   parameters: Record<string, unknown>;
   cooldown_seconds: number;
-  severity: string;
+  severity: EventRuleSeverity;
   version: number;
   min_track_length: number;
 }

@@ -10,6 +10,9 @@
   `v1.0.1-audit-polish` milestone is a scoped audit polish tag, not a new
   production capability release, and must not move or rebuild any `v1.0.0`
   tag.
+- `v1.0.2-spec-alignment` is a scoped spec-alignment patch after v1.0.1. It
+  must not move or rebuild `v1.0.1-audit-polish` or
+  `v1.0.0-full-final-version`.
 - Existing milestone tags must not be moved, deleted, or rebuilt.
 
 ## 2. Functional Acceptance
@@ -73,6 +76,10 @@
 - Traffic Analysis Center run list, summary, manifest, detections, tracks,
   trajectory points, events, alerts, flow counts, and zone statistics are
   DB-first with artifact fallback where applicable.
+- `GET /api/analysis-runs/{run_id}/alerts` is DB-first for DB `alerts` rows and
+  preserves artifact fallback when no DB alert rows exist.
+- Event rule severity is `low` / `medium` / `high`; Alert Center `level` is a
+  separate alert concept and may be `info` / `warning` / `critical`.
 - `/api/processing/tasks` is DB-backed and supports local visibility filters
   for `video_id`, `run_id`, `status`, `mode`, and `task_type`.
 - Alert Center supports `new`, `acknowledged`, `resolved`, and `ignored`.

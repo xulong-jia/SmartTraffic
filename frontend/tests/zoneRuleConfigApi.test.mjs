@@ -37,6 +37,10 @@ execFileSync(
 
 const configApi = await import(pathToFileURL(path.join(outDir, "utils/zoneRuleConfigApi.js")).href);
 
+test("event rule severity options match backend EventEngine contract", () => {
+  assert.deepEqual(configApi.EVENT_RULE_SEVERITIES, ["low", "medium", "high"]);
+});
+
 test("parseTargetClasses builds stable API target class arrays", () => {
   assert.deepEqual(configApi.parseTargetClasses(" car, bus,,truck "), ["car", "bus", "truck"]);
 });
@@ -106,4 +110,16 @@ test("invalid event rule form returns validation errors instead of payload", () 
   assert.ok(result.errors.includes("Event type is unsupported."));
   assert.ok(result.errors.includes("Cooldown seconds must be non-negative."));
   assert.ok(result.errors.includes("Parameters JSON must be an object."));
+});
+
+test("event rule payload rejects critical severity before reaching backend", () => {
+  const result = configApi.buildEventRulePayload({
+    ...configApi.createEmptyEventRuleFormState(),
+    name: "Critical rule",
+    eventType: "wrong_way_driving",
+    severity: "critical"
+  });
+
+  assert.equal(result.payload, null);
+  assert.ok(result.errors.includes("Severity must be low, medium, or high."));
 });

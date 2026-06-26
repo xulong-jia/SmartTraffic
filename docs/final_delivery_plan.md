@@ -35,6 +35,14 @@ metrics 或完整视频级 rerun claim。该小修使 `AlertPanel` / `EventTable
 `model_runs`，并将 Stage 6 historical design note 标为 archived /
 historical。
 
+`v1.0.2-spec-alignment` 是 v1.0.1 后的 scoped spec-alignment 小修：只修复
+逐句级执行手册审计发现的两个对齐问题，不移动、不重打
+`v1.0.1-audit-polish` 或 `v1.0.0-full-final-version`。该小修使
+`GET /api/analysis-runs/{run_id}/alerts` 按 run_id 优先读取 DB `alerts`
+并保留 artifact fallback，同时将 ZoneEditor / event rule payload 的
+severity 收敛为 EventEngine 支持的 `low` / `medium` / `high`。Alert
+Center `level` 仍是独立概念，可继续使用 `info` / `warning` / `critical`。
+
 当前项目仍是本地开发和验证口径，不是生产部署版、production IAM、生产级实时监控或交通执法系统。
 
 ## 2. 已完成能力
@@ -74,6 +82,8 @@ historical。
 - v1.0.1 Audit Polish：修复 v1.0.0 后审计缺口，包括 AlertPanel /
   EventTable 真实组件接入、DB-backed processing task list、detector/tracker
   `model_runs` business writes，以及 Stage 6 historical / archived 文档标记。
+- v1.0.2 Spec Alignment：修复 run-level alerts DB-first 缺口，并统一 event
+  rule severity 为 `low` / `medium` / `high`；不移动 v1.0.1 或 v1.0.0 tag。
 - Stage 9AB final pre-delivery audit and documentation closeout。
 - Stage 9CD 小型 demo/sample config、toy expected annotations、seed script、Makefile 和环境命令收口。
 - Stage 9EF final acceptance and final tag preparation。

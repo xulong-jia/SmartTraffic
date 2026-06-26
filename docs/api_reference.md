@@ -127,6 +127,9 @@ Manual alignment note:
 - Event and alert artifacts remain available for legacy run directories.
 - Detection, tracking, trajectory, flow count, and zone statistic reads are
   DB-first with artifact fallback.
+- `v1.0.2-spec-alignment` makes
+  `GET /api/analysis-runs/{run_id}/alerts` DB-first with artifact fallback,
+  matching the rest of the run-scoped Traffic Analysis Center result reads.
 - Full Stage 3AB makes Zone / Event Rule CRUD and top-level Event APIs
   DB-backed.
 - Full Stage 3CD makes EventEvidence / RuleExecution lifecycle, Alert Center
@@ -172,6 +175,10 @@ Supported `event_type` values:
 - `pedestrian_in_vehicle_lane`
 - `congestion`
 - `flow_counting`
+
+Event rule severity values are limited to `low`, `medium`, and `high`, matching
+the EventEngine contract. Alert levels are separate generated alert states and
+may still use `info`, `warning`, and `critical`.
 
 ## Analysis Runs
 
@@ -697,9 +704,12 @@ Behavior:
 
 `GET /api/analysis-runs/{run_id}/alerts`
 
-This endpoint remains an artifact-compatible run alert query for run artifacts.
-The standalone Alert Center endpoints below are DB-first for DB alert rows and
-fallback to artifact alerts for legacy runs.
+This endpoint is a DB-first run alert query. When DB `alerts` rows exist for the
+run, it reads them by `run_id`, applies the same filters, and returns
+`source=db`. When no DB alert rows exist, it falls back to `alerts.jsonl` and
+`alert_summary.json` from the local run directory. The standalone Alert Center
+endpoints below remain DB-first for DB alert rows and fallback to artifact
+alerts for legacy runs.
 
 Query parameters:
 
@@ -719,15 +729,19 @@ Response shape:
   "limit": 100,
   "status": null,
   "level": null,
-  "event_type": null
+  "event_type": null,
+  "source": "db"
 }
 ```
 
 Behavior:
 
 - Missing run returns 404.
-- Existing run without alert artifacts returns 404.
+- Existing run without DB alert rows and without alert artifacts returns 404.
 - `limit=0` returns `summary` with an empty `alerts` list.
+- Event rule severity remains `low` / `medium` / `high`; alert `level` remains
+  the alert-center concept and may be `info`, `warning`, or `critical`.
+
 ### Alert Center
 
 `GET /api/alerts`

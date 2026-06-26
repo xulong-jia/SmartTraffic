@@ -15,6 +15,10 @@ Rule Execution artifacts include rule inputs and trigger context, and the Alert
 Center supports artifact-backed query plus acknowledge / resolve / ignore status
 transitions.
 
+Event rule severity is constrained to `low`, `medium`, and `high`, matching the
+EventEngine contract. This is separate from Alert Center `level`, where
+generated alerts may still use `info`, `warning`, or `critical`.
+
 SmartTraffic event outputs are video-analysis signals only. They are not
 law-enforcement-grade traffic violation judgments.
 
@@ -325,7 +329,9 @@ records are empty. Generated process artifacts can be queried through
 `GET /api/analysis-runs/{run_id}/events`,
 `GET /api/analysis-runs/{run_id}/flow-counts`,
 `GET /api/analysis-runs/{run_id}/zone-statistics`, and
-`GET /api/analysis-runs/{run_id}/alerts`.
+`GET /api/analysis-runs/{run_id}/alerts`. After `v1.0.2-spec-alignment`, the
+run-level alerts endpoint is DB-first when DB `alerts` rows exist and preserves
+artifact fallback for legacy/local runs.
 
 This remains a local validation workflow with DB-first result reads and artifact
 fallback. It is not a production analytics or enforcement workflow.

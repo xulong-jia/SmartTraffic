@@ -198,6 +198,7 @@ def get_analysis_run_alerts(
     alert_status: str | None = Query(default=None, alias="status"),
     level: str | None = Query(default=None),
     event_type: str | None = Query(default=None),
+    db: Session = Depends(get_db),
 ) -> dict:
     try:
         return traffic_analysis_service.read_run_alerts(
@@ -206,6 +207,7 @@ def get_analysis_run_alerts(
             status=alert_status,
             level=level,
             event_type=event_type,
+            db=db,
         )
     except KeyError as exc:
         raise HTTPException(

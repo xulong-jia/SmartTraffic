@@ -31,6 +31,7 @@ import {
   buildEventRulePayload,
   createEmptyEventRuleFormState,
   eventRuleToFormState,
+  EVENT_RULE_SEVERITIES,
   EVENT_TYPES,
   type EventRuleFormState
 } from "../utils/zoneRuleConfigApi";
@@ -477,10 +478,11 @@ export default function ZoneEditor() {
               }
               value={ruleState.severity}
             >
-              <option value="low">low</option>
-              <option value="medium">medium</option>
-              <option value="high">high</option>
-              <option value="critical">critical</option>
+              {EVENT_RULE_SEVERITIES.map((severity) => (
+                <option key={severity} value={severity}>
+                  {severity}
+                </option>
+              ))}
             </select>
           </label>
           <label className="stacked-control">

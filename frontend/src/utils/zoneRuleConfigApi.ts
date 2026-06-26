@@ -1,4 +1,9 @@
-import type { EventRulePayload, EventRuleRecord, EventRuleUpdatePayload } from "../types";
+import type {
+  EventRulePayload,
+  EventRuleRecord,
+  EventRuleSeverity,
+  EventRuleUpdatePayload
+} from "../types";
 
 export const EVENT_TYPES = [
   "wrong_way_driving",
@@ -8,6 +13,8 @@ export const EVENT_TYPES = [
   "congestion",
   "flow_counting"
 ] as const;
+
+export const EVENT_RULE_SEVERITIES = ["low", "medium", "high"] as const;
 
 export interface EventRuleFormState {
   id: string | null;
@@ -54,7 +61,7 @@ export function eventRuleToFormState(rule: EventRuleRecord): EventRuleFormState 
     targetClassesText: rule.target_classes.join(","),
     parametersText: JSON.stringify(rule.parameters ?? {}, null, 2),
     cooldownSeconds: Number(rule.cooldown_seconds ?? 0),
-    severity: rule.severity || "medium",
+    severity: normalizeEventRuleSeverity(rule.severity),
     version: Number(rule.version ?? 1),
     minTrackLength: Number(rule.min_track_length ?? 1)
   };
@@ -106,6 +113,11 @@ function buildEventRuleBase(
   if (!Number.isFinite(state.minTrackLength) || state.minTrackLength < 1) {
     errors.push("Minimum track length must be at least 1.");
   }
+  const rawSeverity = state.severity.trim();
+  const severity = normalizeEventRuleSeverity(rawSeverity);
+  if (rawSeverity && severity !== rawSeverity) {
+    errors.push("Severity must be low, medium, or high.");
+  }
 
   let parameters: Record<string, unknown> = {};
   try {
@@ -132,10 +144,18 @@ function buildEventRuleBase(
       target_classes: parseTargetClasses(state.targetClassesText),
       parameters,
       cooldown_seconds: Number(state.cooldownSeconds),
-      severity: state.severity.trim() || "medium",
+      severity,
       version: Math.max(1, Math.trunc(state.version || 1)),
       min_track_length: Math.max(1, Math.trunc(state.minTrackLength || 1))
     },
     errors: []
   };
+}
+
+function normalizeEventRuleSeverity(value: string | null | undefined): EventRuleSeverity {
+  const severity = (value ?? "").trim();
+  if (EVENT_RULE_SEVERITIES.includes(severity as EventRuleSeverity)) {
+    return severity as EventRuleSeverity;
+  }
+  return "medium";
 }

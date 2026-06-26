@@ -15,6 +15,9 @@ Current state:
 - The frontend ZoneEditor supports polygon, direction line, and counting line
   drawing, save/update/delete, enabled/version display, validation, loading,
   error, and empty states.
+- Event rule severity in ZoneEditor and `/api/event-rules` payloads is limited
+  to `low`, `medium`, and `high`. Alert Center `level` is a separate concept and
+  may still use `info`, `warning`, or `critical`.
 - Full Stage 5CD consumes zones in Analysis Detail overlays, including
   polygons, direction lines, counting lines, enabled state, and selected event
   zone highlighting.

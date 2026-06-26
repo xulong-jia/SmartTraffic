@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.analysis.artifact_writer import TrafficArtifactWriter
 from app.models import TrafficAnalysisRun
 from app.repositories import (
+    AlertRepository,
     DetectionRepository,
     EventEvidenceRepository,
     EventRepository,
@@ -586,7 +587,34 @@ class TrafficAnalysisService:
         status: str | None = None,
         level: str | None = None,
         event_type: str | None = None,
+        db: Session | None = None,
     ) -> dict[str, Any]:
+        if db is not None:
+            db_rows = AlertRepository(db).list(run_id=run_id)
+            if db_rows:
+                alerts: list[dict[str, Any]] = []
+                for row in db_rows:
+                    alert = _db_alert_payload(row)
+                    if _alert_matches(
+                        alert,
+                        status=status,
+                        level=level,
+                        event_type=event_type,
+                    ):
+                        alerts.append(alert)
+                limited = alerts[:limit] if limit > 0 else []
+                run = TrafficAnalysisRunRepository(db).get(run_id)
+                return {
+                    "run_id": run_id,
+                    "video_id": _first_alert_video_id(alerts, run),
+                    "summary": _alert_summary(alerts),
+                    "alerts": limited,
+                    "limit": limit,
+                    "status": status,
+                    "level": level,
+                    "event_type": event_type,
+                    "source": "db",
+                }
         run_dir = self._run_dir(run_id)
         metadata = self._load_metadata(run_id)
         summary_path = run_dir / "alert_summary.json"
@@ -619,6 +647,7 @@ class TrafficAnalysisService:
             "status": status,
             "level": level,
             "event_type": event_type,
+            "source": "artifact",
         }
 
     def read_run_flow_counts(
@@ -882,6 +911,67 @@ def _db_rule_execution_payload(row: Any) -> dict[str, Any]:
         "created_at": _to_iso(row.created_at),
         "source": "db",
     }
+
+
+def _db_alert_payload(row: Any) -> dict[str, Any]:
+    payload = dict(row.payload or {})
+    payload.update(
+        {
+            "id": payload.get("id") or row.id,
+            "alert_id": payload.get("alert_id") or row.id,
+            "event_id": payload.get("event_id") or row.event_id or "",
+            "run_id": row.run_id,
+            "alert_type": payload.get("alert_type") or row.type,
+            "event_type": payload.get("event_type") or row.type,
+            "level": payload.get("level") or row.severity or "warning",
+            "status": row.status,
+            "message": payload.get("message") or row.message or "",
+            "title": payload.get("title") or row.type.replace("_", " ").capitalize(),
+            "created_at": payload.get("created_at") or _to_iso(row.created_at),
+            "source": "db",
+        }
+    )
+    payload.setdefault("video_id", "")
+    payload.setdefault("acknowledged_by", None)
+    payload.setdefault("acknowledged_at", None)
+    payload.setdefault("resolved_at", None)
+    payload.setdefault("event_evidence_id", None)
+    payload.setdefault("snapshot_path", None)
+    return payload
+
+
+def _first_alert_video_id(
+    alerts: list[dict[str, Any]],
+    run: TrafficAnalysisRun | None,
+) -> str:
+    for alert in alerts:
+        video_id = alert.get("video_id")
+        if video_id:
+            return str(video_id)
+    return str(run.video_id) if run is not None and run.video_id else ""
+
+
+def _alert_summary(alerts: list[dict[str, Any]]) -> dict[str, Any]:
+    per_level_counts: dict[str, int] = {}
+    per_status_counts: dict[str, int] = {}
+    per_event_type_counts: dict[str, int] = {}
+    for alert in alerts:
+        _increment_count(per_level_counts, alert.get("level"))
+        _increment_count(per_status_counts, alert.get("status"))
+        _increment_count(per_event_type_counts, alert.get("event_type"))
+    return {
+        "total_alerts": len(alerts),
+        "per_level_counts": dict(sorted(per_level_counts.items())),
+        "per_status_counts": dict(sorted(per_status_counts.items())),
+        "per_event_type_counts": dict(sorted(per_event_type_counts.items())),
+    }
+
+
+def _increment_count(counts: dict[str, int], value: Any) -> None:
+    if value is None:
+        return
+    key = str(value)
+    counts[key] = counts.get(key, 0) + 1
 
 
 def _rule_execution_matches_event_ids(row: Any, event_ids: set[str]) -> bool:
