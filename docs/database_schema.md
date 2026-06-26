@@ -13,9 +13,11 @@ Current implementation notes:
   representation.
 - Full SQLAlchemy models, repositories, migrations, and database-backed query
   services are not complete.
-- `event_rules`, `zones`, `review_comments`, `bad_cases`,
-  `evaluation_datasets`, and `evaluation_results` are target design, not
-  completed implementation.
+- `event_rules` and `zones` currently have artifact-based / in-memory MVP
+  configuration APIs, not database-backed persistence.
+- `review_comments`, `bad_cases`, `evaluation_datasets`, and
+  `evaluation_results` now have artifact-backed MVP implementations. Their
+  database tables remain target design, not completed DB-backed implementation.
 - Event / alert results currently come from local artifacts under
   `results/traffic_analysis/<run_id>/`.
 

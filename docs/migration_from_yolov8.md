@@ -26,7 +26,7 @@ The source project was inspected in read-only mode. No files were modified, move
 | `app.py` and `app/streamlit_video_demo.py` | Streamlit demo is not part of the new SmartTraffic architecture. |
 | ByteTrack runtime files under `src/tracking/` and tracking CLIs | SmartTraffic stage three uses a new DeepSORT adapter boundary instead of directly migrating the old ByteTrack runtime. |
 | `src/analytics/*` event/counting runtime | SmartTraffic implements new trajectory, event, and alert layers with its own contracts instead of directly migrating the old analytics runtime. |
-| Bad Case and evaluation services/docs as implemented in the old project | SmartTraffic will implement these later under its own Bad Case / Evaluation Center boundaries. Review Center is implemented as a SmartTraffic-native artifact-backed MVP, not migrated from the old project. |
+| Bad Case and evaluation services/docs as implemented in the old project | Not directly migrated. SmartTraffic now has its own Stage 8 artifact-backed Bad Case / Evaluation MVP, with different contracts and explicit DB-final / industrial-metrics boundaries. |
 | Old README product claims and release history | New README must reflect SmartTraffic scope and phase-one status. |
 | `frontend/dist`, `frontend/node_modules`, `.pytest_cache`, `__pycache__` | Generated caches/build outputs are not migrated. |
 
@@ -69,11 +69,11 @@ What changed:
 - Real DeepSORT is optional through `deep-sort-realtime` if it is available in the environment.
 - `backend/app/services/tracking_service.py` orchestrates detection -> tracking and writes `tracks.csv`, `tracks.jsonl`, and `tracking_summary.json`.
 
-Still not migrated or implemented:
+Still not migrated or implemented in Stage 3:
 
 - Old event/counting/ROI analytics runtime.
 - Event Engine rules.
-- Database-backed Alert / Review final workflows, Bad Case Center, and Evaluation Center complete logic.
+- Full database-backed Alert / Review / Bad Case / Evaluation final workflows.
 
 Boundary difference:
 
@@ -102,12 +102,12 @@ Generated trajectory features include:
 - `track_length`
 - `dwell_time_ms`
 
-Still not migrated or implemented:
+Still not migrated or implemented in Stage 4:
 
 - Old event/counting/ROI analytics runtime.
 - Event/counting implementations from the old project.
 - Congestion rule and full aggregate flow-counting analytics.
-- Full database-backed Alert / Review final workflows, Bad Case Center, and Evaluation Center logic.
+- Full database-backed Alert / Review / Bad Case / Evaluation final workflows.
 
 Boundary difference:
 
@@ -148,7 +148,7 @@ What changed:
 - These event and alert endpoints are artifact-based MVP query endpoints, not a
   complete database-backed result center.
 
-Still not migrated or implemented:
+Still not migrated or implemented in Stage 5:
 
 - Old event/counting/ROI analytics runtime.
 - Advanced flow-counts analytics beyond the Stage 6C artifact-backed
@@ -157,7 +157,7 @@ Still not migrated or implemented:
   `zone_statistics.json` read API.
 - Frontend flow / congestion charts and long-term database aggregates.
 - Database-backed alert lifecycle persistence and notification delivery.
-- Database-backed Review Center final workflow, Bad Case Center, and Evaluation Center complete logic.
+- Database-backed Review / Bad Case / Evaluation final workflows. Later Stage 7 and Stage 8 provide artifact-backed Review, Bad Case, and Evaluation MVPs, but not DB-final implementations.
 - Real-world speed calibration.
 - Law-enforcement-grade traffic violation judgment.
 
@@ -184,10 +184,10 @@ What changed:
 - Dashboard, Video Center, and Analysis Detail read real run APIs with minimal
   tables and status panels.
 
-Still not migrated or implemented:
+Still not migrated or implemented in Stage 6:
 
 - Database-backed result index or database migrations.
-- Database-backed Review Center final workflow, Bad Case Center, or Evaluation Center workflows.
+- Database-backed Review / Bad Case / Evaluation final workflows. Later Stage 7 and Stage 8 provide artifact-backed MVPs over local artifacts.
 - Production permissions, realtime streams, model training, or deployment.
 - Real-world speed calibration or law-enforcement-grade conclusions.
 
@@ -214,9 +214,9 @@ What changed:
 - React Review Center consumes the Review API and supports minimal navigation
   from Analysis Detail and Alert Center by `run_id`, `event_id`, and `alert_id`.
 
-Still not migrated or implemented:
+Still not migrated or implemented in Stage 7:
 
 - Database-backed Review Center final workflow or migrations.
-- Bad Case Center and Evaluation Center.
+- Bad Case Center and Evaluation Center inside Stage 7 itself. Later Stage 8 implements separate artifact-backed Bad Case / Evaluation MVPs.
 - Multi-user permissions, production-grade audit compliance, rule reruns,
   production deployment, or law-enforcement-grade conclusions.

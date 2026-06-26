@@ -32,6 +32,8 @@ results/*
 !results/traffic_analysis/
 results/traffic_analysis/*
 !results/traffic_analysis/.gitkeep
+evals/results/*
+!evals/results/.gitkeep
 
 *.pt
 *.pth

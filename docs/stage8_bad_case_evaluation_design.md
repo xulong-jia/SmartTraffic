@@ -840,7 +840,7 @@ Stage：8F。
 
 #### GET /api/evaluation/runs/{evaluation_run_id}
 
-用途：查询 evaluation run 详情。
+用途：设计期详情路由。当前 Stage 8EFG/HI MVP 尚未单独实现该详情 endpoint；现阶段使用 `GET /api/evaluation/runs`、`GET /api/evaluation/results`、`GET /api/evaluation/failed-cases` 与 `GET /api/evaluation/summary/{run_id}` 组合查询。
 
 Response：
 
@@ -852,7 +852,7 @@ Response：
 }
 ```
 
-Stage：8F。
+Stage：planned after Stage 8 MVP。
 
 #### GET /api/evaluation/summary/{run_id}
 
@@ -927,7 +927,7 @@ Response：
 
 ### 8.4 Failed Case -> Bad Case APIs
 
-#### POST /api/evaluation/failed-cases/{failed_case_id}/bad-case
+#### POST /api/bad-cases/from-failed-case
 
 用途：从 evaluation failed case 创建 Bad Case。
 
@@ -935,6 +935,8 @@ Request：
 
 ```json
 {
+  "run_id": "run_xxx",
+  "failed_case_id": "fail_xxx",
   "root_cause": "rule threshold too sensitive",
   "tags": ["regression", "wrong_direction"],
   "status": "open"
@@ -952,7 +954,7 @@ Response：
 }
 ```
 
-Stage：8H。
+Stage：8HI 已实现。该接口对同一 `run_id + failed_case_id` 幂等，若已存在 linked failed case 的 Bad Case 则返回已有记录；它不修改 `failed_cases.jsonl` 或 evaluation result artifacts。
 
 ## 9. 前端页面草案
 
@@ -986,7 +988,7 @@ EvaluationCenterPage MVP 应包含：
 - Metrics summary cards：按 detection、tracking、trajectory、event、flow_counting、bad_case_regression 分组。
 - Failed cases table：failed_case_id、failure_type、module、expected、actual、frame_index、event_id、track_id。
 - `evaluation_summary.json` viewer：展示 schema_version、generated_at、summary 和 failed_cases。
-- Failed case -> Bad Case link：调用 planned API 创建 Bad Case。
+- Failed case -> Bad Case link：调用 `POST /api/bad-cases/from-failed-case` 创建或返回 Bad Case。
 - Warning：明确 MVP metrics 不是工业级完整评测，缺 ground truth 时只显示 diagnostic / planned 状态。
 
 ### 9.3 与 Review Center 的跳转关系

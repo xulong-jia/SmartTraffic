@@ -56,7 +56,7 @@ Stage 7 也不改变 Stage 5/6 的事件规则、告警生成、交通统计和�
 - `GET /api/alerts`、`GET /api/alerts/{alert_id}`、`PATCH /api/alerts/{alert_id}/acknowledge`、`PATCH /api/alerts/{alert_id}/resolve`、`PATCH /api/alerts/{alert_id}/ignore` 已存在，并写回当前 artifact-backed alert storage。
 - 前端 `AnalysisDetailPage` 已展示 events、event evidence、rule executions 和 alerts。
 - 前端 `AlertCenterPage` 已支持 run/status/level 过滤和 acknowledge / resolve / ignore 告警操作。
-- 前端导航已有 `Review Center`、`Bad Case Center (planned)` 和 `Evaluation Center (planned)` 入口。
+- 前端导航已有 `Review Center`、`Bad Case Center` 和 `Evaluation Center` 入口；在 Stage 7 审计时 Bad Case / Evaluation 仍是 planned，Stage 8 后已替换为 artifact-backed MVP 页面。
 - Stage 7D 已将 Review Center placeholder 替换为 artifact-backed 前端 MVP，可读取 `/api/review` 事件列表/详情并执行基础复核动作。
 - Stage 7E 已支持 `/review` URL query 初始化，并从 Analysis Detail / Alert Center 定位到 Review Center。
 - Stage 6 visual artifacts 已包含 keyframes index、keyframe snapshots 和 `annotated_video.mp4` 的 manifest 状态，可作为人工复核证据入口。
@@ -78,7 +78,7 @@ Stage 7 也不改变 Stage 5/6 的事件规则、告警生成、交通统计和�
 - Stage 7D 已新增前端 review API client、review types、ReviewCenterPage 真实 API 接入和 review utility 测试。
 - Stage 7E 已新增 `reviewNavigation` utility，用于构建 `/review?run_id=&event_id=&alert_id=&status=&event_type=` 链接和解析 query。
 
-这些能力经过 Stage 7F 收尾审计后代表 Stage 7 Review Center artifact-backed MVP 和既有读取基础，不代表数据库最终版复核工作流、已创建 tag 或 Stage 8 Bad Case / Evaluation 已经实现。
+这些能力经过 Stage 7F 收尾审计后代表 Stage 7 Review Center artifact-backed MVP 和既有读取基础，不代表数据库最终版复核工作流。Stage 8 之后，Bad Case / Evaluation 已作为独立 artifact-backed MVP 实现，但不属于 Stage 7 的完成范围。
 
 ### 3.3 未实现能力
 
@@ -87,7 +87,7 @@ Stage 7 也不改变 Stage 5/6 的事件规则、告警生成、交通统计和�
 - standalone `/api/events` 真实查询逻辑。当前 `backend/app/api/events.py` 只返回 placeholder。
 - Analysis Detail 中直接执行复核动作、展示完整 review form。
 - Alert Center 与 event review status 的自动同步。
-- Bad Case 管理中心、Evaluation Center 和评测报告。
+- Bad Case 管理中心、Evaluation Center 和评测报告不属于 Stage 7；Stage 8 后已作为独立 artifact-backed MVP 实现。
 
 ### 3.4 当前风险
 
@@ -1018,7 +1018,7 @@ Stage 7 每个子阶段至少运行：
 验收：
 
 - Review Center artifact-based MVP 明确完成。
-- Bad Case / Evaluation 仍标记为后续阶段。
+- Bad Case / Evaluation 在 Stage 7F 时仍标记为后续阶段；Stage 8 后已完成 artifact-backed MVP，但仍不是 DB final version。
 - 旧 tag 不移动。
 
 审计结果：
@@ -1029,7 +1029,7 @@ Stage 7 每个子阶段至少运行：
 | Review API | 已实现 `GET /api/review/events`、`GET /api/review/events/{event_id}`、confirm、false-positive、ignore、resolve、comments 和 false-negatives endpoints；数据来源为 Stage 6 event / alert / visual artifacts 与 Stage 7 review artifacts。 |
 | Review Center frontend | 已接入真实 `/api/review`，支持 run/status/event_type 过滤、event list/detail、linked alerts、comments、visual artifact references、confirm / false-positive / ignore / resolve、add comment、add false negative MVP，以及 loading / empty / error / submitting / success 状态。 |
 | Analysis / Alert 联动 | Analysis Detail 已提供 event Review link；Alert Center 已提供 linked event Review link；Review Center 支持 `run_id`、`event_id`、`alert_id`、`status`、`event_type` query 初始化、自动加载 event detail 和 alert context 高亮。 |
-| 边界 | 当前是 artifact-backed MVP，不是 DB final version；不做 Bad Case Center、Evaluation Center、DB-backed review state、多用户权限、规则重跑、生产级审计合规、实时流、生产部署或执法级判断。 |
+| 边界 | Stage 7 本身是 artifact-backed Review MVP，不是 DB final version；不做 Bad Case Center、Evaluation Center、DB-backed review state、多用户权限、规则重跑、生产级审计合规、实时流、生产部署或执法级判断。Stage 8 后 Bad Case / Evaluation 已独立完成 artifact-backed MVP。 |
 
 ## 11. 风险与规避
 

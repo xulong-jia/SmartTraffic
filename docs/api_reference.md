@@ -715,6 +715,7 @@ Implemented endpoints:
 - `PATCH /api/bad-cases/{case_id}`
 - `GET /api/bad-cases/summary?run_id=`
 - `POST /api/bad-cases/from-review`
+- `POST /api/bad-cases/from-failed-case`
 
 `GET /api/bad-cases` supports global discovery across run directories when
 `run_id` is omitted. Missing `bad_cases.jsonl` returns an empty list. Malformed

@@ -151,6 +151,7 @@ cp .env.example .env
 - Stage 8CD Bad Case API and frontend MVP completed
 - Stage 8EFG Evaluation artifacts, MVP metrics, API, CLI, and frontend MVP completed
 - Stage 8HI Bad Case / Evaluation link, regression summary MVP, and closeout audit completed
+- Stage 9AB final pre-delivery audit and documentation closeout in progress
 - Zone / Event Rule configuration API MVP, Event Evidence / Rule Execution artifacts, and Alert Center status workflow implemented
 
 `v0.5.0-event-alert-minimal` is an earlier minimal Event / Alert milestone tag and should not be moved to newer commits.
@@ -325,7 +326,7 @@ Not implemented yet:
 - database-backed zone/rule config persistence
 - database-backed alert persistence
 - database-backed Traffic Analysis result index
-- Bad Case / Evaluation
+- Bad Case / Evaluation inside Stage 5 itself; later Stage 8 provides separate artifact-backed Bad Case Center and Evaluation Center MVPs
 - Database implementation / persistence
 
 Event/Alert query endpoints are artifact-based MVP endpoints. They are not a full database-backed result center.
@@ -395,6 +396,14 @@ bddcd93 feat: add congestion rule
 - `PATCH /api/bad-cases/{case_id}`
 - `GET /api/bad-cases/summary`
 - `POST /api/bad-cases/from-review`
+- `POST /api/bad-cases/from-failed-case`
+- `GET /api/evaluation/datasets`
+- `POST /api/evaluation/datasets`
+- `GET /api/evaluation/runs`
+- `POST /api/evaluation/run`
+- `GET /api/evaluation/results`
+- `GET /api/evaluation/summary/{run_id}`
+- `GET /api/evaluation/failed-cases`
 
 `POST /api/videos/{video_id}/process` 当前支持：
 
@@ -468,7 +477,7 @@ The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert mile
 - frontend flow statistics chart
 - frontend congestion chart
 - complete Dashboard visualization workbench
-- Evaluation Center 工业级完整评测
+- Evaluation Center 工业级完整评测；当前只有 Stage 8 artifact-backed MVP metrics
 - 真实 rerun-based Bad Case regression pipeline
 - 数据库持久化 Zone / Event Rule / Alert 状态
 - DB-backed result index
@@ -497,6 +506,8 @@ The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert mile
 ## 文档索引
 
 - `docs/api_reference.md`
+- `docs/final_delivery_plan.md`
+- `docs/demo_plan.md`
 - `docs/migration_from_yolov8.md`
 - `docs/stage2_yolov8_detection.md`
 - `docs/stage3_deepsort_tracking.md`
@@ -510,6 +521,19 @@ The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert mile
 - `docs/database_schema.md`
 - `docs/event_rules.md`
 - `docs/zone_config.md`
+
+## Milestones / Tags
+
+现有里程碑 tag 只读引用，后续不得移动、删除或重建：
+
+- `v0.5.0-event-alert-minimal`
+- `v0.5.1-stage5-event-process-mvp`
+- `v0.5.2-stage5-alert-center-mvp`
+- `v0.6.0-traffic-analysis-center-mvp`
+- `v0.7.0-review-center-mvp`
+- `v0.8.0-bad-case-evaluation-mvp`
+
+Stage 9 仍是最终交付收口阶段。Stage 9AB 只做最终审计与文档收口；Demo / sample / Docker / 环境细节留给 Stage 9CD，最终验收和后续 tag 留给 Stage 9EF。
 
 ## 自查命令
 
@@ -535,6 +559,8 @@ Git 和格式检查：
 cd ..
 git status --short --branch
 git diff --check
+docker compose config
+python3 scripts/danger_check.py
 ```
 
 大文件检查：
