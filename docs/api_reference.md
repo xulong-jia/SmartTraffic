@@ -15,11 +15,12 @@
 - `GET /api/videos/{video_id}/status`
 
 Full Stage 2AB makes the video API DB-backed for video metadata and processing
-task lifecycle state. Upload still stores the source video on local disk, while
-the `videos` row stores filename, storage path, status, fps, dimensions, frame
+task lifecycle state. Full Stage 2CD persists core result rows for successful
+processing runs. Upload still stores the source video on local disk, while the
+`videos` row stores filename, storage path, status, fps, dimensions, frame
 count, duration, camera id, and metadata. `GET /api/videos/{video_id}/frames`
-returns rows from the `frames` table; Stage 2AB does not auto-extract frame
-images or persist detection/tracking/trajectory details into DB.
+returns rows from the `frames` table; Stage 2CD does not auto-extract frame
+images.
 
 `POST /api/videos/{video_id}/process` supports:
 
@@ -83,16 +84,19 @@ Each process request creates a DB `processing_tasks` row with `pending`,
 `running`, `completed`, or `failed` status, progress, start/finish timestamps,
 error message, parameters, and result summary. Each successful process request
 also creates a `traffic_analysis_runs` row, so one video may have multiple
-`run_id` values.
+`run_id` values. Full Stage 2CD imports generated `detections.csv`,
+`tracks.csv`, `trajectory_points.csv`, `flow_counts.json`, and
+`zone_statistics.json` into DB tables while keeping the artifacts.
 
 Manual alignment note:
 
 - Stage 5 is implemented as an artifact-based / in-memory MVP.
 - Event, traffic statistics, and alert endpoints documented below are
   artifact-based MVP endpoints.
-- Detection, tracking, trajectory, event, alert, traffic statistics, Review,
-  Bad Case, and Evaluation detail reads are not a database-backed final Traffic
-  Analysis Center implementation.
+- Detection, tracking, trajectory, flow count, and zone statistic reads are
+  DB-first with artifact fallback.
+- Event / Alert lifecycle, Review, Bad Case, and Evaluation workflows are not
+  migrated to the final DB-backed implementation in this stage.
 
 ## Zone / Event Rule Config
 
@@ -126,10 +130,10 @@ Supported `event_type` values:
 
 ## Analysis Runs
 
-These endpoints form the Stage 6 Traffic Analysis Center artifact-based MVP
-API surface. They read local run artifacts and manifest status; they do not
-implement a database-backed final result center, Review Center, Bad Case
-Center, or Evaluation Center.
+These endpoints form the Traffic Analysis Center result API surface. Full
+Stage 2CD makes the run index and core result reads DB-first while preserving
+artifact fallback. Event / Alert lifecycle, Review Center, Bad Case Center, and
+Evaluation Center are still not final DB-backed workflows.
 
 - `GET /api/analysis-runs`
 - `GET /api/analysis-runs/{run_id}`
@@ -152,12 +156,10 @@ Center, or Evaluation Center.
 
 `GET /api/analysis-runs`
 
-This Stage 6D endpoint returns an artifact-backed run list. It combines the
-in-memory processing registry with directories found under
-`results/traffic_analysis/`, de-duplicates by `run_id`, and builds summaries
-from the best available source in this order: `manifest.json`, `metadata.json`,
-`artifact_index.json`, in-memory registry, then directory scan fallback. It does
-not use a database.
+This endpoint returns a DB-first run list. It reads `traffic_analysis_runs`
+first, then falls back to directories found under `results/traffic_analysis/`
+and the in-memory registry for legacy artifact-only runs. Results are
+de-duplicated by `run_id`.
 
 Query parameters:
 
@@ -179,7 +181,7 @@ Response shape:
       "status": "completed",
       "mode": "offline",
       "result_dir": "results/traffic_analysis/run_xxx",
-      "source": "manifest",
+      "source": "db",
       "metadata": {
         "available": true,
         "path": "metadata.json",
@@ -217,6 +219,8 @@ Behavior:
   descending, with `run_id` as a stable fallback.
 - Paths are relative or sanitized for frontend use; local absolute paths are
   not exposed.
+- `source` may be `db`, `manifest`, `metadata`, `artifact_index`,
+  `in_memory_registry`, or `directory_scan`.
 - Invalid JSON in one run's manifest does not make the whole list fail. The
   affected run can fall back to metadata or directory scan and marks that file
   status as `error`.
@@ -233,19 +237,18 @@ one run. It preserves the legacy `id` field while also exposing `run_id`.
 Behavior:
 
 - Missing run returns 404.
-- Summary source can be `manifest`, `metadata`, `artifact_index`,
+- Summary source can be `db`, `manifest`, `metadata`, `artifact_index`,
   `in_memory_registry`, or `directory_scan`.
-- This endpoint is an artifact-based result index, not a DB-backed result
-  index.
+- DB rows take precedence over artifact fallback when both exist.
 
 ### Manifest
 
 `GET /api/analysis-runs/{run_id}/manifest`
 
-This endpoint returns the Stage 6B/6C/6F run artifact manifest. It reads or
-builds `manifest.json` from the local run directory and writes
-`artifact_index.json` when the index is missing. It is artifact-backed and does
-not use a database.
+This endpoint returns a DB-first run manifest/index representation. For DB runs,
+it is built from `traffic_analysis_runs.artifact_index`; for legacy
+artifact-only runs, it reads or builds `manifest.json` from the local run
+directory and writes `artifact_index.json` when the index is missing.
 
 Response shape:
 
@@ -314,7 +317,7 @@ Behavior:
 - Paths are relative to the run directory.
 - Stage 6F `keyframes`, `keyframes_index`, and `annotated_video` status are
   exposed through this manifest and through the run summary `artifact_summary`.
-- The endpoint does not generate evaluation results or database rows.
+- The endpoint does not generate evaluation results.
 - Visual artifact generation failures are represented in manifest status and do
   not imply Review / Bad Case / Evaluation behavior.
 
@@ -337,14 +340,15 @@ Response shape:
   "frames": [],
   "rows": [],
   "limit": 100,
-  "track_id": null
+  "track_id": null,
+  "source": "db"
 }
 ```
 
 Behavior:
 
 - Missing run returns 404.
-- Existing run without trajectory artifacts returns 404.
+- Existing run without trajectory DB rows or trajectory artifacts returns 404.
 - `limit=0` returns `summary` with empty `frames` and `rows`.
 - `track_id` filters trajectory rows and frame-level `trajectory_points`.
 
@@ -396,10 +400,10 @@ Behavior:
 
 `GET /api/analysis-runs/{run_id}/flow-counts`
 
-This endpoint returns the Stage 6C artifact-backed `flow_counts.json` payload.
-If the run exists but the statistics file is missing, the service builds it
-from local `events.jsonl` and `event_evidence.jsonl` artifacts. A run with no
-`flow_counting` events returns a valid empty artifact.
+This endpoint returns flow count results DB-first. If DB `flow_counts` rows are
+missing but the run artifacts exist, it falls back to the Stage 6C
+`flow_counts.json` payload. A run with no `flow_counting` events returns a valid
+empty artifact fallback.
 
 Response shape:
 
@@ -424,7 +428,8 @@ Response shape:
     "by_direction": {}
   },
   "windows": [],
-  "records": []
+  "records": [],
+  "source": "db"
 }
 ```
 
@@ -433,21 +438,21 @@ Behavior:
 - Missing run returns 404.
 - Existing run without `flow_counting` events returns an empty artifact.
 - Direction values are normalized to `in`, `out`, or `unknown`.
+- `source` is `db` for persisted rows and `artifact` for fallback.
 - Stage 6E Analysis Detail displays this payload as a minimal summary/table
   view.
-- This is not a frontend chart, database aggregate, or real-world calibrated
+- This is not a frontend chart or real-world calibrated
   traffic volume system.
 
 ### Zone Statistics
 
 `GET /api/analysis-runs/{run_id}/zone-statistics`
 
-This endpoint returns the Stage 6C artifact-backed `zone_statistics.json`
-payload. If the run exists but the statistics file is missing, the service
-builds it from local `trajectory_points.jsonl`, `events.jsonl`, and
-`event_evidence.jsonl` artifacts. It only aggregates explicit zone information
-already present in trajectory points and congestion evidence; it does not infer
-new zone membership from geometry at query time.
+This endpoint returns zone statistics DB-first. If DB `zone_statistics` rows are
+missing but the run artifacts exist, it falls back to the Stage 6C
+`zone_statistics.json` payload. The artifact builder only aggregates explicit
+zone information already present in trajectory points and congestion evidence;
+it does not infer new zone membership from geometry at query time.
 
 Response shape:
 
@@ -472,7 +477,8 @@ Response shape:
     "congestion_event_count": 0
   },
   "windows": [],
-  "congestion_events": []
+  "congestion_events": [],
+  "source": "db"
 }
 ```
 
@@ -481,10 +487,11 @@ Behavior:
 - Missing run returns 404.
 - Existing run without zone data returns an empty artifact.
 - Congestion rule evidence is preserved as `congestion_events`.
+- `source` is `db` for persisted rows and `artifact` for fallback.
 - Stage 6E Analysis Detail displays this payload as a minimal summary/table
   view.
-- This is not a frontend congestion chart, database persistence layer, or
-  real-world congestion calibration system.
+- This is not a frontend congestion chart or real-world congestion calibration
+  system.
 
 ### Alert Generation
 
@@ -801,14 +808,14 @@ implemented as working behavior yet:
 ## Placeholders For Later Phases
 
 - `GET /api/detections`: contract-only placeholder. Use
-  `GET /api/analysis-runs/{run_id}/detections` for current artifact-backed
-  detection reads.
+  `GET /api/analysis-runs/{run_id}/detections` for current DB-first /
+  artifact-fallback detection reads.
 - `GET /api/tracks`: contract-only placeholder. Use
-  `GET /api/analysis-runs/{run_id}/tracks` for current artifact-backed tracking
-  reads.
+  `GET /api/analysis-runs/{run_id}/tracks` for current DB-first /
+  artifact-fallback tracking reads.
 - `GET /api/trajectories`: contract-only placeholder. Use
   `GET /api/analysis-runs/{run_id}/trajectory-points` for current
-  artifact-backed trajectory reads.
+  DB-first / artifact-fallback trajectory reads.
 - `GET /api/events`: contract-only placeholder. Use
   `GET /api/analysis-runs/{run_id}/events` for current event artifacts, or
   `/api/review` for Stage 7 review event workflows.

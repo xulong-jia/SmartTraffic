@@ -4,7 +4,7 @@
 
 ## 1. 当前版本状态
 
-当前已完成 Stage 9EF 最终验收准备。最新工程交付 commit 是 Stage 9CD 后的 `5538a3a`，当前建议 final engineering delivery tag 为 `v0.9.0-final-engineering-delivery`。该 tag 不是 `v1.0.0`，不代表 DB-backed final version、production deployment 或执法级系统。Full Stage 1AB 已在最终交付后补充 DB Foundation：SQLAlchemy Declarative Base、engine/session dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 已接入。Full Stage 1CD 已新增 core models、业务表 migration、repositories 和 CRUD tests。Full Stage 1EF 已新增 artifact compatibility / import / read-through helper 和 dry-run CLI。Full Stage 2AB 已完成 Video API、Processing Task 生命周期和 `traffic_analysis_runs` run index 的 DB-backed 迁移；Result Persistence 明细、Review、Bad Case 和 Evaluation 工作流仍未全面 DB-backed。Stage 1-9 已完成 artifact-backed MVP 与最终工程交付准备主链路：
+当前已完成 Stage 9EF 最终验收准备。最新工程交付 commit 是 Stage 9CD 后的 `5538a3a`，当前建议 final engineering delivery tag 为 `v0.9.0-final-engineering-delivery`。该 tag 不是 `v1.0.0`，不代表 DB-backed final version、production deployment 或执法级系统。Full Stage 1AB 已在最终交付后补充 DB Foundation：SQLAlchemy Declarative Base、engine/session dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 已接入。Full Stage 1CD 已新增 core models、业务表 migration、repositories 和 CRUD tests。Full Stage 1EF 已新增 artifact compatibility / import / read-through helper 和 dry-run CLI。Full Stage 2AB 已完成 Video API、Processing Task 生命周期和 `traffic_analysis_runs` run index 的 DB-backed 迁移；Full Stage 2CD 已完成 detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic Analysis Center DB-first index。Event / Alert lifecycle、Review、Bad Case 和 Evaluation 工作流仍未全面 DB-backed。Stage 1-9 已完成 artifact-backed MVP 与最终工程交付准备主链路：
 
 ```text
 video upload
@@ -29,7 +29,7 @@ video upload
 - Trajectory Engine 与轨迹 artifacts。
 - Event Engine、六类规则回调、event evidence 和 rule execution artifacts。
 - Alert Center artifact-backed MVP 和基础状态流转。
-- Traffic Analysis Center artifact-backed MVP，包括 manifest、artifact index、statistics、visual artifacts、Analysis Runs API 和前端最小视图。
+- Traffic Analysis Center artifact-compatible MVP，包括 manifest、artifact index、statistics、visual artifacts、Analysis Runs API 和前端最小视图；核心 result index / detections / tracks / trajectory_points / flow_counts / zone_statistics 已 DB-first。
 - Review Center artifact-backed MVP，包括 review artifacts、Review API、React 页面和 Analysis / Alert 定位联动。
 - Bad Case Center artifact-backed MVP，包括 `bad_cases.jsonl`、schema、service、API、React 页面、from-review 和 from-failed-case。
 - Evaluation Center artifact-backed MVP，包括 dataset / run / result / failed-case artifacts、MVP metrics、API、CLI、React 页面和 Bad Case regression summary MVP。
@@ -38,6 +38,7 @@ video upload
 - Full Stage 1CD Core Models / Migrations / Repositories：核心业务表 schema、repository CRUD foundation 和测试已完成，但未接入业务 service。
 - Full Stage 1EF Artifact Compatibility：旧 run artifacts discovery、结构化导入 DB、DB 优先 read-through fallback 和 CLI 已完成，但未改变现有 API 默认行为。
 - Full Stage 2AB Video / Processing DB-backed foundation：Video upload/list/detail/status/frames、Processing Task 状态/进度/时间/错误信息、以及同一 video 多 run index 已接入 DB，同时保留本地 artifact 生成。
+- Full Stage 2CD Result Persistence：detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic Analysis Center DB index 已接入 DB-first / artifact fallback，同时保留本地 artifact 生成。
 - Stage 9AB final pre-delivery audit and documentation closeout。
 - Stage 9CD 小型 demo/sample config、toy expected annotations、seed script、Makefile 和环境命令收口。
 - Stage 9EF final acceptance and final tag preparation。
@@ -47,7 +48,7 @@ video upload
 
 - DB-backed final version。
 - DB-backed full business API/service migration 和生产级持久化查询层。
-- Detection / tracking / trajectory / event / statistics detail DB persistence。
+- Event / Alert lifecycle DB workflow。
 - Review / Bad Case / Evaluation DB-backed workflow。
 - Industrial-grade mAP / IDF1 / MOTA。
 - Real dataset benchmark。

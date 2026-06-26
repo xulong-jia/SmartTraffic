@@ -1,9 +1,21 @@
 from typing import Any
 import csv
 import json
+from datetime import datetime
 from pathlib import Path
 
+from sqlalchemy.orm import Session
+
 from app.analysis.artifact_writer import TrafficArtifactWriter
+from app.models import TrafficAnalysisRun
+from app.repositories import (
+    DetectionRepository,
+    FlowCountRepository,
+    TrackRepository,
+    TrafficAnalysisRunRepository,
+    TrajectoryPointRepository,
+    ZoneStatisticRepository,
+)
 
 
 STAGE6D_SCHEMA_VERSION = "stage6d.v1"
@@ -44,10 +56,18 @@ class TrafficAnalysisService:
         video_id: str | None = None,
         limit: int = 50,
         offset: int = 0,
+        db: Session | None = None,
     ) -> dict[str, Any]:
         summaries_by_run_id: dict[str, dict[str, Any]] = {}
+        if db is not None:
+            for run in TrafficAnalysisRunRepository(db).list():
+                summaries_by_run_id[run.id] = _db_run_summary(run)
+
         for run_dir in self.discover_run_directories():
-            summaries_by_run_id[run_dir.name] = self.build_run_summary(run_dir.name)
+            summaries_by_run_id.setdefault(
+                run_dir.name,
+                self.build_run_summary(run_dir.name),
+            )
 
         for run_id, registry_run in self._runs.items():
             summaries_by_run_id.setdefault(
@@ -74,7 +94,11 @@ class TrafficAnalysisService:
             "offset": safe_offset,
         }
 
-    def get_run(self, run_id: str) -> dict[str, Any]:
+    def get_run(self, run_id: str, db: Session | None = None) -> dict[str, Any]:
+        if db is not None:
+            run = TrafficAnalysisRunRepository(db).get(run_id)
+            if run is not None:
+                return _db_run_summary(run)
         registry_run = self._runs.get(run_id)
         return self.build_run_summary(run_id, registry_run=registry_run)
 
@@ -186,7 +210,25 @@ class TrafficAnalysisService:
             "artifact_summary": artifact_summary,
         }
 
-    def read_run_detections(self, run_id: str, limit: int = 100) -> dict[str, Any]:
+    def read_run_detections(
+        self,
+        run_id: str,
+        limit: int = 100,
+        db: Session | None = None,
+    ) -> dict[str, Any]:
+        if db is not None:
+            rows = DetectionRepository(db).list(run_id=run_id)
+            if rows:
+                limited = rows[:limit] if limit > 0 else []
+                return {
+                    "run_id": run_id,
+                    "video_id": _first_row_video_id(rows),
+                    "summary": _db_result_summary(db, run_id),
+                    "frames": _group_result_rows(limited, "detections"),
+                    "rows": [_model_dict(row) for row in limited],
+                    "limit": limit,
+                    "source": "db",
+                }
         run_dir = self._run_dir(run_id)
         metadata = self._load_metadata(run_id)
         summary_path = run_dir / "detection_summary.json"
@@ -222,9 +264,28 @@ class TrafficAnalysisService:
             "frames": frames,
             "rows": rows,
             "limit": limit,
+            "source": "artifact",
         }
 
-    def read_run_tracks(self, run_id: str, limit: int = 100) -> dict[str, Any]:
+    def read_run_tracks(
+        self,
+        run_id: str,
+        limit: int = 100,
+        db: Session | None = None,
+    ) -> dict[str, Any]:
+        if db is not None:
+            rows = TrackRepository(db).list(run_id=run_id)
+            if rows:
+                limited = rows[:limit] if limit > 0 else []
+                return {
+                    "run_id": run_id,
+                    "video_id": _first_row_video_id(rows),
+                    "summary": _db_result_summary(db, run_id),
+                    "frames": _group_result_rows(limited, "tracks"),
+                    "rows": [_model_dict(row) for row in limited],
+                    "limit": limit,
+                    "source": "db",
+                }
         run_dir = self._run_dir(run_id)
         metadata = self._load_metadata(run_id)
         summary_path = run_dir / "tracking_summary.json"
@@ -260,6 +321,7 @@ class TrafficAnalysisService:
             "frames": frames,
             "rows": rows,
             "limit": limit,
+            "source": "artifact",
         }
 
     def read_run_trajectory_points(
@@ -267,7 +329,28 @@ class TrafficAnalysisService:
         run_id: str,
         limit: int = 100,
         track_id: int | None = None,
+        db: Session | None = None,
     ) -> dict[str, Any]:
+        if db is not None:
+            rows = TrajectoryPointRepository(db).list(run_id=run_id)
+            if track_id is not None:
+                rows = [
+                    row
+                    for row in rows
+                    if _track_id_matches(row.track_id, track_id)
+                ]
+            if rows:
+                limited = rows[:limit] if limit > 0 else []
+                return {
+                    "run_id": run_id,
+                    "video_id": _first_row_video_id(rows),
+                    "summary": _db_result_summary(db, run_id),
+                    "frames": _group_result_rows(limited, "trajectory_points"),
+                    "rows": [_model_dict(row) for row in limited],
+                    "limit": limit,
+                    "track_id": track_id,
+                    "source": "db",
+                }
         run_dir = self._run_dir(run_id)
         metadata = self._load_metadata(run_id)
         summary_path = run_dir / "trajectory_summary.json"
@@ -323,6 +406,7 @@ class TrafficAnalysisService:
             "rows": rows,
             "limit": limit,
             "track_id": track_id,
+            "source": "artifact",
         }
 
     def read_run_events(
@@ -445,23 +529,61 @@ class TrafficAnalysisService:
             "event_type": event_type,
         }
 
-    def read_run_flow_counts(self, run_id: str) -> dict[str, Any]:
+    def read_run_flow_counts(
+        self,
+        run_id: str,
+        db: Session | None = None,
+    ) -> dict[str, Any]:
+        if db is not None:
+            rows = FlowCountRepository(db).list(run_id=run_id)
+            if rows:
+                return {
+                    "run_id": run_id,
+                    "records": [_model_dict(row) for row in rows],
+                    "summary": {"total_records": len(rows)},
+                    "source": "db",
+                }
         run_dir = self._ensure_statistics_artifacts(run_id)
         flow_counts_path = run_dir / "flow_counts.json"
         if not flow_counts_path.is_file():
             raise FileNotFoundError("flow counts artifact not found")
         with flow_counts_path.open(encoding="utf-8") as file:
-            return json.load(file)
+            payload = json.load(file)
+        payload["source"] = "artifact"
+        return payload
 
-    def read_run_zone_statistics(self, run_id: str) -> dict[str, Any]:
+    def read_run_zone_statistics(
+        self,
+        run_id: str,
+        db: Session | None = None,
+    ) -> dict[str, Any]:
+        if db is not None:
+            rows = ZoneStatisticRepository(db).list(run_id=run_id)
+            if rows:
+                return {
+                    "run_id": run_id,
+                    "windows": [_model_dict(row) for row in rows],
+                    "summary": {"total_windows": len(rows)},
+                    "source": "db",
+                }
         run_dir = self._ensure_statistics_artifacts(run_id)
         zone_statistics_path = run_dir / "zone_statistics.json"
         if not zone_statistics_path.is_file():
             raise FileNotFoundError("zone statistics artifact not found")
         with zone_statistics_path.open(encoding="utf-8") as file:
-            return json.load(file)
+            payload = json.load(file)
+        payload["source"] = "artifact"
+        return payload
 
-    def read_run_manifest(self, run_id: str) -> dict[str, Any]:
+    def read_run_manifest(
+        self,
+        run_id: str,
+        db: Session | None = None,
+    ) -> dict[str, Any]:
+        if db is not None:
+            run = TrafficAnalysisRunRepository(db).get(run_id)
+            if run is not None:
+                return _db_run_manifest(run)
         metadata = self._load_metadata(run_id)
         writer = TrafficArtifactWriter(self._run_dir(run_id).parent)
         return writer.write_run_manifest(
@@ -504,6 +626,132 @@ class TrafficAnalysisService:
 
 
 traffic_analysis_service = TrafficAnalysisService()
+
+
+def _db_run_summary(run: TrafficAnalysisRun) -> dict[str, Any]:
+    artifact_paths = {
+        str(key): _safe_relative_path(value)
+        for key, value in (run.artifact_index or {}).items()
+        if value
+    }
+    summary = run.summary or {}
+    artifact_summary = summary.get("artifact_summary")
+    if not isinstance(artifact_summary, dict):
+        artifact_summary = {
+            key: {
+                "status": "available",
+                "path": path,
+                "record_count": 0,
+            }
+            for key, path in artifact_paths.items()
+        }
+    return {
+        "id": run.id,
+        "run_id": run.id,
+        "video_id": run.video_id,
+        "status": run.status,
+        "mode": str(summary.get("mode") or "offline"),
+        "result_dir": _public_result_dir(run.id, run.result_dir),
+        "created_at": _to_iso(run.created_at),
+        "updated_at": _to_iso(run.updated_at),
+        "started_at": str(summary.get("started_at") or ""),
+        "finished_at": str(summary.get("finished_at") or ""),
+        "source": "db",
+        "schema_version": STAGE6D_SCHEMA_VERSION,
+        "metadata": {
+            "available": bool(summary),
+            "path": "db",
+            "status": "available" if summary else "empty",
+        },
+        "manifest": {
+            "available": True,
+            "path": "db",
+            "status": "available",
+            "schema_version": summary.get("schema_version"),
+        },
+        "artifact_index": {
+            "available": bool(artifact_paths),
+            "path": "db",
+            "status": "available" if artifact_paths else "empty",
+        },
+        "artifact_paths": artifact_paths,
+        "artifact_summary": artifact_summary,
+    }
+
+
+def _db_run_manifest(run: TrafficAnalysisRun) -> dict[str, Any]:
+    artifacts = {
+        key: {
+            "status": "available",
+            "path": _safe_relative_path(path),
+            "record_count": 0,
+        }
+        for key, path in (run.artifact_index or {}).items()
+    }
+    return {
+        "schema_version": "stage6b.v1",
+        "run_id": run.id,
+        "video_id": run.video_id,
+        "status": run.status,
+        "created_at": _to_iso(run.created_at),
+        "updated_at": _to_iso(run.updated_at),
+        "result_dir": _public_result_dir(run.id, run.result_dir),
+        "artifacts": artifacts,
+        "source": "db",
+    }
+
+
+def _db_result_summary(db: Session, run_id: str) -> dict[str, Any]:
+    run = TrafficAnalysisRunRepository(db).get(run_id)
+    if run is None:
+        return {}
+    return run.summary or {}
+
+
+def _first_row_video_id(rows: list[Any]) -> str:
+    for row in rows:
+        video_id = getattr(row, "video_id", None)
+        if video_id:
+            return str(video_id)
+    return ""
+
+
+def _group_result_rows(rows: list[Any], item_key: str) -> list[dict[str, Any]]:
+    frames_by_index: dict[int, dict[str, Any]] = {}
+    for row in rows:
+        frame_index = int(getattr(row, "frame_index", 0) or 0)
+        frame = frames_by_index.setdefault(
+            frame_index,
+            {
+                "frame_index": frame_index,
+                "timestamp_ms": getattr(row, "timestamp_ms", None),
+                item_key: [],
+            },
+        )
+        frame[item_key].append(_model_dict(row))
+    return [frames_by_index[index] for index in sorted(frames_by_index)]
+
+
+def _model_dict(row: Any) -> dict[str, Any]:
+    payload = {
+        attr.key: _jsonable_value(getattr(row, attr.key))
+        for attr in row.__mapper__.column_attrs
+    }
+    if "metadata_json" in payload:
+        payload["metadata"] = payload.pop("metadata_json")
+    return payload
+
+
+def _jsonable_value(value: Any) -> Any:
+    if isinstance(value, datetime):
+        return _to_iso(value)
+    return value
+
+
+def _to_iso(value: Any) -> str:
+    if isinstance(value, datetime):
+        return value.replace(microsecond=0).isoformat()
+    return str(value or "")
 
 
 def _public_metadata(metadata: dict[str, Any]) -> dict[str, Any]:

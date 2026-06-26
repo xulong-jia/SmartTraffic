@@ -1,5 +1,7 @@
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
 
+from app.db.session import get_db
 from app.services.alert_service import AlertService
 from app.services.traffic_analysis_service import traffic_analysis_service
 
@@ -13,19 +15,24 @@ def list_analysis_runs(
     video_id: str | None = Query(default=None),
     limit: int = Query(default=50, ge=0, le=1000),
     offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
 ) -> dict:
     return traffic_analysis_service.list_runs(
         status=run_status,
         video_id=video_id,
         limit=limit,
         offset=offset,
+        db=db,
     )
 
 
 @router.get("/{run_id}")
-def get_analysis_run(run_id: str) -> dict:
+def get_analysis_run(
+    run_id: str,
+    db: Session = Depends(get_db),
+) -> dict:
     try:
-        return traffic_analysis_service.get_run(run_id)
+        return traffic_analysis_service.get_run(run_id, db=db)
     except KeyError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -34,9 +41,12 @@ def get_analysis_run(run_id: str) -> dict:
 
 
 @router.get("/{run_id}/manifest")
-def get_analysis_run_manifest(run_id: str) -> dict:
+def get_analysis_run_manifest(
+    run_id: str,
+    db: Session = Depends(get_db),
+) -> dict:
     try:
-        return traffic_analysis_service.read_run_manifest(run_id)
+        return traffic_analysis_service.read_run_manifest(run_id, db=db)
     except KeyError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -45,9 +55,12 @@ def get_analysis_run_manifest(run_id: str) -> dict:
 
 
 @router.get("/{run_id}/flow-counts")
-def get_analysis_run_flow_counts(run_id: str) -> dict:
+def get_analysis_run_flow_counts(
+    run_id: str,
+    db: Session = Depends(get_db),
+) -> dict:
     try:
-        return traffic_analysis_service.read_run_flow_counts(run_id)
+        return traffic_analysis_service.read_run_flow_counts(run_id, db=db)
     except KeyError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -61,9 +74,12 @@ def get_analysis_run_flow_counts(run_id: str) -> dict:
 
 
 @router.get("/{run_id}/zone-statistics")
-def get_analysis_run_zone_statistics(run_id: str) -> dict:
+def get_analysis_run_zone_statistics(
+    run_id: str,
+    db: Session = Depends(get_db),
+) -> dict:
     try:
-        return traffic_analysis_service.read_run_zone_statistics(run_id)
+        return traffic_analysis_service.read_run_zone_statistics(run_id, db=db)
     except KeyError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -80,9 +96,14 @@ def get_analysis_run_zone_statistics(run_id: str) -> dict:
 def get_analysis_run_detections(
     run_id: str,
     limit: int = Query(default=100, ge=0, le=1000),
+    db: Session = Depends(get_db),
 ) -> dict:
     try:
-        return traffic_analysis_service.read_run_detections(run_id, limit=limit)
+        return traffic_analysis_service.read_run_detections(
+            run_id,
+            limit=limit,
+            db=db,
+        )
     except KeyError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -94,9 +115,10 @@ def get_analysis_run_detections(
 def get_analysis_run_tracks(
     run_id: str,
     limit: int = Query(default=100, ge=0, le=1000),
+    db: Session = Depends(get_db),
 ) -> dict:
     try:
-        return traffic_analysis_service.read_run_tracks(run_id, limit=limit)
+        return traffic_analysis_service.read_run_tracks(run_id, limit=limit, db=db)
     except KeyError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -109,12 +131,14 @@ def get_analysis_run_trajectory_points(
     run_id: str,
     limit: int = Query(default=100, ge=0, le=1000),
     track_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
 ) -> dict:
     try:
         return traffic_analysis_service.read_run_trajectory_points(
             run_id,
             limit=limit,
             track_id=track_id,
+            db=db,
         )
     except KeyError as exc:
         raise HTTPException(

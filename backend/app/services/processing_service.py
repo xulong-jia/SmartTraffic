@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from sqlalchemy.orm import Session
 
+from app.analysis.artifact_compatibility import import_run_artifacts_to_db
 from app.core.config import get_settings
 from app.repositories import ProcessingTaskRepository, TrafficAnalysisRunRepository
 from app.services.alert_service import AlertService
@@ -171,6 +172,11 @@ class ProcessingService:
                     result_dir=f"results/traffic_analysis/{run_id}",
                     artifact_index=result["artifacts"],
                     summary=result,
+                )
+                import_run_artifacts_to_db(
+                    db,
+                    run_id,
+                    result.get("result_dir") or f"results/traffic_analysis/{run_id}",
                 )
             traffic_analysis_service.register_run(
                 run_id=run_id,
