@@ -554,10 +554,11 @@ The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert mile
 - 完整视频级 Bad Case rerun pipeline；当前 regression 是 deterministic replay / rule replay
 - production-grade DB aggregate analytics and complete Alert operations workflow
 - complex video overlay editor
-- 正式实时流处理
+- 正式实时流处理；留给 Full Stage 7
 - 真实世界速度标定；当前 `speed_px_per_second` 不是 m/s 或 km/h
 - law-enforcement-grade violation judgement
-- 生产级权限、安全和监控
+- 生产级权限、安全和监控；Realtime / Security 留给 Full Stage 7
+- Full final release hardening 和 `v1.0.0`；留给 Full Stage 8
 
 项目输出不作为正式交通执法依据。
 

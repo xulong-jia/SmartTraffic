@@ -878,6 +878,9 @@ implemented as working behavior yet:
 - database-backed aggregate statistics APIs
 - complete video-level Bad Case rerun pipeline
 - COCO official mAP / TrackEval official evaluation
+- Report Center remains for Full Stage 6
+- Realtime / Security remain for Full Stage 7
+- Full final release hardening and `v1.0.0` remain for Full Stage 8
 
 ## Placeholders For Later Phases
 

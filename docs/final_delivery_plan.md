@@ -63,9 +63,8 @@ video upload
 - Complete video-level Bad Case rerun pipeline；当前是 deterministic replay / rule replay。
 - Report Center；留给 Full Stage 6。
 - Production-grade evaluation platform。
-- Permissions / multi-user audit。
-- Realtime streams。
-- Production deployment、monitoring 和 security hardening。
+- Realtime streams、Permissions / multi-user audit、Security hardening；留给 Full Stage 7。
+- Full final release hardening、production deployment readiness、monitoring readiness 和 `v1.0.0`；留给 Full Stage 8。
 - Law-enforcement-grade violation judgement。
 
 ## 4. Stage 9CD 计划：Demo / Sample / Docker / 环境收口
