@@ -4,7 +4,7 @@
 
 ## 1. 当前版本状态
 
-当前已完成 Stage 9EF 最终验收准备。最新工程交付 commit 是 Stage 9CD 后的 `5538a3a`，当前建议 final engineering delivery tag 为 `v0.9.0-final-engineering-delivery`。该 tag 不是 `v1.0.0`，不代表 DB-backed final version、production deployment 或执法级系统。Full Stage 1AB 已在最终交付后补充 DB Foundation：SQLAlchemy Declarative Base、engine/session dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 已接入。Full Stage 1CD 已新增 core models、业务表 migration、repositories 和 CRUD tests。业务 API、artifact import/read-through 和 service 层 DB-backed 迁移仍未完成；Full Stage 1EF 将处理 artifact compatibility / import / read-through，Full Stage 2 才开始 Video / Processing / Result Persistence 业务迁移。Stage 1-9 已完成 artifact-backed MVP 与最终工程交付准备主链路：
+当前已完成 Stage 9EF 最终验收准备。最新工程交付 commit 是 Stage 9CD 后的 `5538a3a`，当前建议 final engineering delivery tag 为 `v0.9.0-final-engineering-delivery`。该 tag 不是 `v1.0.0`，不代表 DB-backed final version、production deployment 或执法级系统。Full Stage 1AB 已在最终交付后补充 DB Foundation：SQLAlchemy Declarative Base、engine/session dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 已接入。Full Stage 1CD 已新增 core models、业务表 migration、repositories 和 CRUD tests。Full Stage 1EF 已新增 artifact compatibility / import / read-through helper 和 dry-run CLI。业务 API 和 service 层 DB-backed 迁移仍未完成；Full Stage 2 才开始 Video / Processing / Result Persistence 业务迁移。Stage 1-9 已完成 artifact-backed MVP 与最终工程交付准备主链路：
 
 ```text
 video upload
@@ -36,6 +36,7 @@ video upload
 - Docker Compose 本地开发骨架。
 - Full Stage 1AB DB Foundation：SQLAlchemy / Alembic / Session / Config 基础接入，默认 SQLite 本地验证。
 - Full Stage 1CD Core Models / Migrations / Repositories：核心业务表 schema、repository CRUD foundation 和测试已完成，但未接入业务 service。
+- Full Stage 1EF Artifact Compatibility：旧 run artifacts discovery、结构化导入 DB、DB 优先 read-through fallback 和 CLI 已完成，但未改变现有 API 默认行为。
 - Stage 9AB final pre-delivery audit and documentation closeout。
 - Stage 9CD 小型 demo/sample config、toy expected annotations、seed script、Makefile 和环境命令收口。
 - Stage 9EF final acceptance and final tag preparation。
@@ -44,7 +45,7 @@ video upload
 ## 3. 未完成边界
 
 - DB-backed final version。
-- DB-backed business API/service migration、artifact compatibility / import / read-through 和生产级持久化查询层。
+- DB-backed business API/service migration 和生产级持久化查询层。
 - Industrial-grade mAP / IDF1 / MOTA。
 - Real dataset benchmark。
 - Real rerun-based Bad Case regression pipeline。
