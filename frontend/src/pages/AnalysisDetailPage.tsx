@@ -13,6 +13,9 @@ import {
   getAnalysisRunZoneStatistics,
   listAnalysisRuns
 } from "../api/analysisRuns";
+import { listZones } from "../api/zones";
+import EventTimeline from "../components/EventTimeline";
+import VideoPlayerWithOverlay from "../components/VideoPlayerWithOverlay";
 import type {
   AlertRecord,
   AlertsResponse,
@@ -30,9 +33,12 @@ import type {
   TrajectoryFrame,
   TrajectoryPointRow,
   TrajectoryPointsResponse,
+  ZoneRecord,
   ZoneStatisticsArtifact
 } from "../types";
+import { buildOverlayDataBundle, inferOverlaySize } from "../utils/analysisDetailMapping";
 import { formatDisplayValue as formatValue } from "../utils/format";
+import { getEventSeekTimeMs } from "../utils/eventTimeline";
 import { getRunId } from "../utils/analysisRunMetrics";
 import { buildReviewLink } from "../utils/reviewNavigation";
 
@@ -124,6 +130,11 @@ export default function AnalysisDetailPage({
   const [zoneStatisticsData, setZoneStatisticsData] = useState<ZoneStatisticsArtifact | null>(null);
   const [zoneStatisticsLoading, setZoneStatisticsLoading] = useState(false);
   const [zoneStatisticsError, setZoneStatisticsError] = useState("");
+  const [zones, setZones] = useState<ZoneRecord[]>([]);
+  const [zonesLoading, setZonesLoading] = useState(false);
+  const [zonesError, setZonesError] = useState("");
+  const [currentTimeMs, setCurrentTimeMs] = useState(0);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   useEffect(() => {
     const requestedRunId = initialRunId.trim();
@@ -155,6 +166,9 @@ export default function AnalysisDetailPage({
     loadAlerts(selectedRunId);
     loadFlowCounts(selectedRunId);
     loadZoneStatistics(selectedRunId);
+    loadZonesForOverlay();
+    setCurrentTimeMs(0);
+    setSelectedEventId(null);
   }, [selectedRunId]);
 
   useEffect(() => {
@@ -350,6 +364,18 @@ export default function AnalysisDetailPage({
     }
   }
 
+  async function loadZonesForOverlay(videoId?: string | null) {
+    setZonesLoading(true);
+    setZonesError("");
+    try {
+      setZones(await listZones(videoId ? { videoId } : {}));
+    } catch (currentError) {
+      setZonesError(currentError instanceof Error ? currentError.message : "Zones request failed");
+    } finally {
+      setZonesLoading(false);
+    }
+  }
+
   function handleAlertsRefresh() {
     if (!selectedRunId) {
       return;
@@ -379,6 +405,17 @@ export default function AnalysisDetailPage({
     }
   }
 
+  const overlayData = buildOverlayDataBundle({
+    detections,
+    tracks,
+    trajectory: trajectoryData,
+    events: eventsData,
+    zones,
+    selectedEventId
+  });
+  const overlaySize = inferOverlaySize({ detections, tracks, zones });
+  const videoUrl = normalizeVideoUrl(runSummary?.artifact_paths?.annotated_video);
+
   return (
     <>
       <header className="page-header">
@@ -387,6 +424,45 @@ export default function AnalysisDetailPage({
           <p>Run summary, artifact status, events, alerts, and Stage 6 statistics.</p>
         </div>
       </header>
+      <div className="grid two review-workspace">
+        <VideoPlayerWithOverlay
+          currentTimeMs={currentTimeMs}
+          detections={overlayData.detections}
+          height={overlaySize.height}
+          onSeek={setCurrentTimeMs}
+          selectedEventId={selectedEventId}
+          selectedTrackId={overlayData.selectedTrackId}
+          selectedZoneId={overlayData.selectedZoneId}
+          title="Video Overlay"
+          tracks={overlayData.tracks}
+          trajectoryPoints={overlayData.trajectoryFrames}
+          videoUrl={videoUrl}
+          width={overlaySize.width}
+          zones={overlayData.zones}
+        />
+        <div className="grid">
+          <EventTimeline
+            error={eventsError}
+            events={overlayData.events}
+            loading={eventsLoading}
+            onSeek={setCurrentTimeMs}
+            onSelectEvent={(eventId, event) => {
+              setSelectedEventId(eventId);
+              setCurrentTimeMs(getEventSeekTimeMs(event));
+            }}
+            selectedEventId={selectedEventId}
+          />
+          <section className="panel">
+            <h3>Overlay Data</h3>
+            {zonesLoading ? <p className="muted">Loading zones...</p> : null}
+            {zonesError ? <p>{zonesError}</p> : null}
+            <p>
+              {overlayData.detections.length} detection frames · {overlayData.tracks.length} track frames ·{" "}
+              {overlayData.trajectoryFrames.length} trajectory frames · {overlayData.zones.length} zones
+            </p>
+          </section>
+        </div>
+      </div>
       <div className="grid two">
         <div className="grid">
           <section className="panel">
@@ -1248,6 +1324,16 @@ function parseTrackIdFilter(value: string): number | null {
 function normalizeOptionalString(value: string): string | null {
   const trimmed = value.trim();
   return trimmed || null;
+}
+
+function normalizeVideoUrl(value: string | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) {
+    return value;
+  }
+  return null;
 }
 
 function clampInteger(value: number, min: number, max: number): number {

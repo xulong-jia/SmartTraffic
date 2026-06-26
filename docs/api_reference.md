@@ -112,6 +112,10 @@ counting-line, target-class, parameter, cooldown, severity, and version data in
 the existing structured JSON fields. Full Stage 5AB connects the frontend
 ZoneEditor to these APIs so users can draw polygon, direction line, and counting
 line geometry, then save and read back DB-backed zones and event rules.
+Full Stage 5CD consumes the same zone records in Analysis Detail overlay mode:
+polygons, direction lines, counting lines, enabled state, and selected event
+zone highlighting are rendered as frontend SVG overlays. Detection, tracking,
+trajectory, and event overlays use the existing Analysis Runs read APIs.
 
 Zones:
 

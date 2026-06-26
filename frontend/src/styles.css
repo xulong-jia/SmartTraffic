@@ -327,6 +327,163 @@ button:disabled {
   color: #607080;
 }
 
+.video-overlay-panel {
+  min-width: 0;
+}
+
+.video-overlay-stage {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  border: 1px solid #cbd5df;
+  border-radius: 6px;
+  background: #111820;
+}
+
+.overlay-video,
+.video-overlay-svg,
+.overlay-placeholder {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.overlay-video {
+  object-fit: contain;
+}
+
+.overlay-placeholder {
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    #111820;
+  background-size: 48px 48px;
+  color: #d6dee7;
+}
+
+.video-overlay-svg {
+  pointer-events: none;
+}
+
+.detection-box,
+.track-box {
+  fill: transparent;
+  stroke-width: 3;
+}
+
+.detection-box {
+  stroke: #f0c849;
+}
+
+.track-box {
+  stroke: #4eb3d3;
+}
+
+.overlay-item.highlighted .detection-box,
+.overlay-item.highlighted .track-box {
+  stroke: #f06b6b;
+  stroke-width: 5;
+}
+
+.overlay-label {
+  paint-order: stroke;
+  fill: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  stroke: rgba(0, 0, 0, 0.72);
+  stroke-width: 4px;
+}
+
+.track-polyline {
+  fill: none;
+  stroke: rgba(78, 179, 211, 0.72);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+.track-polyline.highlighted {
+  stroke: #f06b6b;
+  stroke-width: 5;
+}
+
+.display-zone polygon {
+  fill: rgba(86, 152, 107, 0.14);
+  stroke: #6fbd83;
+  stroke-width: 3;
+}
+
+.display-zone.disabled {
+  opacity: 0.36;
+}
+
+.display-zone.highlighted polygon {
+  fill: rgba(240, 107, 107, 0.2);
+  stroke: #f06b6b;
+  stroke-width: 5;
+}
+
+.zone-direction-display {
+  stroke: #df7aa0;
+  stroke-linecap: round;
+  stroke-width: 4;
+}
+
+.zone-counting-display {
+  stroke: #82d8b5;
+  stroke-linecap: round;
+  stroke-width: 4;
+}
+
+.event-timeline {
+  min-width: 0;
+}
+
+.event-timeline select {
+  border: 1px solid #aeb9c4;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #17212b;
+  padding: 8px 10px;
+}
+
+.timeline-list {
+  display: grid;
+  gap: 8px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.timeline-item {
+  display: grid;
+  width: 100%;
+  gap: 3px;
+  text-align: left;
+}
+
+.timeline-item.selected {
+  border-color: #287ab5;
+  background: #e7f2fb;
+}
+
+.timeline-time {
+  color: #657483;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.timeline-main {
+  font-weight: 700;
+}
+
+.timeline-meta {
+  color: #657483;
+  font-size: 13px;
+}
+
 .zone-editor {
   display: grid;
   gap: 16px;

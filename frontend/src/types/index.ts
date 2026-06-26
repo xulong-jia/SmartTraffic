@@ -330,12 +330,19 @@ export interface EventSummary {
 
 export interface TrafficEvent {
   [key: string]: string | number | boolean | null | object | undefined;
+  id?: string;
   event_id?: string;
   event_type?: string | null;
   track_id?: number | null;
   zone_id?: string | null;
+  frame_index?: number | null;
   start_frame?: number | null;
   end_frame?: number | null;
+  timestamp_ms?: number | null;
+  start_time_ms?: number | null;
+  end_time_ms?: number | null;
+  class_name?: string | null;
+  confidence?: number | null;
   severity?: string | null;
   status?: string | null;
 }
