@@ -66,17 +66,22 @@ entire results directory by default.
 
 ## Boundary
 
-Full Stage 1 is now complete at the foundation level:
+Full Stage 1 is complete at the foundation level:
 
 - Full Stage 1AB: SQLAlchemy / Alembic / Session / Config
 - Full Stage 1CD: Core Models / Migrations / Repositories / CRUD Tests
 - Full Stage 1EF: Artifact Compatibility / Import / Read-through
 
-Still not complete:
+Later DB-backed core-flow stages now complete:
 
-- business API DB-backed migration
-- Video / Processing DB-backed flow
+- Full Stage 2AB: Video / Processing DB-backed flow
+- Full Stage 2CD: Core result persistence and Analysis Runs DB-first reads
+
+Still not complete after Full Stage 2:
+
+- full business API DB-backed migration beyond the core video / processing /
+  result path
 - Event / Alert / Review / Bad Case / Evaluation DB-backed workflow
-- frontend changes for DB-backed reads
+- Zone / Rule DB snapshot
 - real evaluation metrics beyond the existing MVP artifacts
 - realtime, permissions, production security, and reporting
