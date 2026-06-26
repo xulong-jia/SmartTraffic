@@ -1,7 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
-from app.analysis.export import REPORT_EXPORT_HEADERS, report_filename
+from app.analysis.export import (
+    REPORT_EXPORT_HEADERS,
+    report_filename,
+    report_pdf_filename,
+)
 from app.db.session import get_db
 from app.services.report_service import ReportService
 
@@ -55,6 +59,28 @@ def export_report_csv(
         )
     }
     return Response(content=payload, media_type="text/csv", headers=headers)
+
+
+@router.get("/{run_id}/export.pdf")
+def export_report_pdf(run_id: str, db: Session = Depends(get_db)) -> Response:
+    try:
+        payload = ReportService(db).build_pdf(run_id)
+    except KeyError as exc:
+        raise _not_found(f"analysis run not found: {exc.args[0]}") from exc
+    headers = {
+        "Content-Disposition": (
+            f'attachment; filename="{report_pdf_filename(run_id)}"'
+        )
+    }
+    return Response(content=payload, media_type="application/pdf", headers=headers)
+
+
+@router.get("/{run_id}/bundle")
+def get_report_bundle(run_id: str, db: Session = Depends(get_db)) -> dict:
+    try:
+        return ReportService(db).build_bundle(run_id)
+    except KeyError as exc:
+        raise _not_found(f"analysis run not found: {exc.args[0]}") from exc
 
 
 def _not_found(detail: str) -> HTTPException:

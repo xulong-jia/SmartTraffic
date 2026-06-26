@@ -110,6 +110,55 @@ export interface ReportSummaryResponse {
   bad_case_type_counts: Record<string, number>;
   evaluation_metric_summary: Record<string, unknown>;
   available_exports: ReportExportSection[];
+  bundle: ReportBundleResponse;
+  keyframe_summary: ReportKeyframeSummary;
+  annotated_video: ReportAnnotatedVideoSummary;
+  note: string;
+}
+
+export interface ReportArtifactReference {
+  key: string;
+  artifact_type: string;
+  path?: string | null;
+  exists: boolean;
+  note: string;
+}
+
+export interface ReportKeyframeItem {
+  source_type?: string | null;
+  source_id?: string | null;
+  frame_index?: number | null;
+  timestamp_ms?: number | null;
+  path?: string | null;
+  status: string;
+}
+
+export interface ReportKeyframeSummary {
+  available: boolean;
+  status: string;
+  keyframe_count: number;
+  keyframe_items: ReportKeyframeItem[];
+  index_status: string;
+  index_reference?: string | null;
+  notes: string;
+}
+
+export interface ReportAnnotatedVideoSummary {
+  available: boolean;
+  status: string;
+  annotated_video_available: boolean;
+  annotated_video_reference?: string | null;
+  record_count: number;
+  notes: string;
+}
+
+export interface ReportBundleResponse {
+  schema_version: string;
+  run_id: string;
+  generated_at: string;
+  included_sections: string[];
+  artifact_references: ReportArtifactReference[];
+  disclaimer: string;
   note: string;
 }
 

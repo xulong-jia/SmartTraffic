@@ -169,15 +169,18 @@ workflows while preserving artifact fallback.
 
 ## Reports
 
-Full Stage 6AB adds a DB-first / artifact-compatible Report Center API for
-CSV and JSON export. It aggregates existing analysis, event, alert, flow,
-zone, bad case, and evaluation records. Reports are for analysis and review
-only; they are not traffic-enforcement artifacts.
+Full Stage 6AB/6CD adds a DB-first / artifact-compatible Report Center API for
+CSV, JSON, PDF, bundle metadata, keyframe summary, and annotated-video
+reference export. It aggregates existing analysis, event, alert, flow, zone,
+bad case, and evaluation records. Reports are for analysis and review only;
+they are not traffic-enforcement artifacts.
 
 - `GET /api/reports/runs`
 - `GET /api/reports/{run_id}/summary`
+- `GET /api/reports/{run_id}/bundle`
 - `GET /api/reports/{run_id}/export.json`
 - `GET /api/reports/{run_id}/export.csv?section=events`
+- `GET /api/reports/{run_id}/export.pdf`
 
 Supported CSV `section` values:
 
@@ -190,7 +193,8 @@ Supported CSV `section` values:
 
 `GET /api/reports/{run_id}/summary` returns the selected run summary, section
 counts, event / alert / bad-case breakdowns, flow totals, evaluation metric
-summary, available export sections, and the non-enforcement note.
+summary, bundle metadata, keyframe summary, annotated video reference,
+available export sections, and the non-enforcement note.
 
 `GET /api/reports/{run_id}/export.json` returns a structured JSON report:
 
@@ -213,8 +217,20 @@ summary, available export sections, and the non-enforcement note.
 
 CSV exports always include a stable header row, even when the selected section
 has no rows. Local absolute paths are sanitized before report payloads are
-returned. PDF export, MP4 / annotated video export generation, keyframe summary,
-permissions, and realtime reporting are intentionally outside Full Stage 6AB.
+returned.
+
+`GET /api/reports/{run_id}/export.pdf` returns a lightweight text PDF with run
+metadata, event / alert / flow / zone / bad case / evaluation summaries,
+available artifact references, and explicit non-enforcement disclaimers. The
+PDF is generated in memory and is not written to the repository.
+
+`GET /api/reports/{run_id}/bundle` returns metadata only. It lists included
+sections, artifact references, keyframe index status, and annotated video
+reference status. It does not create a zip, copy large videos, embed keyframe
+images, or generate new MP4 artifacts.
+
+Permissions and realtime reporting are intentionally outside Full Stage 6 and
+remain for later stages.
 
 ### Analysis Runs List
 
@@ -927,7 +943,6 @@ implemented as working behavior yet:
 - database-backed aggregate statistics APIs
 - complete video-level Bad Case rerun pipeline
 - COCO official mAP / TrackEval official evaluation
-- PDF report export and report bundle generation remain for later Full Stage 6 work
 - Realtime / Security remain for Full Stage 7
 - Full final release hardening and `v1.0.0` remain for Full Stage 8
 

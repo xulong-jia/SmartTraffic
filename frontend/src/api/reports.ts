@@ -3,6 +3,7 @@ import type {
   AnalysisRunListParams,
   AnalysisRunListResponse,
   AnalysisRunSummary,
+  ReportBundleResponse,
   ReportExportSection,
   ReportJsonExportResponse,
   ReportSummaryResponse
@@ -34,6 +35,12 @@ export function getReportJson(runId: string): Promise<ReportJsonExportResponse> 
   );
 }
 
+export function getReportBundle(runId: string): Promise<ReportBundleResponse> {
+  return apiGet<ReportBundleResponse>(
+    `/api/reports/${encodeURIComponent(runId)}/bundle`
+  );
+}
+
 export async function getReportCsv(
   runId: string,
   section: ReportExportSection
@@ -45,6 +52,20 @@ export async function getReportCsv(
     throw new Error(`Request failed with status ${response.status}`);
   }
   const fallback = buildReportFilename(runId, section, "csv");
+  return {
+    blob: await response.blob(),
+    filename: resolveDownloadFilename(response.headers.get("Content-Disposition"), fallback)
+  };
+}
+
+export async function getReportPdf(runId: string): Promise<{ blob: Blob; filename: string }> {
+  const response = await fetch(
+    `${getApiBaseUrl()}/api/reports/${encodeURIComponent(runId)}/export.pdf`
+  );
+  if (!response.ok) {
+    throw new Error(`Request failed with status ${response.status}`);
+  }
+  const fallback = buildReportFilename(runId, "report", "pdf");
   return {
     blob: await response.blob(),
     filename: resolveDownloadFilename(response.headers.get("Content-Disposition"), fallback)

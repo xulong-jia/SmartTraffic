@@ -1,6 +1,9 @@
 import type {
+  ReportAnnotatedVideoSummary,
+  ReportBundleResponse,
   ReportExportSection,
   ReportJsonExportResponse,
+  ReportKeyframeSummary,
   ReportSummaryResponse
 } from "../types";
 
@@ -71,9 +74,12 @@ export function buildJsonExportMetadata(payload: ReportJsonExportResponse | null
 
 export function buildReportFilename(
   runId: string,
-  section: ReportExportSection | "full_report",
-  extension: "csv" | "json"
+  section: ReportExportSection | "full_report" | "report",
+  extension: "csv" | "json" | "pdf"
 ): string {
+  if (extension === "pdf" && section === "report") {
+    return `smarttraffic_report_${safeName(runId)}.pdf`;
+  }
   return `smarttraffic_${safeName(runId)}_${safeName(section)}.${extension}`;
 }
 
@@ -93,6 +99,43 @@ export function buildEmptyReportState(summary: ReportSummaryResponse | null): st
   return total > 0
     ? "Report sections are ready for export."
     : "This run has no reportable rows yet.";
+}
+
+export function buildBundleSectionLabel(bundle: ReportBundleResponse | null): string {
+  if (!bundle) {
+    return "No bundle metadata loaded.";
+  }
+  return `${bundle.included_sections.length} sections: ${bundle.included_sections.join(", ")}`;
+}
+
+export function buildArtifactReferenceRows(bundle: ReportBundleResponse | null) {
+  return (bundle?.artifact_references ?? []).map((item) => ({
+    key: item.key,
+    type: item.artifact_type,
+    path: item.path || "-",
+    status: item.exists ? "Available" : "Unavailable",
+    note: item.note
+  }));
+}
+
+export function buildKeyframeSummaryRows(summary: ReportKeyframeSummary | null) {
+  return (summary?.keyframe_items ?? []).map((item) => ({
+    source: `${item.source_type || "unknown"}:${item.source_id || "-"}`,
+    frame: item.frame_index ?? "-",
+    timestamp: item.timestamp_ms ?? "-",
+    path: item.path || "-",
+    status: item.status
+  }));
+}
+
+export function buildAnnotatedVideoLabel(summary: ReportAnnotatedVideoSummary | null): string {
+  if (!summary) {
+    return "Annotated video metadata is not loaded.";
+  }
+  if (summary.available) {
+    return `Available: ${summary.annotated_video_reference || "annotated_video.mp4"}`;
+  }
+  return `Unavailable (${summary.status}): ${summary.notes}`;
 }
 
 function safeName(value: string): string {

@@ -104,6 +104,10 @@ test("download filenames are safe and content disposition wins", () => {
     "smarttraffic_run_1_flow_counts.csv"
   );
   assert.equal(
+    reportExport.buildReportFilename("run.1", "report", "pdf"),
+    "smarttraffic_report_run_1.pdf"
+  );
+  assert.equal(
     reportExport.resolveDownloadFilename(
       'attachment; filename="smarttraffic_run_events.csv"',
       "fallback.csv"
@@ -118,4 +122,105 @@ test("empty state and enforcement warning stay explicit", () => {
     "Select an analysis run to prepare report exports."
   );
   assert.match(reportExport.REPORT_NOT_FOR_ENFORCEMENT_WARNING, /not for traffic enforcement/);
+});
+
+test("bundle summary helpers map sections and artifact rows", () => {
+  const bundle = {
+    schema_version: "full_stage_6cd.report_bundle.v1",
+    run_id: "run.1",
+    generated_at: "2026-01-01T00:00:00+00:00",
+    included_sections: ["summary", "events", "keyframes", "annotated_video"],
+    artifact_references: [
+      {
+        key: "keyframes",
+        artifact_type: "visual_artifact_reference",
+        path: "keyframes/index.json",
+        exists: true,
+        note: "Keyframes available."
+      },
+      {
+        key: "annotated_video",
+        artifact_type: "visual_artifact_reference",
+        path: "annotated_video.mp4",
+        exists: false,
+        note: "Source video missing."
+      }
+    ],
+    disclaimer: reportExport.REPORT_NOT_FOR_ENFORCEMENT_WARNING,
+    note: "metadata only"
+  };
+  assert.equal(
+    reportExport.buildBundleSectionLabel(bundle),
+    "4 sections: summary, events, keyframes, annotated_video"
+  );
+  assert.deepEqual(reportExport.buildArtifactReferenceRows(bundle), [
+    {
+      key: "keyframes",
+      type: "visual_artifact_reference",
+      path: "keyframes/index.json",
+      status: "Available",
+      note: "Keyframes available."
+    },
+    {
+      key: "annotated_video",
+      type: "visual_artifact_reference",
+      path: "annotated_video.mp4",
+      status: "Unavailable",
+      note: "Source video missing."
+    }
+  ]);
+});
+
+test("visual artifact helpers normalize keyframes and annotated video labels", () => {
+  assert.deepEqual(
+    reportExport.buildKeyframeSummaryRows({
+      available: true,
+      status: "available",
+      keyframe_count: 1,
+      keyframe_items: [
+        {
+          source_type: "event",
+          source_id: "event_1",
+          frame_index: 12,
+          timestamp_ms: 480,
+          path: "keyframes/event_1.jpg",
+          status: "available"
+        }
+      ],
+      index_status: "available",
+      index_reference: "keyframes/index.json",
+      notes: "available"
+    }),
+    [
+      {
+        source: "event:event_1",
+        frame: 12,
+        timestamp: 480,
+        path: "keyframes/event_1.jpg",
+        status: "available"
+      }
+    ]
+  );
+  assert.equal(
+    reportExport.buildAnnotatedVideoLabel({
+      available: true,
+      status: "available",
+      annotated_video_available: true,
+      annotated_video_reference: "annotated_video.mp4",
+      record_count: 1,
+      notes: "available"
+    }),
+    "Available: annotated_video.mp4"
+  );
+  assert.equal(
+    reportExport.buildAnnotatedVideoLabel({
+      available: false,
+      status: "missing_source_video",
+      annotated_video_available: false,
+      annotated_video_reference: "annotated_video.mp4",
+      record_count: 0,
+      notes: "Source video was not available."
+    }),
+    "Unavailable (missing_source_video): Source video was not available."
+  );
 });

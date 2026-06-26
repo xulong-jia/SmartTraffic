@@ -1,8 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { getReportCsv, getReportJson, getReportSummary, listReportRuns } from "../api/reports";
+import {
+  getReportBundle,
+  getReportCsv,
+  getReportJson,
+  getReportPdf,
+  getReportSummary,
+  listReportRuns
+} from "../api/reports";
 import type {
   AnalysisRunSummary,
+  ReportBundleResponse,
   ReportExportSection,
   ReportJsonExportResponse,
   ReportSummaryResponse
@@ -11,9 +19,13 @@ import { formatDisplayValue } from "../utils/format";
 import {
   REPORT_NOT_FOR_ENFORCEMENT_WARNING,
   buildEmptyReportState,
+  buildAnnotatedVideoLabel,
+  buildArtifactReferenceRows,
+  buildBundleSectionLabel,
   buildExportSectionOptions,
   buildJsonExportMetadata,
   buildJsonExportPreview,
+  buildKeyframeSummaryRows,
   buildReportFilename,
   buildReportSummaryCards
 } from "../utils/reportExport";
@@ -22,10 +34,11 @@ export default function ReportCenterPage() {
   const [runs, setRuns] = useState<AnalysisRunSummary[]>([]);
   const [selectedRunId, setSelectedRunId] = useState("");
   const [summary, setSummary] = useState<ReportSummaryResponse | null>(null);
+  const [bundle, setBundle] = useState<ReportBundleResponse | null>(null);
   const [jsonExport, setJsonExport] = useState<ReportJsonExportResponse | null>(null);
   const [selectedSection, setSelectedSection] = useState<ReportExportSection>("events");
   const [loading, setLoading] = useState(false);
-  const [exporting, setExporting] = useState<ReportExportSection | "json" | null>(null);
+  const [exporting, setExporting] = useState<ReportExportSection | "json" | "pdf" | null>(null);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -36,6 +49,10 @@ export default function ReportCenterPage() {
   );
   const jsonMetadata = buildJsonExportMetadata(jsonExport);
   const jsonPreview = buildJsonExportPreview(jsonExport);
+  const activeBundle = bundle || summary?.bundle || null;
+  const artifactRows = buildArtifactReferenceRows(activeBundle);
+  const keyframeRows = buildKeyframeSummaryRows(summary?.keyframe_summary ?? null);
+  const annotatedVideoLabel = buildAnnotatedVideoLabel(summary?.annotated_video ?? null);
 
   useEffect(() => {
     void loadRuns();
@@ -54,6 +71,7 @@ export default function ReportCenterPage() {
         await loadSummary(nextRunId);
       } else {
         setSummary(null);
+        setBundle(null);
         setJsonExport(null);
       }
     } catch (currentError) {
@@ -76,6 +94,7 @@ export default function ReportCenterPage() {
     try {
       const payload = await getReportSummary(normalizedRunId);
       setSummary(payload);
+      setBundle(payload.bundle);
       setJsonExport(null);
       const nextSection = buildExportSectionOptions(payload.available_exports).find(
         (item) => item.available
@@ -86,6 +105,7 @@ export default function ReportCenterPage() {
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Report summary request failed");
       setSummary(null);
+      setBundle(null);
       setJsonExport(null);
     } finally {
       setLoading(false);
@@ -132,6 +152,43 @@ export default function ReportCenterPage() {
       setError(currentError instanceof Error ? currentError.message : "JSON export failed");
     } finally {
       setExporting(null);
+    }
+  }
+
+  async function exportPdf() {
+    if (!selectedRunId) {
+      setError("run_id is required.");
+      return;
+    }
+    setExporting("pdf");
+    setError("");
+    setSuccessMessage("");
+    try {
+      const payload = await getReportPdf(selectedRunId);
+      triggerDownload(payload.blob, payload.filename);
+      setSuccessMessage(`Downloaded ${payload.filename}.`);
+    } catch (currentError) {
+      setError(currentError instanceof Error ? currentError.message : "PDF export failed");
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  async function refreshBundle() {
+    if (!selectedRunId) {
+      setError("run_id is required.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    setSuccessMessage("");
+    try {
+      setBundle(await getReportBundle(selectedRunId));
+      setSuccessMessage("Bundle metadata refreshed.");
+    } catch (currentError) {
+      setError(currentError instanceof Error ? currentError.message : "Bundle request failed");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -197,6 +254,16 @@ export default function ReportCenterPage() {
             disabled={!summary || exporting !== null || !selectedRunId}
           >
             Export JSON
+          </button>
+          <button
+            type="button"
+            onClick={exportPdf}
+            disabled={!summary || exporting !== null || !selectedRunId}
+          >
+            Export PDF
+          </button>
+          <button type="button" onClick={refreshBundle} disabled={!summary || loading}>
+            Bundle
           </button>
         </div>
         <p className="muted">{REPORT_NOT_FOR_ENFORCEMENT_WARNING}</p>
@@ -308,6 +375,89 @@ export default function ReportCenterPage() {
             <p className="muted">Export JSON to preview the full structured report.</p>
           )}
           {jsonPreview ? <pre className="json-panel">{jsonPreview}</pre> : null}
+        </div>
+      </section>
+
+      <section className="grid two">
+        <div className="panel">
+          <div className="section-heading-row">
+            <h3>Report Bundle</h3>
+            <span className="status-pill">{activeBundle?.schema_version || "No bundle"}</span>
+          </div>
+          <p className="muted">{buildBundleSectionLabel(activeBundle)}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Artifact</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Path</th>
+              </tr>
+            </thead>
+            <tbody>
+              {artifactRows.length ? (
+                artifactRows.map((row) => (
+                  <tr key={row.key}>
+                    <td>{row.key}</td>
+                    <td>{row.type}</td>
+                    <td>{row.status}</td>
+                    <td>{row.path}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4}>No bundle metadata loaded.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="panel">
+          <div className="section-heading-row">
+            <h3>Visual Artifact Summary</h3>
+            <span className="status-pill">{summary?.keyframe_summary.status || "No run"}</span>
+          </div>
+          <dl className="detail-grid">
+            <div>
+              <dt>Keyframes</dt>
+              <dd>
+                {summary
+                  ? `${summary.keyframe_summary.keyframe_count} items (${summary.keyframe_summary.status})`
+                  : "-"}
+              </dd>
+            </div>
+            <div>
+              <dt>Annotated video</dt>
+              <dd>{annotatedVideoLabel}</dd>
+            </div>
+          </dl>
+          <table>
+            <thead>
+              <tr>
+                <th>Source</th>
+                <th>Frame</th>
+                <th>Status</th>
+                <th>Path</th>
+              </tr>
+            </thead>
+            <tbody>
+              {keyframeRows.length ? (
+                keyframeRows.map((row) => (
+                  <tr key={`${row.source}-${row.frame}-${row.path}`}>
+                    <td>{row.source}</td>
+                    <td>{row.frame}</td>
+                    <td>{row.status}</td>
+                    <td>{row.path}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4}>No keyframe item references available.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
     </>
