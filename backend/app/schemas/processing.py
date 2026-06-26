@@ -37,6 +37,7 @@ class ProcessingTaskResponse(BaseModel):
     video_id: str
     run_id: str
     task_type: str
+    mode: str | None = None
     status: str
     params_json: dict[str, Any]
     progress: float

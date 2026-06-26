@@ -116,7 +116,10 @@ also creates a `traffic_analysis_runs` row, so one video may have multiple
 `tracks.csv`, `trajectory_points.csv`, `flow_counts.json`, and
 `zone_statistics.json` into DB tables while keeping the artifacts. Full Stage
 3AB records the current zone/rule config snapshot in the run summary when the
-processing flow creates a DB run.
+processing flow creates a DB run. `v1.0.1-audit-polish` also records detector
+and tracker business writes in `model_runs` for DB-backed processing flows,
+including sanitized detector model path / dry-run parameters, tracker
+parameters, summary metrics, and artifact references.
 
 Manual alignment note:
 
@@ -205,6 +208,22 @@ start records. Processing task rows include status, mode, progress,
 timestamps, error message, parameters, result summary, and related video / run
 ids where available. It is DB-backed for Full Stage 2AB+ flows and is used for
 local operational visibility, not as a production queue monitor.
+
+`v1.0.1-audit-polish` makes this endpoint DB-first instead of reading only the
+legacy in-memory registry. Supported filters are:
+
+- `video_id`
+- `run_id`
+- `status`
+- `mode`
+- `task_type` (matches explicit task type values such as `realtime_process` and
+  processing modes such as `detection_only`)
+- `include_memory` (optional debug compatibility flag, default false, merges
+  legacy in-memory tasks after DB rows)
+
+Responses include `id`, `video_id`, `run_id`, `task_type`, `mode`, `status`,
+`progress`, `error_message`, `started_at`, `finished_at`, `created_at`,
+`params_json`, and `result`.
 
 ## Detection / Tracking / Trajectory Resource Placeholders
 

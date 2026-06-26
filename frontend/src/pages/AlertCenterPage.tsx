@@ -1,4 +1,4 @@
-import { type MouseEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   acknowledgeAlert,
@@ -6,7 +6,9 @@ import {
   listAlerts,
   resolveAlert
 } from "../api/alerts";
+import AlertPanel from "../components/AlertPanel";
 import type { AlertCenterResponse, AlertRecord } from "../types";
+import type { AlertActionPayload } from "../utils/alertPanel";
 import { buildReviewLink } from "../utils/reviewNavigation";
 
 interface AlertCenterPageProps {
@@ -21,6 +23,7 @@ export default function AlertCenterPage({ onOpenReview }: AlertCenterPageProps) 
   const [data, setData] = useState<AlertCenterResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [actionAlertId, setActionAlertId] = useState<string | null>(null);
+  const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -110,115 +113,42 @@ export default function AlertCenterPage({ onOpenReview }: AlertCenterPageProps) 
             Refresh
           </button>
         </div>
-        {error ? <p className="muted">{error}</p> : null}
-        {loading ? <p className="muted">Loading alerts</p> : null}
-        {!loading && data && data.alerts.length === 0 ? (
-          <p className="muted">No alerts match the current filters.</p>
-        ) : null}
-        {data && data.alerts.length > 0 ? (
-          <table>
-            <thead>
-              <tr>
-                <th>Status</th>
-                <th>Level</th>
-                <th>Type</th>
-                <th>Event</th>
-                <th>Track</th>
-                <th>Run</th>
-                <th>Message</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.alerts.map((alert) => (
-                <tr key={alert.id}>
-                  <td>{alert.status}</td>
-                  <td>{alert.level}</td>
-                  <td>{alert.alert_type}</td>
-                  <td>{alert.event_id}</td>
-                  <td>{formatNullable(alert.track_id)}</td>
-                  <td>{alert.run_id}</td>
-                  <td>{alert.message}</td>
-                  <td>
-                    <div className="toolbar compact">
-                      <button
-                        type="button"
-                        disabled={actionAlertId === alert.id || alert.status === "acknowledged"}
-                        onClick={() =>
-                          runAction(alert.id, (id) =>
-                            acknowledgeAlert(id, normalizeOptionalString(acknowledgedBy) ?? undefined)
-                          )
-                        }
-                      >
-                        Acknowledge
-                      </button>
-                      <button
-                        type="button"
-                        disabled={actionAlertId === alert.id || alert.status === "resolved"}
-                        onClick={() => runAction(alert.id, resolveAlert)}
-                      >
-                        Resolve
-                      </button>
-                      <button
-                        type="button"
-                        disabled={actionAlertId === alert.id || alert.status === "ignored"}
-                        onClick={() => runAction(alert.id, ignoreAlert)}
-                      >
-                        Ignore
-                      </button>
-                      {alert.event_id ? (
-                        <a
-                          href={buildReviewLink(
-                            alert.run_id,
-                            alert.event_id,
-                            alert.alert_id || alert.id
-                          )}
-                          onClick={(clickEvent) =>
-                            openReviewLink(
-                              clickEvent,
-                              buildReviewLink(
-                                alert.run_id,
-                                alert.event_id,
-                                alert.alert_id || alert.id
-                              ),
-                              onOpenReview
-                            )
-                          }
-                        >
-                          Review linked event
-                        </a>
-                      ) : (
-                        <span className="muted">No linked event</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : null}
+        <AlertPanel
+          actionAlertId={actionAlertId}
+          alerts={data?.alerts ?? []}
+          buildReviewHref={(alert) =>
+            alert.event_id
+              ? buildReviewLink(alert.run_id, alert.event_id, alert.alert_id || alert.id)
+              : null
+          }
+          error={error}
+          levelFilter={level}
+          loading={loading}
+          onAcknowledge={(payload) =>
+            runAlertPanelAction(payload, (id) =>
+              acknowledgeAlert(id, normalizeOptionalString(acknowledgedBy) ?? undefined)
+            )
+          }
+          onIgnore={(payload) => runAlertPanelAction(payload, ignoreAlert)}
+          onOpenReview={onOpenReview}
+          onResolve={(payload) => runAlertPanelAction(payload, resolveAlert)}
+          onSelectAlert={(alert) => setSelectedAlertId(alert.alert_id || alert.id)}
+          selectedAlertId={selectedAlertId}
+          statusFilter={status}
+        />
       </section>
     </>
   );
+
+  function runAlertPanelAction(
+    payload: AlertActionPayload,
+    action: (id: string) => Promise<AlertRecord>
+  ) {
+    runAction(payload.alertId, action);
+  }
 }
 
 function normalizeOptionalString(value: string): string | null {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
-}
-
-function formatNullable(value: string | number | null | undefined): string {
-  return value === null || value === undefined || value === "" ? "-" : String(value);
-}
-
-function openReviewLink(
-  event: MouseEvent<HTMLAnchorElement>,
-  href: string,
-  onOpenReview?: (href: string) => void
-) {
-  if (!onOpenReview || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-    return;
-  }
-  event.preventDefault();
-  onOpenReview(href);
 }

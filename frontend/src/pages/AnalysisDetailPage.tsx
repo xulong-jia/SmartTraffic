@@ -1,4 +1,4 @@
-import { type MouseEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   generateAlerts,
@@ -14,6 +14,7 @@ import {
   listAnalysisRuns
 } from "../api/analysisRuns";
 import { listZones } from "../api/zones";
+import EventTable from "../components/EventTable";
 import EventTimeline from "../components/EventTimeline";
 import VideoPlayerWithOverlay from "../components/VideoPlayerWithOverlay";
 import type {
@@ -53,18 +54,6 @@ const trajectoryColumns: Array<keyof TrajectoryPointRow> = [
   "moving_angle",
   "track_length"
 ];
-
-const eventColumns = [
-  "event_type",
-  "severity",
-  "status",
-  "track_id",
-  "class_name",
-  "zone_id",
-  "start_frame",
-  "end_frame",
-  "confidence"
-] as const;
 
 const evidenceColumns = ["event_id", "evidence_type", "frame_index", "track_id"] as const;
 
@@ -583,7 +572,17 @@ export default function AnalysisDetailPage({
             </div>
             {eventsLoading ? <p className="muted">Loading events...</p> : null}
             {eventsError ? <p>{eventsError}</p> : null}
-            {eventsData ? <EventsDetail data={eventsData} onOpenReview={onOpenReview} /> : null}
+            {eventsData ? (
+              <EventsDetail
+                data={eventsData}
+                onOpenReview={onOpenReview}
+                onSelectEvent={(eventId, event) => {
+                  setSelectedEventId(eventId);
+                  setCurrentTimeMs(getEventSeekTimeMs(event));
+                }}
+                selectedEventId={selectedEventId}
+              />
+            ) : null}
           </section>
           <section className="panel">
             <h3>Alert Query</h3>
@@ -992,12 +991,15 @@ function TrajectoryDetail({ data }: { data: TrajectoryPointsResponse }) {
 
 function EventsDetail({
   data,
-  onOpenReview
+  onOpenReview,
+  onSelectEvent,
+  selectedEventId
 }: {
   data: EventsResponse;
   onOpenReview?: (href: string) => void;
+  onSelectEvent?: (eventId: string, event: EventRecord) => void;
+  selectedEventId?: string | null;
 }) {
-  const eventPreview = data.events.slice(0, 20);
   const evidencePreview = data.event_evidence.slice(0, 20);
   const executionPreview = data.rule_executions.slice(0, 20);
 
@@ -1016,47 +1018,17 @@ function EventsDetail({
         {formatCountMap(data.summary.per_status_counts)}
       </p>
       <h3>Events</h3>
-      {eventPreview.length === 0 ? (
-        <p className="muted">暂无 events</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              {eventColumns.map((column) => (
-                <th key={column}>{column}</th>
-              ))}
-              <th>Review</th>
-            </tr>
-          </thead>
-          <tbody>
-            {eventPreview.map((event, index) => {
-              const eventId = normalizeOptionalRecordValue(event.event_id);
-              const href = buildReviewLink(data.run_id, eventId);
-              return (
-                <tr key={`${eventId || "event"}-${index}`}>
-                  {eventColumns.map((column) => (
-                    <td key={column}>{formatValue(event[column])}</td>
-                  ))}
-                  <td>
-                    {eventId ? (
-                      <a
-                        href={href}
-                        onClick={(clickEvent) =>
-                          openReviewLink(clickEvent, href, onOpenReview)
-                        }
-                      >
-                        Review
-                      </a>
-                    ) : (
-                      <span className="muted">No event_id</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
+      <EventTable
+        buildReviewHref={(event) => {
+          const eventId = normalizeOptionalRecordValue(event.event_id);
+          return eventId ? buildReviewLink(data.run_id, eventId) : null;
+        }}
+        events={data.events}
+        maxRows={20}
+        onOpenReview={onOpenReview}
+        onSelectEvent={onSelectEvent}
+        selectedEventId={selectedEventId}
+      />
       <h3>Event Evidence</h3>
       {evidencePreview.length === 0 ? (
         <p className="muted">暂无 event evidence</p>
@@ -1071,18 +1043,6 @@ function EventsDetail({
       )}
     </>
   );
-}
-
-function openReviewLink(
-  event: MouseEvent<HTMLAnchorElement>,
-  href: string,
-  onOpenReview?: (href: string) => void
-) {
-  if (!onOpenReview || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-    return;
-  }
-  event.preventDefault();
-  onOpenReview(href);
 }
 
 function normalizeOptionalRecordValue(value: unknown): string | null {

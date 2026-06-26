@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
@@ -7,7 +8,11 @@ from sqlalchemy.orm import Session
 
 from app.analysis.artifact_compatibility import import_run_artifacts_to_db
 from app.core.config import get_settings
-from app.repositories import ProcessingTaskRepository, TrafficAnalysisRunRepository
+from app.repositories import (
+    ModelRunRepository,
+    ProcessingTaskRepository,
+    TrafficAnalysisRunRepository,
+)
 from app.services.config_snapshot_service import (
     attach_config_snapshot_to_run,
     build_config_snapshot,
@@ -177,6 +182,14 @@ class ProcessingService:
                     artifact_index=result["artifacts"],
                     summary=result,
                 )
+                _record_model_runs(
+                    db=db,
+                    run_id=run_id,
+                    mode=mode,
+                    params=params,
+                    result=result,
+                    settings=settings,
+                )
                 attach_config_snapshot_to_run(
                     db,
                     run_id,
@@ -276,6 +289,156 @@ def _stage_for_mode(mode: str) -> tuple[str, str]:
 
 
 processing_service = ProcessingService()
+
+
+def _record_model_runs(
+    *,
+    db: Session,
+    run_id: str,
+    mode: str,
+    params: DetectionRunParams | TrackingRunParams | TrajectoryRunParams | None,
+    result: dict[str, Any],
+    settings: Any,
+) -> None:
+    repo = ModelRunRepository(db)
+    detector_params = _detector_model_params(params, settings)
+    repo.create(
+        id=f"modelrun_{run_id}_detector",
+        run_id=run_id,
+        model_name="yolov8",
+        model_version="dry-run" if detector_params["dry_run"] else "unknown",
+        task_type="detector",
+        parameters=detector_params,
+        metrics={
+            "total_frames_processed": result.get("total_frames_processed"),
+            "total_detections": result.get("total_detections"),
+            "per_class_counts": result.get("per_class_counts", {}),
+        },
+        artifact_paths=_artifact_subset(
+            result.get("artifacts", {}),
+            "detections",
+            "detection_summary",
+        ),
+    )
+    if mode in {"detection_tracking", "detection_tracking_trajectory"}:
+        tracker_params = _tracker_model_params(params, settings)
+        repo.create(
+            id=f"modelrun_{run_id}_tracker",
+            run_id=run_id,
+            model_name="deepsort",
+            model_version="dry-run" if tracker_params["dry_run"] else "unknown",
+            task_type="tracker",
+            parameters=tracker_params,
+            metrics={
+                "total_tracks": result.get("total_tracks"),
+                "unique_track_ids": result.get("unique_track_ids"),
+                "per_class_track_counts": result.get("per_class_track_counts", {}),
+                "track_state_counts": result.get("track_state_counts", {}),
+            },
+            artifact_paths=_artifact_subset(
+                result.get("artifacts", {}),
+                "tracks",
+                "tracking_summary",
+            ),
+        )
+
+
+def _detector_model_params(
+    params: DetectionRunParams | TrackingRunParams | TrajectoryRunParams | None,
+    settings: Any,
+) -> dict[str, Any]:
+    model_path = getattr(params, "model_path", None) or settings.yolo_model_path
+    conf_threshold = getattr(params, "conf_threshold", None)
+    iou_threshold = getattr(params, "iou_threshold", None)
+    image_size = getattr(params, "image_size", None)
+    device = getattr(params, "device", None)
+    dry_run = _detector_dry_run(params, settings)
+    return {
+        "model_path": _safe_config_path(model_path),
+        "conf_threshold": (
+            conf_threshold
+            if conf_threshold is not None
+            else settings.yolo_conf_threshold
+        ),
+        "iou_threshold": (
+            iou_threshold
+            if iou_threshold is not None
+            else settings.yolo_iou_threshold
+        ),
+        "image_size": image_size if image_size is not None else settings.yolo_image_size,
+        "device": device or settings.yolo_device,
+        "dry_run": dry_run,
+    }
+
+
+def _tracker_model_params(
+    params: DetectionRunParams | TrackingRunParams | TrajectoryRunParams | None,
+    settings: Any,
+) -> dict[str, Any]:
+    target_classes = getattr(params, "tracking_target_classes", None)
+    return {
+        "dry_run": _tracker_dry_run(params, settings),
+        "max_age": _param_or_setting(params, "deepsort_max_age", settings.deepsort_max_age),
+        "n_init": _param_or_setting(params, "deepsort_n_init", settings.deepsort_n_init),
+        "max_iou_distance": _param_or_setting(
+            params,
+            "deepsort_max_iou_distance",
+            settings.deepsort_max_iou_distance,
+        ),
+        "max_cosine_distance": _param_or_setting(
+            params,
+            "deepsort_max_cosine_distance",
+            settings.deepsort_max_cosine_distance,
+        ),
+        "min_confidence": _param_or_setting(
+            params,
+            "tracking_min_confidence",
+            settings.tracking_min_confidence,
+        ),
+        "target_classes": list(target_classes or settings.tracking_target_classes),
+    }
+
+
+def _detector_dry_run(
+    params: DetectionRunParams | TrackingRunParams | TrajectoryRunParams | None,
+    settings: Any,
+) -> bool:
+    if isinstance(params, DetectionRunParams) and params.dry_run is not None:
+        return bool(params.dry_run)
+    detector_dry_run = getattr(params, "detector_dry_run", None)
+    if detector_dry_run is not None:
+        return bool(detector_dry_run)
+    return bool(settings.yolo_dry_run)
+
+
+def _tracker_dry_run(
+    params: DetectionRunParams | TrackingRunParams | TrajectoryRunParams | None,
+    settings: Any,
+) -> bool:
+    tracker_dry_run = getattr(params, "tracker_dry_run", None)
+    if tracker_dry_run is not None:
+        return bool(tracker_dry_run)
+    return bool(settings.deepsort_dry_run)
+
+
+def _param_or_setting(
+    params: DetectionRunParams | TrackingRunParams | TrajectoryRunParams | None,
+    field: str,
+    default: Any,
+) -> Any:
+    value = getattr(params, field, None)
+    return value if value is not None else default
+
+
+def _safe_config_path(value: str | Path) -> str:
+    path = Path(value)
+    return path.name if path.is_absolute() else str(path)
+
+
+def _artifact_subset(artifacts: Any, *keys: str) -> dict[str, Any]:
+    if not isinstance(artifacts, dict):
+        return {}
+    return {key: artifacts[key] for key in keys if key in artifacts}
 
 
 def _run_event_alert_pipeline(

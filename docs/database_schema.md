@@ -43,6 +43,10 @@ Current implementation notes:
   `evaluation_results`, failed cases persisted in
   `evaluation_results.summary["failed_cases"]`, and optional CLI DB writes via
   `scripts/run_evals.py --write-db`.
+- `v1.0.1-audit-polish` keeps `model_runs` as a real business table:
+  successful DB-backed detector/tracker processing writes one detector row and,
+  for tracking modes, one tracker row with sanitized model path, dry-run/config
+  parameters, summary metrics, and artifact references.
 - The default local database URL is `sqlite:///./smarttraffic.db`.
 - Videos, processing tasks, processing-created run indexes, detections, tracks,
   trajectory points, flow counts, zone statistics, zones, event rules,
@@ -101,7 +105,9 @@ review audit comments, false-negative event records, and rule rerun request
 tasks while preserving artifact fallback. Full Stage 3EF persists Bad Case
 records in `bad_cases`, Evaluation dataset records in `evaluation_datasets`,
 Evaluation metric results in `evaluation_results.metrics`, and run summary /
-failed cases in `evaluation_results.summary`. Full Stage 1EF can import structured
+failed cases in `evaluation_results.summary`. `v1.0.1-audit-polish` persists
+detector/tracker business rows in `model_runs` during DB-backed processing
+instead of leaving that table as repository-only foundation. Full Stage 1EF can import structured
 artifacts such as
 `metadata.json`, `detections.csv`, `tracks.csv`, `trajectory_points.csv`,
 `events.jsonl`, `alerts.jsonl`, `flow_counts.json`, `zone_statistics.json`,

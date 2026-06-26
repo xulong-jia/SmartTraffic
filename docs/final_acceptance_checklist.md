@@ -6,6 +6,10 @@
 - Full Stage 8AB prepares final audit documentation only.
 - Do not create `v1.0.0-full-final-version` until Full Stage 8CD final
   acceptance is complete.
+- `v1.0.0-full-final-version` is frozen after final acceptance. The
+  `v1.0.1-audit-polish` milestone is a scoped audit polish tag, not a new
+  production capability release, and must not move or rebuild any `v1.0.0`
+  tag.
 - Existing milestone tags must not be moved, deleted, or rebuilt.
 
 ## 2. Functional Acceptance
@@ -18,6 +22,9 @@
 - Frontend workflows cover Dashboard, Video Center, Analysis Detail with
   overlays, Alert Center, Review Center, Bad Case Center, Evaluation Center,
   Report Center, ZoneEditor, and Camera Center.
+- `v1.0.1-audit-polish` removes the last frontend contract-only audit gaps:
+  `AlertPanel` and `EventTable` are real reusable components connected to
+  Alert Center and Analysis Detail respectively.
 
 ## 3. Engineering Acceptance
 
@@ -66,6 +73,8 @@
 - Traffic Analysis Center run list, summary, manifest, detections, tracks,
   trajectory points, events, alerts, flow counts, and zone statistics are
   DB-first with artifact fallback where applicable.
+- `/api/processing/tasks` is DB-backed and supports local visibility filters
+  for `video_id`, `run_id`, `status`, `mode`, and `task_type`.
 - Alert Center supports `new`, `acknowledged`, `resolved`, and `ignored`.
 - Review Center supports confirm, false positive, false negative, ignore,
   resolve, comments, Review -> Bad Case, and rule-rerun request recording.
@@ -77,6 +86,9 @@
   are DB-first with artifact fallback.
 - Evaluation datasets, results, failed cases, and regression summaries are
   DB-first with artifact fallback.
+- DB-backed processing writes detector/tracker business records into
+  `model_runs` with sanitized path/config parameters, summary metrics, and
+  artifact references.
 - Bad Case regression is deterministic replay / stored rule replay.
 - Regression is not a complete video pipeline rerun.
 

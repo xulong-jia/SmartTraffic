@@ -26,6 +26,15 @@ Full Stage 8AB 当前补充 full final audit、文档一致性修正和
 `docs/final_acceptance_checklist.md`。`v1.0.0-full-final-version` 留给 Full
 Stage 8CD 最终全量验收后再创建。
 
+`v1.0.1-audit-polish` 是 v1.0.0 冻结后的 scoped audit polish：只修复
+后审计发现的缺口，不移动、不重打 `v1.0.0-full-final-version`，也不新增
+production IAM、production realtime、COCO official mAP、TrackEval official
+metrics 或完整视频级 rerun claim。该小修使 `AlertPanel` / `EventTable`
+不再是 contract-only 组件，使 `/api/processing/tasks` 读取 DB
+`processing_tasks`，使 DB-backed processing 写入 detector/tracker
+`model_runs`，并将 Stage 6 historical design note 标为 archived /
+historical。
+
 当前项目仍是本地开发和验证口径，不是生产部署版、production IAM、生产级实时监控或交通执法系统。
 
 ## 2. 已完成能力
@@ -62,6 +71,9 @@ Stage 8CD 最终全量验收后再创建。
   完成文档一致性审计，修正 README/docs/API/database/evaluation/realtime/reporting/security
   口径，并新增 `docs/final_acceptance_checklist.md`。该阶段不创建
   `v1.0.0` tag，不新增业务功能。
+- v1.0.1 Audit Polish：修复 v1.0.0 后审计缺口，包括 AlertPanel /
+  EventTable 真实组件接入、DB-backed processing task list、detector/tracker
+  `model_runs` business writes，以及 Stage 6 historical / archived 文档标记。
 - Stage 9AB final pre-delivery audit and documentation closeout。
 - Stage 9CD 小型 demo/sample config、toy expected annotations、seed script、Makefile 和环境命令收口。
 - Stage 9EF final acceptance and final tag preparation。

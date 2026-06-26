@@ -1,3 +1,158 @@
-export default function AlertPanel() {
-  return <div className="panel muted">Alert panel contract</div>;
+import type { MouseEvent } from "react";
+
+import type { AlertRecord } from "../types";
+import {
+  alertPanelEmptyLabel,
+  buildAlertActionPayload,
+  buildAlertPanelRows,
+  filterAlertPanelRows,
+  type AlertActionPayload
+} from "../utils/alertPanel";
+
+interface AlertPanelProps {
+  alerts: AlertRecord[];
+  loading?: boolean;
+  error?: string;
+  statusFilter?: string | null;
+  levelFilter?: string | null;
+  selectedAlertId?: string | null;
+  actionAlertId?: string | null;
+  onSelectAlert?: (alert: AlertRecord) => void;
+  onAcknowledge?: (payload: AlertActionPayload) => void;
+  onResolve?: (payload: AlertActionPayload) => void;
+  onIgnore?: (payload: AlertActionPayload) => void;
+  buildReviewHref?: (alert: AlertRecord) => string | null;
+  onOpenReview?: (href: string) => void;
+}
+
+export default function AlertPanel({
+  alerts,
+  loading = false,
+  error = "",
+  statusFilter = "",
+  levelFilter = "",
+  selectedAlertId = null,
+  actionAlertId = null,
+  onSelectAlert,
+  onAcknowledge,
+  onResolve,
+  onIgnore,
+  buildReviewHref,
+  onOpenReview
+}: AlertPanelProps) {
+  const visibleAlerts = filterAlertPanelRows(alerts, {
+    status: statusFilter,
+    level: levelFilter
+  });
+  const rows = buildAlertPanelRows(visibleAlerts, selectedAlertId);
+  const emptyLabel = alertPanelEmptyLabel(loading, error, visibleAlerts);
+
+  return (
+    <div>
+      {emptyLabel ? <p className="muted">{emptyLabel}</p> : null}
+      {rows.length > 0 ? (
+        <table>
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Level</th>
+              <th>Title</th>
+              <th>Event</th>
+              <th>Track</th>
+              <th>Run</th>
+              <th>Created</th>
+              <th>Message</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, index) => {
+              const alert = visibleAlerts[index];
+              const href = buildReviewHref?.(alert) ?? null;
+              const busy = actionAlertId === row.id || actionAlertId === alert.id;
+              return (
+                <tr
+                  className={row.selected ? "selected-row" : ""}
+                  key={row.id}
+                  onClick={() => onSelectAlert?.(alert)}
+                >
+                  <td>{row.status}</td>
+                  <td>{row.level}</td>
+                  <td>{row.title}</td>
+                  <td>{row.eventId}</td>
+                  <td>{row.trackId}</td>
+                  <td>{row.runId}</td>
+                  <td>{row.createdAt}</td>
+                  <td>{row.message}</td>
+                  <td>
+                    <div className="toolbar compact">
+                      {onAcknowledge ? (
+                        <button
+                          disabled={busy || !row.canAcknowledge}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onAcknowledge(buildAlertActionPayload(row.id, "acknowledge"));
+                          }}
+                          type="button"
+                        >
+                          Acknowledge
+                        </button>
+                      ) : null}
+                      {onResolve ? (
+                        <button
+                          disabled={busy || !row.canResolve}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onResolve(buildAlertActionPayload(row.id, "resolve"));
+                          }}
+                          type="button"
+                        >
+                          Resolve
+                        </button>
+                      ) : null}
+                      {onIgnore ? (
+                        <button
+                          disabled={busy || !row.canIgnore}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onIgnore(buildAlertActionPayload(row.id, "ignore"));
+                          }}
+                          type="button"
+                        >
+                          Ignore
+                        </button>
+                      ) : null}
+                      {href ? (
+                        <a
+                          href={href}
+                          onClick={(event) => openReviewLink(event, href, onOpenReview)}
+                        >
+                          Review linked event
+                        </a>
+                      ) : (
+                        <span className="muted">No linked event</span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      ) : null}
+    </div>
+  );
+}
+
+function openReviewLink(
+  event: MouseEvent<HTMLAnchorElement>,
+  href: string,
+  onOpenReview?: (href: string) => void
+) {
+  if (!onOpenReview || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+    return;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  onOpenReview(href);
 }

@@ -8,6 +8,8 @@ SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engin
 
 Full Stage 8AB 已完成 full final audit / docs consistency 准备，并新增 `docs/final_acceptance_checklist.md`。该阶段不创建 `v1.0.0-full-final-version` tag；最终全量验收和 v1.0.0 tag 留给 Full Stage 8CD。
 
+`v1.0.1-audit-polish` 是 v1.0.0 冻结后的 scoped audit polish，不移动、不重打 `v1.0.0-full-final-version`。本小修只处理后审计缺口：`AlertPanel` / `EventTable` 已不再是 contract-only 组件并分别接入 Alert Center / Analysis Detail，`GET /api/processing/tasks` 已改为 DB-backed task list，DB-backed processing 会写入 detector / tracker `model_runs` business records，`docs/stage6_traffic_analysis_center_design.md` 已标为 historical / archived。该小修不新增 production IAM、production realtime、COCO official mAP、TrackEval official metrics 或完整视频级 rerun claim。
+
 当前 Alert Center 支持 `new`、`acknowledged`、`resolved` 和 `ignored` 基础状态流转；DB alert rows 优先持久化这些状态，旧 artifact-only runs 仍 fallback 写回本地 alert artifacts。
 
 当前可验证的本地 artifacts 生成和查询闭环是：

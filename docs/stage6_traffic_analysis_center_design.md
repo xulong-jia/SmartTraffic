@@ -1,5 +1,11 @@
 # Stage 6 Traffic Analysis Center 设计文档
 
+> Historical / archived note: this is a historical Stage 6 design note. It may
+> describe planned or intermediate artifact-based MVP state from earlier
+> milestones. The current final implementation status is documented in
+> `README.md`, `docs/api_reference.md`, `docs/database_schema.md`,
+> `docs/final_acceptance_checklist.md`, and `docs/final_delivery_plan.md`.
+
 本文档最初是 Stage 6A 的只读审计与设计准备文档。Stage 6B 已在 artifact-based / in-memory MVP 范围内实现 run manifest 与 artifact index 加固；Stage 6C 已实现 artifact-backed `flow_counts.json` 和 `zone_statistics.json` MVP；Stage 6D 已实现 Analysis Runs list / summary API；Stage 6E 已实现前端真实 run 数据接入 MVP；Stage 6F 已实现 keyframes / annotated video visual artifacts pipeline MVP；Stage 6G 已完成 Stage 6 收尾审计和文档边界修正。当前 Stage 6 可视为 Traffic Analysis Center artifact-based MVP 完成，但仍不是 database final version。
 
 ## 1. 阶段目标
