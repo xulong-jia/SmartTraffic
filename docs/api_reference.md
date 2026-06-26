@@ -109,8 +109,9 @@ Manual alignment note:
 Full Stage 3AB makes these configuration APIs DB-backed. Responses preserve the
 existing shape and include `version`; the DB model stores polygon, direction,
 counting-line, target-class, parameter, cooldown, severity, and version data in
-the existing structured JSON fields. The frontend ZoneEditor was not redesigned
-in this stage.
+the existing structured JSON fields. Full Stage 5AB connects the frontend
+ZoneEditor to these APIs so users can draw polygon, direction line, and counting
+line geometry, then save and read back DB-backed zones and event rules.
 
 Zones:
 

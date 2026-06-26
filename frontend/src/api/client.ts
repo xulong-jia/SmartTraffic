@@ -43,3 +43,13 @@ export async function apiPatch<T>(path: string, body?: unknown): Promise<T> {
   }
   return (await response.json()) as T;
 }
+
+export async function apiDelete<T>(path: string): Promise<T> {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    method: "DELETE"
+  });
+  if (!response.ok) {
+    throw new Error(`Request failed with status ${response.status}`);
+  }
+  return (await response.json()) as T;
+}

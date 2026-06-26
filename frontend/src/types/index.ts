@@ -130,7 +130,53 @@ export interface ZoneRecord {
   enabled: boolean;
   video_id?: string | null;
   camera_id?: string | null;
+  version: number;
 }
+
+export interface ZonePayload {
+  id?: string | null;
+  name: string;
+  zone_type: string;
+  polygon: number[][];
+  direction?: DirectionConfig | null;
+  counting_line?: CountingLineConfig | null;
+  enabled: boolean;
+  video_id?: string | null;
+  camera_id?: string | null;
+  version: number;
+}
+
+export type ZoneUpdatePayload = Partial<ZonePayload>;
+
+export interface EventRuleRecord {
+  id: string;
+  name: string;
+  event_type: string;
+  enabled: boolean;
+  zone_id?: string | null;
+  target_classes: string[];
+  parameters: Record<string, unknown>;
+  cooldown_seconds: number;
+  severity: string;
+  version: number;
+  min_track_length: number;
+}
+
+export interface EventRulePayload {
+  id?: string | null;
+  name: string;
+  event_type: string;
+  enabled: boolean;
+  zone_id?: string | null;
+  target_classes: string[];
+  parameters: Record<string, unknown>;
+  cooldown_seconds: number;
+  severity: string;
+  version: number;
+  min_track_length: number;
+}
+
+export type EventRuleUpdatePayload = Partial<EventRulePayload>;
 
 export interface DetectionProcessResult {
   run_id: string;
