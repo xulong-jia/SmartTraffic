@@ -100,7 +100,9 @@ Manual alignment note:
   DB-backed.
 - Full Stage 3CD makes EventEvidence / RuleExecution lifecycle, Alert Center
   status transitions, and Review audit trail DB-first with artifact fallback.
-  Complete Bad Case / Evaluation workflows are still later-stage work.
+- Full Stage 3EF makes Bad Case / Evaluation workflows DB-first with artifact
+  fallback, including failed cases persisted in
+  `evaluation_results.summary["failed_cases"]`.
 
 ## Zone / Event Rule Config
 
@@ -140,8 +142,8 @@ Supported `event_type` values:
 These endpoints form the Traffic Analysis Center result API surface. Full
 Stage 2CD makes the run index and core result reads DB-first while preserving
 artifact fallback. Full Stage 3CD adds DB-first Event / Alert / Review lifecycle
-reads and writes. Bad Case Center and Evaluation Center are still not final
-DB-backed workflows.
+reads and writes. Full Stage 3EF adds DB-first Bad Case and Evaluation
+workflows while preserving artifact fallback.
 
 - `GET /api/analysis-runs`
 - `GET /api/analysis-runs/{run_id}`
@@ -384,8 +386,9 @@ Top-level Event APIs:
 `PATCH /api/events/{event_id}/status` updates the DB event status only. Review
 Center actions under `/api/review` write the `review_comments` DB audit trail.
 `POST /api/events/{event_id}/bad-case` creates a minimal DB bad-case record
-linked to the event, run, video, and track. Complete Bad Case workflow remains
-Full Stage 3EF.
+linked to the event, run, video, and track. Full Stage 3EF extends the complete
+Bad Case workflow under `/api/bad-cases` with DB-first create/list/detail/update,
+filter, summary, from-review, and from-failed-case behavior.
 
 Query parameters:
 
@@ -726,8 +729,8 @@ workflow endpoint and returns the created `event_id`.
 `event_id`, `run_id`, `rule_id`, `requested_by`, and `reason`. It does not run
 the rule engine or mutate result artifacts.
 
-False-negative and rerun endpoints do not create Bad Cases and do not feed
-Evaluation Center.
+False-negative and rerun endpoints do not automatically create Bad Cases and do
+not automatically feed Evaluation Center.
 
 HTTP behavior:
 
@@ -740,8 +743,9 @@ The Stage 7 frontend does not create Bad Case records, does not feed
 Evaluation Center, and Stage 7E navigation does not auto-sync Alert Center
 status with Event review status. Stage 8B adds backend artifact/schema/service
 support for Bad Case records. Stage 8CD adds routed Bad Case API and a Bad
-Case Center frontend MVP. Review artifacts can be referenced by Bad Cases, but
-Review API actions still do not modify Bad Case records automatically.
+Case Center frontend MVP. Full Stage 3EF makes Bad Case DB workflow available
+under `/api/bad-cases`, but Review API actions still do not modify Bad Case
+records automatically.
 
 Stage 7E frontend URL query contract:
 
