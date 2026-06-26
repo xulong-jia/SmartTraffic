@@ -4,7 +4,7 @@
 
 ## 1. 当前版本状态
 
-当前已完成 Stage 9EF 最终验收准备。最新工程交付 commit 是 Stage 9CD 后的 `5538a3a`，当前建议 final engineering delivery tag 为 `v0.9.0-final-engineering-delivery`。该 tag 不是 `v1.0.0`，不代表 DB-backed final version、production deployment 或执法级系统。Full Stage 1AB 已在最终交付后补充 DB Foundation：SQLAlchemy Declarative Base、engine/session dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 已接入。Full Stage 1CD 已新增 core models、业务表 migration、repositories 和 CRUD tests。Full Stage 1EF 已新增 artifact compatibility / import / read-through helper 和 dry-run CLI。Full Stage 2AB 已完成 Video API、Processing Task 生命周期和 `traffic_analysis_runs` run index 的 DB-backed 迁移；Full Stage 2CD 已完成 detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic Analysis Center DB-first index。Event / Alert lifecycle、Review、Bad Case 和 Evaluation 工作流仍未全面 DB-backed。Stage 1-9 已完成 artifact-backed MVP 与最终工程交付准备主链路：
+当前已完成 Stage 9EF 最终验收准备。最新工程交付 commit 是 Stage 9CD 后的 `5538a3a`，当前建议 final engineering delivery tag 为 `v0.9.0-final-engineering-delivery`。该 tag 不是 `v1.0.0`，不代表 DB-backed final version、production deployment 或执法级系统。Full Stage 1AB 已在最终交付后补充 DB Foundation：SQLAlchemy Declarative Base、engine/session dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 已接入。Full Stage 1CD 已新增 core models、业务表 migration、repositories 和 CRUD tests。Full Stage 1EF 已新增 artifact compatibility / import / read-through helper 和 dry-run CLI。Full Stage 2AB 已完成 Video API、Processing Task 生命周期和 `traffic_analysis_runs` run index 的 DB-backed 迁移；Full Stage 2CD 已完成 detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic Analysis Center DB-first index；Full Stage 3AB 已完成 Zone / Event Rule DB CRUD、run-level config snapshot 和 top-level Event APIs。Alert lifecycle、Review、Bad Case 和 Evaluation 工作流仍未全面 DB-backed。Stage 1-9 已完成 artifact-backed MVP 与最终工程交付准备主链路：
 
 ```text
 video upload
@@ -39,6 +39,7 @@ video upload
 - Full Stage 1EF Artifact Compatibility：旧 run artifacts discovery、结构化导入 DB、DB 优先 read-through fallback 和 CLI 已完成，但未改变现有 API 默认行为。
 - Full Stage 2AB Video / Processing DB-backed foundation：Video upload/list/detail/status/frames、Processing Task 状态/进度/时间/错误信息、以及同一 video 多 run index 已接入 DB，同时保留本地 artifact 生成。
 - Full Stage 2CD Result Persistence：detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic Analysis Center DB index 已接入 DB-first / artifact fallback，同时保留本地 artifact 生成。
+- Full Stage 3AB Config / Event API DB flow：Zone / Event Rule CRUD、version 字段、run-level config snapshot、top-level Event APIs、Event status update 和 Event -> Bad Case 最小 DB linkage 已完成；前端 ZoneEditor 未在本阶段改造。
 - Stage 9AB final pre-delivery audit and documentation closeout。
 - Stage 9CD 小型 demo/sample config、toy expected annotations、seed script、Makefile 和环境命令收口。
 - Stage 9EF final acceptance and final tag preparation。
@@ -48,8 +49,9 @@ video upload
 
 - DB-backed final version。
 - DB-backed full business API/service migration 和生产级持久化查询层。
-- Event / Alert lifecycle DB workflow。
-- Review / Bad Case / Evaluation DB-backed workflow。
+- 完整 Event / Alert lifecycle DB workflow。
+- Review DB audit trail。
+- Bad Case / Evaluation 完整 DB-backed workflow。
 - Industrial-grade mAP / IDF1 / MOTA。
 - Real dataset benchmark。
 - Real rerun-based Bad Case regression pipeline。

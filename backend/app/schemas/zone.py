@@ -40,6 +40,7 @@ class ZoneBase(BaseModel):
     enabled: bool = True
     video_id: str | None = None
     camera_id: str | None = None
+    version: int = 1
 
     @field_validator("polygon")
     @classmethod
@@ -47,6 +48,13 @@ class ZoneBase(BaseModel):
         if len(value) < 3:
             raise ValueError("polygon must contain at least three points")
         return [_validate_point(point) for point in value]
+
+    @field_validator("version")
+    @classmethod
+    def validate_version(cls, value: int) -> int:
+        if int(value) < 1:
+            raise ValueError("version must be at least 1")
+        return int(value)
 
 
 class ZoneCreate(ZoneBase):
@@ -62,6 +70,7 @@ class ZoneUpdate(BaseModel):
     enabled: bool | None = None
     video_id: str | None = None
     camera_id: str | None = None
+    version: int | None = None
 
     @field_validator("polygon")
     @classmethod
@@ -71,6 +80,13 @@ class ZoneUpdate(BaseModel):
         if len(value) < 3:
             raise ValueError("polygon must contain at least three points")
         return [_validate_point(point) for point in value]
+
+    @field_validator("version")
+    @classmethod
+    def validate_version(cls, value: int | None) -> int | None:
+        if value is not None and int(value) < 1:
+            raise ValueError("version must be at least 1")
+        return int(value) if value is not None else None
 
 
 class ZoneResponse(ZoneBase):

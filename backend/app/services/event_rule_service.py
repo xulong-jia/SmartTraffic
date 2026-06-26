@@ -2,8 +2,11 @@ from collections.abc import Mapping
 from typing import Any
 from uuid import uuid4
 
+from sqlalchemy.orm import Session
+
+from app.repositories import EventRuleRepository
 from app.schemas.event_rule import EventRuleCreate, EventRuleResponse, EventRuleUpdate
-from app.services.zone_service import zone_service
+from app.services.zone_service import ZoneDbService, zone_service
 
 
 class EventRuleService:
@@ -186,3 +189,145 @@ def _dump_payload(
 
 
 event_rule_service = EventRuleService()
+
+
+class EventRuleDbService:
+    def __init__(self, session: Session) -> None:
+        self.repo = EventRuleRepository(session)
+        self.zone_service = ZoneDbService(session)
+
+    def create_rule(
+        self,
+        payload: EventRuleCreate | Mapping[str, Any],
+    ) -> dict[str, Any]:
+        values = _dump_payload(payload)
+        rule_id = str(values.get("id") or f"rule_{uuid4().hex[:12]}")
+        if self.repo.get(rule_id) is not None:
+            raise ValueError(f"event rule already exists: {rule_id}")
+        rule = EventRuleResponse(**{**values, "id": rule_id}).model_dump()
+        row = self.repo.create(**_rule_to_model_values(rule))
+        return _rule_from_model(row)
+
+    def list_rules(
+        self,
+        *,
+        event_type: str | None = None,
+        enabled: bool | None = None,
+        zone_id: str | None = None,
+    ) -> list[dict[str, Any]]:
+        rules = []
+        for row in self.repo.list():
+            rule = _rule_from_model(row)
+            if event_type is not None and rule.get("event_type") != event_type:
+                continue
+            if enabled is not None and bool(rule.get("enabled", True)) is not enabled:
+                continue
+            if zone_id is not None and rule.get("zone_id") != zone_id:
+                continue
+            rules.append(rule)
+        return rules
+
+    def get_rule(self, rule_id: str) -> dict[str, Any]:
+        row = self.repo.get(rule_id)
+        if row is None:
+            raise KeyError(rule_id)
+        return _rule_from_model(row)
+
+    def update_rule(
+        self,
+        rule_id: str,
+        payload: EventRuleUpdate | Mapping[str, Any],
+    ) -> dict[str, Any]:
+        current = self.get_rule(rule_id)
+        updates = _dump_payload(payload, exclude_unset=True)
+        updates.pop("id", None)
+        rule = EventRuleResponse(**{**current, **updates, "id": rule_id}).model_dump()
+        row = self.repo.update(rule_id, **_rule_to_model_values(rule, include_id=False))
+        if row is None:
+            raise KeyError(rule_id)
+        return _rule_from_model(row)
+
+    def delete_rule(self, rule_id: str) -> None:
+        if not self.repo.delete(rule_id):
+            raise KeyError(rule_id)
+
+    def build_event_engine_rules(
+        self,
+        *,
+        rules: list[dict[str, Any]] | None = None,
+        zones: list[dict[str, Any]] | None = None,
+    ) -> list[dict[str, Any]]:
+        source_rules = (
+            [dict(rule) for rule in rules]
+            if rules is not None
+            else self.list_rules(enabled=True)
+        )
+        zones_by_id = {
+            str(zone.get("zone_id") or zone.get("id")): zone
+            for zone in zones or []
+            if zone.get("zone_id") is not None or zone.get("id") is not None
+        }
+        return [_to_event_engine_rule(rule, zones_by_id) for rule in source_rules]
+
+    def build_event_engine_config(
+        self,
+        *,
+        video_id: str | None = None,
+        zones: list[dict[str, Any]] | None = None,
+        rules: list[dict[str, Any]] | None = None,
+    ) -> dict[str, list[dict[str, Any]]]:
+        event_zones = self.zone_service.build_event_engine_zones(
+            video_id=video_id,
+            zones=zones,
+        )
+        source_rules = rules
+        if source_rules is None:
+            source_rules = self.list_rules(enabled=True)
+            if video_id is not None:
+                source_rules = _filter_rules_for_zones(source_rules, event_zones)
+        event_rules = self.build_event_engine_rules(
+            rules=source_rules,
+            zones=event_zones,
+        )
+        return {"zones": event_zones, "event_rules": event_rules}
+
+
+def _rule_to_model_values(
+    rule: Mapping[str, Any],
+    *,
+    include_id: bool = True,
+) -> dict[str, Any]:
+    values = {
+        "zone_id": rule.get("zone_id"),
+        "name": rule["name"],
+        "type": rule["event_type"],
+        "status": "enabled" if rule.get("enabled", True) else "disabled",
+        "parameters": {
+            "target_classes": rule.get("target_classes") or [],
+            "parameters": rule.get("parameters") or {},
+            "cooldown_seconds": float(rule.get("cooldown_seconds") or 0.0),
+            "severity": rule.get("severity") or "medium",
+            "version": int(rule.get("version") or 1),
+            "min_track_length": int(rule.get("min_track_length") or 1),
+        },
+    }
+    if include_id:
+        values["id"] = rule["id"]
+    return values
+
+
+def _rule_from_model(row: Any) -> dict[str, Any]:
+    parameters = row.parameters or {}
+    return EventRuleResponse(
+        id=row.id,
+        name=row.name,
+        event_type=row.type,
+        enabled=row.status != "disabled",
+        zone_id=row.zone_id,
+        target_classes=list(parameters.get("target_classes") or []),
+        parameters=dict(parameters.get("parameters") or {}),
+        cooldown_seconds=float(parameters.get("cooldown_seconds") or 0.0),
+        severity=str(parameters.get("severity") or "medium"),
+        version=int(parameters.get("version") or 1),
+        min_track_length=int(parameters.get("min_track_length") or 1),
+    ).model_dump()

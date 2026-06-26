@@ -8,6 +8,10 @@ from sqlalchemy.orm import Session
 from app.analysis.artifact_compatibility import import_run_artifacts_to_db
 from app.core.config import get_settings
 from app.repositories import ProcessingTaskRepository, TrafficAnalysisRunRepository
+from app.services.config_snapshot_service import (
+    attach_config_snapshot_to_run,
+    build_config_snapshot,
+)
 from app.services.alert_service import AlertService
 from app.services.detection_service import DetectionRunParams, DetectionService
 from app.services.event_service import EventRunParams, EventService
@@ -172,6 +176,11 @@ class ProcessingService:
                     result_dir=f"results/traffic_analysis/{run_id}",
                     artifact_index=result["artifacts"],
                     summary=result,
+                )
+                attach_config_snapshot_to_run(
+                    db,
+                    run_id,
+                    build_config_snapshot(db, video_id=video["id"]),
                 )
                 import_run_artifacts_to_db(
                     db,

@@ -86,7 +86,9 @@ error message, parameters, and result summary. Each successful process request
 also creates a `traffic_analysis_runs` row, so one video may have multiple
 `run_id` values. Full Stage 2CD imports generated `detections.csv`,
 `tracks.csv`, `trajectory_points.csv`, `flow_counts.json`, and
-`zone_statistics.json` into DB tables while keeping the artifacts.
+`zone_statistics.json` into DB tables while keeping the artifacts. Full Stage
+3AB records the current zone/rule config snapshot in the run summary when the
+processing flow creates a DB run.
 
 Manual alignment note:
 
@@ -95,13 +97,17 @@ Manual alignment note:
   artifact-based MVP endpoints.
 - Detection, tracking, trajectory, flow count, and zone statistic reads are
   DB-first with artifact fallback.
-- Event / Alert lifecycle, Review, Bad Case, and Evaluation workflows are not
-  migrated to the final DB-backed implementation in this stage.
+- Full Stage 3AB makes Zone / Event Rule CRUD and top-level Event APIs
+  DB-backed. Full Event / Alert lifecycle, Review audit trail, and complete Bad
+  Case / Evaluation workflows are still later-stage work.
 
 ## Zone / Event Rule Config
 
-These endpoints are Stage 5A artifact-based / in-memory MVP configuration APIs.
-They provide stable Event Engine input without claiming database persistence.
+Full Stage 3AB makes these configuration APIs DB-backed. Responses preserve the
+existing shape and include `version`; the DB model stores polygon, direction,
+counting-line, target-class, parameter, cooldown, severity, and version data in
+the existing structured JSON fields. The frontend ZoneEditor was not redesigned
+in this stage.
 
 Zones:
 
@@ -358,13 +364,24 @@ Behavior:
 
 This endpoint is an artifact-based run event query. It reads `events.jsonl`,
 `event_evidence.jsonl`, `rule_executions.jsonl`, and `event_summary.json` from a
-local run directory. It is not the execution manual's final standalone
-`/api/events` Event Center implementation.
+local run directory. It remains available for artifact-backed run detail views.
 
-The standalone `GET /api/events` route currently remains contract-only /
-placeholder. Real event reads in the Stage 7 MVP should use this
-`/api/analysis-runs/{run_id}/events` endpoint for run artifacts, or the Review
-API under `/api/review` for review-oriented event list/detail behavior.
+Full Stage 3AB also provides top-level `/api/events` DB-first APIs. When DB rows
+are unavailable and `run_id` is supplied, the top-level list/detail APIs can
+fallback to run artifacts.
+
+Top-level Event APIs:
+
+- `GET /api/events?run_id=&video_id=&event_type=&status=&severity=&track_id=`
+- `GET /api/events/{event_id}?run_id=`
+- `PATCH /api/events/{event_id}/status`
+- `POST /api/events/{event_id}/bad-case`
+
+`PATCH /api/events/{event_id}/status` updates the DB event status only. It does
+not create a full Review audit trail; that remains Full Stage 3CD. `POST
+/api/events/{event_id}/bad-case` creates a minimal DB bad-case record linked to
+the event, run, video, and track. Complete Bad Case workflow remains Full Stage
+3EF.
 
 Query parameters:
 
@@ -796,9 +813,6 @@ rerun-based regression pipeline.
 The following API capabilities are planned by the execution manual but are not
 implemented as working behavior yet:
 
-- `PATCH /api/events/{event_id}/status`
-- standalone `/api/events` full query
-- `GET /api/events/{event_id}`
 - advanced filtering on flow counts and zone statistics
 - database-backed aggregate statistics APIs
 - database-backed Review Center workflow
@@ -816,9 +830,6 @@ implemented as working behavior yet:
 - `GET /api/trajectories`: contract-only placeholder. Use
   `GET /api/analysis-runs/{run_id}/trajectory-points` for current
   DB-first / artifact-fallback trajectory reads.
-- `GET /api/events`: contract-only placeholder. Use
-  `GET /api/analysis-runs/{run_id}/events` for current event artifacts, or
-  `/api/review` for Stage 7 review event workflows.
 Stage 8EFG / Stage 8HI Evaluation APIs are routed under `/api/evaluation` and
 documented above.
 
