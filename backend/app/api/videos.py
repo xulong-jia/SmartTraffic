@@ -1,23 +1,28 @@
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.cv.frame_reader import read_video_metadata
+from app.db.session import get_db
 from app.schemas.processing import DetectionProcessRequest, DetectionProcessResponse
 from app.services.detection_service import DetectionRunParams
 from app.services.trajectory_service import TrajectoryRunParams
 from app.services.tracking_service import TrackingRunParams
-from app.schemas.video import VideoResponse, VideoStatusResponse
+from app.schemas.video import FrameResponse, VideoResponse, VideoStatusResponse
 from app.services.processing_service import EventAlertProcessParams, processing_service
-from app.services.video_service import video_registry
+from app.services.video_service import VideoDbService
 
 
 router = APIRouter(prefix="/api/videos", tags=["videos"])
 
 
 @router.post("/upload", response_model=VideoResponse)
-async def upload_video(file: UploadFile = File(...)) -> VideoResponse:
+async def upload_video(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+) -> VideoResponse:
     settings = get_settings()
     if not file.filename:
         raise HTTPException(
@@ -43,30 +48,52 @@ async def upload_video(file: UploadFile = File(...)) -> VideoResponse:
     target_path.write_bytes(content)
 
     metadata = read_video_metadata(target_path)
-    record = video_registry.create_video(
+    record = VideoDbService(db).create_video(
         filename=file.filename,
         file_path=str(target_path),
         metadata=metadata,
     )
+    db.commit()
     return VideoResponse(**record)
 
 
 @router.get("", response_model=list[VideoResponse])
-def list_videos() -> list[VideoResponse]:
-    return [VideoResponse(**record) for record in video_registry.list_videos()]
+def list_videos(db: Session = Depends(get_db)) -> list[VideoResponse]:
+    return [VideoResponse(**record) for record in VideoDbService(db).list_videos()]
 
 
 @router.get("/{video_id}", response_model=VideoResponse)
-def get_video(video_id: str) -> VideoResponse:
-    return VideoResponse(**_get_video_or_404(video_id))
+def get_video(
+    video_id: str,
+    db: Session = Depends(get_db),
+) -> VideoResponse:
+    return VideoResponse(**_get_video_or_404(video_id, db))
+
+
+@router.get("/{video_id}/frames", response_model=list[FrameResponse])
+def list_video_frames(
+    video_id: str,
+    db: Session = Depends(get_db),
+) -> list[FrameResponse]:
+    try:
+        return [
+            FrameResponse(**record)
+            for record in VideoDbService(db).list_frames(video_id)
+        ]
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="video not found",
+        ) from exc
 
 
 @router.post("/{video_id}/process", response_model=DetectionProcessResponse)
 def process_video(
     video_id: str,
     request: DetectionProcessRequest | None = None,
+    db: Session = Depends(get_db),
 ) -> DetectionProcessResponse:
-    video = _get_video_or_404(video_id)
+    video = _get_video_or_404(video_id, db)
     payload = request or DetectionProcessRequest()
     detector_dry_run = (
         payload.detector_dry_run
@@ -146,8 +173,11 @@ def process_video(
                 generate_alerts=payload.generate_alerts,
                 record_not_matched=payload.record_not_matched,
             ),
+            db=db,
         )
+        db.commit()
     except (FileNotFoundError, RuntimeError, ValueError) as exc:
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
@@ -156,9 +186,12 @@ def process_video(
 
 
 @router.get("/{video_id}/status", response_model=VideoStatusResponse)
-def get_video_status(video_id: str) -> VideoStatusResponse:
-    video = _get_video_or_404(video_id)
-    task = processing_service.get_latest_task(video_id)
+def get_video_status(
+    video_id: str,
+    db: Session = Depends(get_db),
+) -> VideoStatusResponse:
+    video = _get_video_or_404(video_id, db)
+    task = processing_service.get_latest_db_task(video_id, db)
     return VideoStatusResponse(
         video_id=video["id"],
         status=video["status"],
@@ -166,9 +199,9 @@ def get_video_status(video_id: str) -> VideoStatusResponse:
     )
 
 
-def _get_video_or_404(video_id: str) -> dict:
+def _get_video_or_404(video_id: str, db: Session) -> dict:
     try:
-        return video_registry.get_video(video_id)
+        return VideoDbService(db).get_video(video_id)
     except KeyError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

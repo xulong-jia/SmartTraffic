@@ -10,8 +10,16 @@
 - `POST /api/videos/upload`
 - `GET /api/videos`
 - `GET /api/videos/{video_id}`
+- `GET /api/videos/{video_id}/frames`
 - `POST /api/videos/{video_id}/process`
 - `GET /api/videos/{video_id}/status`
+
+Full Stage 2AB makes the video API DB-backed for video metadata and processing
+task lifecycle state. Upload still stores the source video on local disk, while
+the `videos` row stores filename, storage path, status, fps, dimensions, frame
+count, duration, camera id, and metadata. `GET /api/videos/{video_id}/frames`
+returns rows from the `frames` table; Stage 2AB does not auto-extract frame
+images or persist detection/tracking/trajectory details into DB.
 
 `POST /api/videos/{video_id}/process` supports:
 
@@ -71,13 +79,20 @@ artifacts after event artifacts, then runs AlertService. If `event_rules` /
 `zones` are omitted, the process still writes stable empty event, statistics,
 and alert artifacts. The process response keeps the existing summary shape; full
 event, statistics, and alert details are queried from analysis-runs endpoints.
+Each process request creates a DB `processing_tasks` row with `pending`,
+`running`, `completed`, or `failed` status, progress, start/finish timestamps,
+error message, parameters, and result summary. Each successful process request
+also creates a `traffic_analysis_runs` row, so one video may have multiple
+`run_id` values.
 
 Manual alignment note:
 
 - Stage 5 is implemented as an artifact-based / in-memory MVP.
 - Event, traffic statistics, and alert endpoints documented below are
   artifact-based MVP endpoints.
-- They are not a database-backed final Traffic Analysis Center implementation.
+- Detection, tracking, trajectory, event, alert, traffic statistics, Review,
+  Bad Case, and Evaluation detail reads are not a database-backed final Traffic
+  Analysis Center implementation.
 
 ## Zone / Event Rule Config
 

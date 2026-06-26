@@ -1,10 +1,10 @@
 # SmartTraffic 最终交付计划
 
-本文档用于 Stage 9 最终交付前审计和文档收口。它只描述计划、边界和检查清单，不引入核心业务功能、数据库迁移、权限系统、生产部署或新 tag。
+本文档用于 Stage 9 最终交付前审计和文档收口，并记录后续 Full Stage DB 迁移边界。它只描述计划、边界和检查清单，不引入非当前阶段核心业务功能、权限系统、生产部署或新 tag。
 
 ## 1. 当前版本状态
 
-当前已完成 Stage 9EF 最终验收准备。最新工程交付 commit 是 Stage 9CD 后的 `5538a3a`，当前建议 final engineering delivery tag 为 `v0.9.0-final-engineering-delivery`。该 tag 不是 `v1.0.0`，不代表 DB-backed final version、production deployment 或执法级系统。Full Stage 1AB 已在最终交付后补充 DB Foundation：SQLAlchemy Declarative Base、engine/session dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 已接入。Full Stage 1CD 已新增 core models、业务表 migration、repositories 和 CRUD tests。Full Stage 1EF 已新增 artifact compatibility / import / read-through helper 和 dry-run CLI。业务 API 和 service 层 DB-backed 迁移仍未完成；Full Stage 2 才开始 Video / Processing / Result Persistence 业务迁移。Stage 1-9 已完成 artifact-backed MVP 与最终工程交付准备主链路：
+当前已完成 Stage 9EF 最终验收准备。最新工程交付 commit 是 Stage 9CD 后的 `5538a3a`，当前建议 final engineering delivery tag 为 `v0.9.0-final-engineering-delivery`。该 tag 不是 `v1.0.0`，不代表 DB-backed final version、production deployment 或执法级系统。Full Stage 1AB 已在最终交付后补充 DB Foundation：SQLAlchemy Declarative Base、engine/session dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 已接入。Full Stage 1CD 已新增 core models、业务表 migration、repositories 和 CRUD tests。Full Stage 1EF 已新增 artifact compatibility / import / read-through helper 和 dry-run CLI。Full Stage 2AB 已完成 Video API、Processing Task 生命周期和 `traffic_analysis_runs` run index 的 DB-backed 迁移；Result Persistence 明细、Review、Bad Case 和 Evaluation 工作流仍未全面 DB-backed。Stage 1-9 已完成 artifact-backed MVP 与最终工程交付准备主链路：
 
 ```text
 video upload
@@ -37,6 +37,7 @@ video upload
 - Full Stage 1AB DB Foundation：SQLAlchemy / Alembic / Session / Config 基础接入，默认 SQLite 本地验证。
 - Full Stage 1CD Core Models / Migrations / Repositories：核心业务表 schema、repository CRUD foundation 和测试已完成，但未接入业务 service。
 - Full Stage 1EF Artifact Compatibility：旧 run artifacts discovery、结构化导入 DB、DB 优先 read-through fallback 和 CLI 已完成，但未改变现有 API 默认行为。
+- Full Stage 2AB Video / Processing DB-backed foundation：Video upload/list/detail/status/frames、Processing Task 状态/进度/时间/错误信息、以及同一 video 多 run index 已接入 DB，同时保留本地 artifact 生成。
 - Stage 9AB final pre-delivery audit and documentation closeout。
 - Stage 9CD 小型 demo/sample config、toy expected annotations、seed script、Makefile 和环境命令收口。
 - Stage 9EF final acceptance and final tag preparation。
@@ -45,7 +46,9 @@ video upload
 ## 3. 未完成边界
 
 - DB-backed final version。
-- DB-backed business API/service migration 和生产级持久化查询层。
+- DB-backed full business API/service migration 和生产级持久化查询层。
+- Detection / tracking / trajectory / event / statistics detail DB persistence。
+- Review / Bad Case / Evaluation DB-backed workflow。
 - Industrial-grade mAP / IDF1 / MOTA。
 - Real dataset benchmark。
 - Real rerun-based Bad Case regression pipeline。
@@ -109,7 +112,7 @@ Stage 9EF 用于最终验收和 final tag 准备：
 ## 8. 不做事项
 
 - 不新增核心业务功能。
-- 不做数据库 migration。
+- 不做不属于当前阶段的数据库 migration。
 - 不做权限系统。
 - 不做实时流。
 - 不做生产部署。
