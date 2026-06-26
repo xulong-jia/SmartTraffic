@@ -191,6 +191,7 @@ cp .env.example .env
 - Stage 8HI Bad Case / Evaluation link, regression summary MVP, and closeout audit completed
 - Stage 9AB final pre-delivery audit and documentation closeout completed
 - Stage 9CD demo / sample / Docker / environment polish completed
+- Stage 9EF final acceptance and final tag preparation completed
 - Zone / Event Rule configuration API MVP, Event Evidence / Rule Execution artifacts, and Alert Center status workflow implemented
 
 `v0.5.0-event-alert-minimal` is an earlier minimal Event / Alert milestone tag and should not be moved to newer commits.
@@ -572,8 +573,7 @@ The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert mile
 - `v0.7.0-review-center-mvp`
 - `v0.8.0-bad-case-evaluation-mvp`
 
-Stage 9 仍是最终交付收口阶段。Stage 9AB 只做最终审计与文档收口；Demo / sample / Docker / 环境细节留给 Stage 9CD，最终验收和后续 tag 留给 Stage 9EF。
-Stage 9CD 已补充小型 demo/sample 配置、seed script、Makefile 命令和本地环境说明，但仍不提交真实视频、模型权重或 generated results。
+Stage 9 已完成最终交付收口准备：Stage 9AB 做最终审计与文档收口，Stage 9CD 补充小型 demo/sample 配置、seed script、Makefile 命令和本地环境说明，Stage 9EF 做最终验收和 final tag 准备。建议 final engineering delivery tag 为 `v0.9.0-final-engineering-delivery`；它不是 `v1.0.0`、不是 DB-backed final version、不是 production deployment，也不是执法级系统。
 
 ## 自查命令
 

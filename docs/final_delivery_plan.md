@@ -4,7 +4,7 @@
 
 ## 1. 当前版本状态
 
-当前稳定节点是 `v0.8.0-bad-case-evaluation-mvp`，指向 Stage 8HI 后的 `d1f5bf7`。Stage 1-8 已完成 artifact-backed MVP 主链路：
+当前已完成 Stage 9EF 最终验收准备。最新工程交付 commit 是 Stage 9CD 后的 `5538a3a`，当前建议 final engineering delivery tag 为 `v0.9.0-final-engineering-delivery`。该 tag 不是 `v1.0.0`，不代表 DB-backed final version、production deployment 或执法级系统。Stage 1-9 已完成 artifact-backed MVP 与最终工程交付准备主链路：
 
 ```text
 video upload
@@ -36,6 +36,7 @@ video upload
 - Docker Compose 本地开发骨架。
 - Stage 9AB final pre-delivery audit and documentation closeout。
 - Stage 9CD 小型 demo/sample config、toy expected annotations、seed script、Makefile 和环境命令收口。
+- Stage 9EF final acceptance and final tag preparation。
 - pytest、frontend build、Node utility tests、danger check 和文档化自查命令。
 
 ## 3. 未完成边界
@@ -65,15 +66,17 @@ Stage 9CD 已完成交付可运行性收口：
 
 Stage 9CD 不应实现新业务中心、数据库迁移、真实数据下载器、模型训练或生产部署。
 
-## 5. Stage 9EF 计划：最终验收 / Tag
+## 5. Stage 9EF：最终验收 / Tag 准备
 
-Stage 9EF 建议在 Stage 9CD 完成后再执行：
+Stage 9EF 用于最终验收和 final tag 准备：
 
 - 运行后端全量测试、前端测试、前端 build、`docker compose config`、`git diff --check` 和 `scripts/danger_check.py`。
 - 扫描 tracked forbidden files、敏感词、大文件、生成结果、视频、模型权重、cache、dist 和 node_modules。
 - 确认 README、API reference、architecture、database schema、evaluation、demo plan 和 final delivery plan 一致。
 - 确认旧 tag 未移动。
-- 用户明确要求后，才创建最终交付 tag。
+- 所有检查通过且用户明确要求后，才创建 `v0.9.0-final-engineering-delivery`。
+
+`v0.9.0-final-engineering-delivery` 是最终工程交付里程碑，不是 production `v1.0.0`。
 
 ## 6. 数据与安全要求
 
@@ -94,7 +97,7 @@ Stage 9EF 建议在 Stage 9CD 完成后再执行：
 - `git ls-remote --tags origin` 显示旧 tag 未移动。
 - `git diff --check` 通过。
 - `python3 -m compileall backend/app` 通过。
-- `cd backend && python3 -m pytest tests` 通过。
+- `cd backend && ./.venv/bin/python -m pytest tests` 通过。
 - `cd frontend && npm run build` 通过。
 - `docker compose config` 通过。
 - `python3 scripts/danger_check.py` 通过。

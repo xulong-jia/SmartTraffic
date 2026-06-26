@@ -26,7 +26,8 @@ Stage 8EFG / Stage 8HI 已实现：
 ## Artifacts
 
 Evaluation artifacts 位于 `evals/`，真实 generated results 不应提交到 Git。
-仓库只保留 `.gitkeep` 占位目录。
+仓库可以保留 `.gitkeep` 和 Stage 9CD 小型 toy expected files；`evals/results/`
+仍只保留 `.gitkeep`，真实 evaluation run/result/failed-case artifacts 不提交。
 
 ```text
 evals/
