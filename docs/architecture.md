@@ -107,23 +107,31 @@ Alert artifacts:
 - `alerts.jsonl`
 - `alert_summary.json`
 
-The current EventService and AlertService form an artifact-based generation,
-query, and alert status loop. They are not a complete database-backed result
-center, and they are not law-enforcement-grade traffic violation judgment.
+The current EventService and AlertService form an artifact-compatible
+generation, query, and alert status loop. Current DB-backed workflows persist
+events, evidence, rule executions, alerts, review audit records, Bad Cases, and
+Evaluation results when DB rows are available, while preserving artifact
+fallback for legacy runs. They are not law-enforcement-grade traffic violation
+judgment.
 
-## Planned Manual Architecture
+## Manual Architecture Alignment
 
-The execution manual still targets:
+The execution manual targets a layered, reviewable, DB-backed local validation
+system. Current alignment status:
 
-- database-backed Traffic Analysis Center
-- database-backed Alert Center
-- Review Center
-- Bad Case Center
-- Evaluation Center
-- persisted Zone & Rule Config beyond the current in-memory MVP
-- database-backed flow counting and zone statistics
+- Traffic Analysis Center core index and result reads are DB-first with
+  artifact fallback.
+- Alert Center status workflow is DB-first with artifact fallback.
+- Review Center workflow writes DB audit records for DB events and preserves
+  artifact fallback.
+- Bad Case Center and Evaluation Center are DB-first with artifact fallback.
+- Zone / Event Rule config is DB-backed and connected to the ZoneEditor.
+- Flow counts and zone statistics are persisted and read DB-first with artifact
+  fallback.
 
-These modules are not complete in the current project state.
+These modules are complete for the current local validation scope. They are not
+production deployment, enforcement, IAM, or calibrated traffic engineering
+systems.
 
 ## Backend Components
 
@@ -157,13 +165,12 @@ dedup handle repeated zone-level events.
 
 ## Query Layer
 
-The current Traffic Analysis Center is an artifact-based run result query MVP.
-It reads local files under `results/traffic_analysis/<run_id>/` and exposes
-detection, tracking, trajectory, event, traffic statistics, alert, and visual
-artifact status through FastAPI.
-
-This satisfies the current Stage 6 MVP boundary, but it is not a complete
-database-backed result center.
+The current Traffic Analysis Center is DB-first with artifact fallback for the
+core local validation workflow. It reads `traffic_analysis_runs`, detections,
+tracks, trajectory points, flow counts, zone statistics, events, alerts, Bad
+Cases, and Evaluation rows when available, while preserving local files under
+`results/traffic_analysis/<run_id>/` for legacy artifact-only runs and visual
+references.
 
 Implemented artifact query endpoints include:
 
@@ -180,16 +187,14 @@ Implemented artifact query endpoints include:
 - `GET /api/analysis-runs/{run_id}/alerts`
 
 Stage 6B manifest/index support, Stage 6C statistics support, and Stage 6D
-Analysis Runs list / summary support are still artifact-backed. The list API can
-summarize runs from manifest, metadata, artifact index, in-memory registry, or
-directory scan fallback. Stage 6E frontend views consume these APIs for run
-counts, artifact status, event/alert tables, minimal flow / zone statistics
-tables, and visual artifact status. Stage 6F visual artifacts are local files
-tracked through manifest / artifact index / metadata; failed visual generation
-is reflected as artifact status rather than turning the run into a database
-workflow. The current database layer is not a complete production
-implementation. Local artifacts are the source of truth for trajectory, event,
-traffic statistics, alert, and visual review results at this stage.
+Analysis Runs list / summary support remain artifact-compatible. The list API
+can summarize runs from DB, manifest, metadata, artifact index, in-memory
+registry, or directory scan fallback. Stage 6E frontend views consume these
+APIs for run counts, artifact status, event/alert tables, minimal flow / zone
+statistics tables, and visual artifact status. Stage 6F visual artifacts are
+local files tracked through manifest / artifact index / metadata; failed visual
+generation is reflected as artifact status. The current database layer is a
+local SQLite prototype / validation foundation, not a production deployment.
 
 ## Frontend Components
 
@@ -203,29 +208,28 @@ traffic statistics, alert, and visual review results at this stage.
 
 Current frontend limitations:
 
-- no zone editor workflow
-- no video overlay for trajectories/events/alerts
-- no alert timeline
-- no complete traffic visualization dashboard or charts
-- no complex video overlay editor
-- no full review workflow embedded inside Analysis Detail or Alert Center
+- no frontend flow statistics or congestion charting beyond summary/table
+  views
+- no calibrated traffic engineering dashboard
+- no production realtime monitoring UI
+- no complex video overlay editor beyond current inspection overlays
+- review actions are explicit workflows, not automatic enforcement decisions
 
 ## Boundaries And Limitations
 
 Current limitations:
 
-- no database-backed Review Center workflow; Stage 7C/7D/7E provide artifact-backed Review API, frontend MVP, and navigation, and Stage 7F audits that as the local Review Center MVP only
-- no real rerun-based Bad Case regression pipeline
-- no industrial mAP / Precision / Recall detection benchmark
-- no industrial IDF1 / MOTA / ID-switch tracking benchmark
-- no database-backed Zone / Rule / Alert persistence
-- no video overlay
-- no database-backed final Traffic Analysis Center
-- no DB-backed result index
+- no complete video-level Bad Case rerun pipeline; current regression is
+  deterministic replay / stored rule replay
+- no COCO official mAP; current detection mAP is VOC-style single-IoU
+- no TrackEval official IDF1 / MOTA; current tracking metrics are lightweight
+  deterministic association
 - no frontend flow statistics chart
 - no frontend congestion chart
-- no database-backed flow or zone statistics persistence
 - no real-world speed / direction calibration
+- no production IAM, central audit storage, monitoring, backup, or deployment
+  hardening
+- no production realtime monitoring
 - no formal traffic enforcement conclusion
 
 Future phases should keep YOLOv8, DeepSORT, Trajectory Engine, Event Engine, Alert Center, Review Center, Bad Case Center, and Evaluation Center separate. Full Stage 3 has added DB-backed workflow foundations for Review, Bad Case, and Evaluation while preserving artifact fallback. Full Stage 4AB has finalized trajectory features and event-rule behavior, but it does not imply real detection/tracking benchmarks, real rerun-based regression, real-world calibration, production enforcement readiness, or industrial mAP / IDF1 / MOTA completion.

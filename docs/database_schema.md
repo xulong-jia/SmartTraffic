@@ -6,9 +6,11 @@ has a DB foundation plus core SQLAlchemy models, migrations, repositories,
 artifact compatibility helpers, Stage 2AB DB-backed video / processing task
 foundation, Stage 2CD DB-backed core result persistence, Stage 3AB DB-backed
 config / event API flow, Stage 3CD DB-backed event / alert / review lifecycle
-foundation, and Stage 3EF DB-backed Bad Case / Evaluation workflow foundation.
+foundation, Stage 3EF DB-backed Bad Case / Evaluation workflow foundation,
+Stage 7AB camera / realtime preview metadata, and Stage 7CD security / ops
+hardening.
 
-本文描述当前 schema/repository foundation、Full Stage 2 DB-backed 核心流、Full Stage 3AB config / event API、Full Stage 3CD event / alert / review、Full Stage 3EF Bad Case / Evaluation 范围和目标数据库边界，不代表当前仓库已经完成 DB-backed 全量业务迁移。
+本文描述当前 schema/repository foundation、Full Stage 2 DB-backed 核心流、Full Stage 3AB config / event API、Full Stage 3CD event / alert / review、Full Stage 3EF Bad Case / Evaluation、Full Stage 7AB camera / realtime preview 和 Full Stage 7CD security / ops 范围和目标数据库边界。当前仍是本地 SQLite prototype / local validation 口径，不代表 PostgreSQL production deployment、production IAM 或生产级实时监控已经完成。
 
 Current implementation notes:
 
@@ -47,15 +49,18 @@ Current implementation notes:
   top-level event reads/status updates, event evidence, rule executions, alert
   status transitions, review audit records, Bad Case workflow, Evaluation
   dataset/result workflow, and failed-case conversion are DB-backed.
-- `event_rules` and `zones` now use DB-backed CRUD APIs. The frontend
-  ZoneEditor has not been redesigned in this stage.
+- `event_rules` and `zones` now use DB-backed CRUD APIs. Full Stage 5AB
+  connects the frontend ZoneEditor to those APIs for polygon, direction line,
+  and counting line editing.
 - `review_comments` now stores DB-backed Review action audit records for DB
   events. `bad_cases`, `evaluation_datasets`, and `evaluation_results` now have
   DB-first API workflows while preserving artifact fallback.
 - Event / alert artifacts still come from local artifacts under
   `results/traffic_analysis/<run_id>/` for legacy and artifact-only runs.
-- Full Stage 3 and later stages are expected to continue Event / Alert, Review,
-  Bad Case, Evaluation, and broader workflow migrations.
+- Full Stage 4 through Full Stage 7 add trajectory/rule final behavior,
+  detection/tracking benchmark foundations, deterministic regression replay,
+  frontend workflows, report exports, realtime preview metadata, and minimal
+  security/ops hardening on top of the DB-first / artifact-fallback base.
 - Full Stage 7AB extends `cameras` with realtime preview configuration fields:
   `source_type`, `enabled`, `width`, `height`, and `fps`. Realtime preview
   start creates `processing_tasks.mode=realtime_process` rows linked through a
@@ -105,6 +110,7 @@ tables. Full Stage 3AB stores zone/rule config snapshots inside
 `traffic_analysis_runs.summary["event_config_snapshot"]` without adding a new
 table. Full Stage 7AB extends `cameras` for preview source configuration and
 uses `processing_tasks.mode=realtime_process` for preview lifecycle records;
-recent preview metadata remains in memory. Current production realtime streams,
-real mAP / IDF1 / MOTA, and real rerun-based Bad Case regression are still
-outside this schema workflow; this is not the DB-backed full final version.
+recent preview metadata remains in memory. PostgreSQL production deployment,
+production realtime streams, COCO official mAP, TrackEval official IDF1 /
+MOTA, and complete video-level Bad Case rerun are still outside this schema
+workflow.

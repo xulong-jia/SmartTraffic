@@ -1,6 +1,8 @@
 # SmartTraffic 最终交付计划
 
-本文档用于 Stage 9 最终交付前审计和文档收口，并记录后续 Full Stage DB 迁移边界。它只描述计划、边界和检查清单，不引入非当前阶段核心业务功能、权限系统、生产部署或新 tag。
+本文档最初用于 Stage 9 最终交付前审计和文档收口；Full Stage 8AB
+将其更新为 full final audit / docs consistency 入口。它只描述计划、边界和
+检查清单，不引入非当前阶段核心业务功能、生产部署或新 tag。
 
 ## 1. 当前版本状态
 
@@ -20,7 +22,11 @@ video upload
 -> Evaluation Center MVP
 ```
 
-当前项目仍是本地开发和验证口径，不是数据库最终版、生产部署版或交通执法系统。
+Full Stage 8AB 当前补充 full final audit、文档一致性修正和
+`docs/final_acceptance_checklist.md`。`v1.0.0-full-final-version` 留给 Full
+Stage 8CD 最终全量验收后再创建。
+
+当前项目仍是本地开发和验证口径，不是生产部署版、production IAM、生产级实时监控或交通执法系统。
 
 ## 2. 已完成能力
 
@@ -52,6 +58,10 @@ video upload
 - Full Stage 6CD Report Export：已新增 `/api/reports/{run_id}/export.pdf`、`/api/reports/{run_id}/bundle`、keyframe summary、annotated video artifact reference、前端 PDF download 和 bundle / visual artifact summary panel；PDF 与 bundle 均不写入仓库，不复制大视频或图片。
 - Full Stage 7AB Camera / Realtime Preview：已新增 DB-backed Cameras API、`upload` / `rtsp` / `file` / `mock` source_type、enable / disable、`stream_url` masking、mock stream preview、local file smoke-level preview、RTSP no-connect preview、recent frames / events / alerts bounded cache、`processing_tasks.mode=realtime_process` linkage、Camera Center 最小前端页面、后端与前端测试和文档。该阶段不是 production realtime monitoring。
 - Full Stage 7CD Security / Audit / Ops：已新增 `X-SmartTraffic-Actor` / `X-SmartTraffic-Role` minimal identity、`SMARTTRAFFIC_AUTH_MODE=permissive|strict`、strict-mode preview permission guard、关键写操作 actor propagation、structured audit logging、标准错误响应、request id logging、`/health/ready` DB readiness、env/docs hardening 和测试。该阶段不是 production IAM。
+- Full Stage 8AB Full Final Audit / Docs Consistency：对照执行手册 26.1-26.14
+  完成文档一致性审计，修正 README/docs/API/database/evaluation/realtime/reporting/security
+  口径，并新增 `docs/final_acceptance_checklist.md`。该阶段不创建
+  `v1.0.0` tag，不新增业务功能。
 - Stage 9AB final pre-delivery audit and documentation closeout。
 - Stage 9CD 小型 demo/sample config、toy expected annotations、seed script、Makefile 和环境命令收口。
 - Stage 9EF final acceptance and final tag preparation。
@@ -59,15 +69,14 @@ video upload
 
 ## 3. 未完成边界
 
-- DB-backed final version。
-- DB-backed full business API/service migration 和生产级持久化查询层。
+- PostgreSQL production deployment 和生产级 migration operations。
 - COCO official mAP / public dataset benchmark。
 - TrackEval official IDF1 / MOTA benchmark。
 - Real dataset benchmark。
 - Complete video-level Bad Case rerun pipeline；当前是 deterministic replay / rule replay。
 - Production-grade evaluation platform。
-- Production realtime streams、production IAM、central audit storage、Permissions / multi-user audit、Security hardening；留给 Full Stage 8。
-- Full final release hardening、production deployment readiness、monitoring readiness 和 `v1.0.0`；留给 Full Stage 8。
+- Production realtime streams、production IAM、central audit storage、Permissions / multi-user audit 和 deployment hardening。
+- Full Stage 8CD final acceptance 和 `v1.0.0-full-final-version` tag。
 - Law-enforcement-grade violation judgement。
 
 ## 4. Stage 9CD 计划：Demo / Sample / Docker / 环境收口

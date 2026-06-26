@@ -81,10 +81,11 @@ Later DB-backed core-flow stages now complete:
 - Full Stage 3EF: Bad Case / Evaluation DB workflow, including failed cases in
   `evaluation_results.summary["failed_cases"]`
 
-Still not complete after Full Stage 3EF:
+Still not complete after Full Stage 7CD / 8AB audit:
 
 - full final production-grade DB-backed version
-- real evaluation metrics beyond the existing MVP artifacts
-- real mAP / IDF1 / MOTA
-- real rerun-based Bad Case regression
-- realtime, permissions, production security, and reporting
+- COCO official mAP
+- TrackEval official IDF1 / MOTA
+- complete video-level Bad Case rerun pipeline
+- production realtime monitoring
+- production IAM, central audit storage, and deployment hardening

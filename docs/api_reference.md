@@ -195,6 +195,33 @@ workflows while preserving artifact fallback.
 - `PATCH /api/alerts/{alert_id}/resolve`
 - `PATCH /api/alerts/{alert_id}/ignore`
 
+## Processing Tasks
+
+- `GET /api/processing/tasks`
+
+This endpoint exposes the local processing task registry / DB-backed task
+records used by video processing, rule-rerun requests, and realtime preview
+start records. Processing task rows include status, mode, progress,
+timestamps, error message, parameters, result summary, and related video / run
+ids where available. It is DB-backed for Full Stage 2AB+ flows and is used for
+local operational visibility, not as a production queue monitor.
+
+## Detection / Tracking / Trajectory Resource Placeholders
+
+- `GET /api/detections`
+- `GET /api/tracks`
+- `GET /api/trajectories`
+
+These are module-boundary placeholder endpoints. Current real result reads are
+the run-scoped, DB-first / artifact-fallback Analysis Runs endpoints:
+
+- `GET /api/analysis-runs/{run_id}/detections`
+- `GET /api/analysis-runs/{run_id}/tracks`
+- `GET /api/analysis-runs/{run_id}/trajectory-points`
+
+The standalone placeholders do not replace the run-scoped result APIs and are
+not production aggregate search endpoints.
+
 ## Reports
 
 Full Stage 6AB/6CD adds a DB-first / artifact-compatible Report Center API for
@@ -1024,8 +1051,8 @@ Recent frames / events / alerts are kept in a bounded in-memory cache
 (`max_items=20` per camera). Disabled cameras return `400` on start. Missing
 cameras return `404`. Full Stage 7CD adds minimal actor / permission / audit /
 readiness hardening around these endpoints. Production IAM, central audit
-storage, operations monitoring, and production realtime streaming remain for
-Full Stage 8.
+storage, operations monitoring, and production realtime streaming remain
+outside the current local preview.
 
 ## Not Implemented From The Manual Yet
 
@@ -1033,23 +1060,14 @@ The following API capabilities are planned by the execution manual but are not
 implemented as working behavior yet:
 
 - advanced filtering on flow counts and zone statistics
-- database-backed aggregate statistics APIs
+- production-grade aggregate statistics APIs
 - complete video-level Bad Case rerun pipeline
 - COCO official mAP / TrackEval official evaluation
-- Production Realtime / Security remain for Full Stage 8
-- Full final release hardening and `v1.0.0` remain for Full Stage 8
+- production realtime monitoring and production IAM
+- Full final `v1.0.0` release tag; Stage 8AB only prepares final audit docs
 
 ## Placeholders For Later Phases
 
-- `GET /api/detections`: contract-only placeholder. Use
-  `GET /api/analysis-runs/{run_id}/detections` for current DB-first /
-  artifact-fallback detection reads.
-- `GET /api/tracks`: contract-only placeholder. Use
-  `GET /api/analysis-runs/{run_id}/tracks` for current DB-first /
-  artifact-fallback tracking reads.
-- `GET /api/trajectories`: contract-only placeholder. Use
-  `GET /api/analysis-runs/{run_id}/trajectory-points` for current
-  DB-first / artifact-fallback trajectory reads.
 Stage 8EFG / Stage 8HI Evaluation APIs are routed under `/api/evaluation` and
 documented above.
 
@@ -1058,8 +1076,9 @@ event and alert center APIs remain separate from the artifact-based
 `analysis-runs` list, summary, event, statistics, and alert endpoints
 documented above. Review API MVP is available under `/api/review`, the Stage 7
 Review Center frontend consumes it, and Stage 7F confirms the artifact-backed
-Review Center MVP boundary. Stage 8CD adds artifact-backed Bad Case APIs and
-frontend workflow. Stage 8EFG adds artifact-backed Evaluation APIs and frontend
-workflow. Stage 8HI adds failed case conversion and Bad Case regression summary
-MVP. Rerun-based regression, industrial metrics, and DB-backed final state
-belong to later phases.
+Review Center MVP boundary. Stage 8CD adds artifact-compatible Bad Case APIs
+and frontend workflow. Stage 8EFG adds Evaluation APIs and frontend workflow.
+Stage 8HI adds failed case conversion and Bad Case regression summary MVP. Full
+Stage 3EF makes Bad Case and Evaluation DB-first with artifact fallback.
+Complete video-level rerun, COCO official metrics, TrackEval official metrics,
+and production hardening remain outside the current implementation.
