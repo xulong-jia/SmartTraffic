@@ -64,6 +64,42 @@ scripts/        项目辅助脚本
 
 `results/traffic_analysis/` 用于保存每次处理的 `run_id` 结果目录。`local_models/`、`local_videos/` 和真实运行结果均被 `.gitignore` 排除，只保留必要的 `.gitkeep`。
 
+## Demo / Sample
+
+Stage 9CD 提供小型 demo/sample 配置，不包含视频、模型权重或 generated results。默认文件位置：
+
+- `samples/configs/demo_zones.json`
+- `samples/configs/demo_event_rules.json`
+- `samples/configs/demo_processing_request.json`
+- `evals/expected/demo_expected_events.json`
+- `evals/expected/demo_expected_counts.json`
+
+生成或补齐这些文件：
+
+```bash
+python3 scripts/seed_demo_data.py
+```
+
+只查看将要创建的文件，不写入：
+
+```bash
+python3 scripts/seed_demo_data.py --dry-run
+```
+
+覆盖已有 demo/sample 文件：
+
+```bash
+python3 scripts/seed_demo_data.py --force
+```
+
+写入临时目录用于测试：
+
+```bash
+python3 scripts/seed_demo_data.py --output-root /tmp/smarttraffic-demo-seed --force
+```
+
+这些 sample config 可作为 dry-run 本地演示输入。`evals/expected/` 下的 toy expected files 只用于 Evaluation MVP smoke input，不代表真实 benchmark。不要把 `results/`、`evals/results/`、视频、图片帧或模型权重提交到 Git。
+
 ## 本地运行
 
 ### 后端
@@ -99,6 +135,7 @@ http://localhost:5173
 ### Docker Compose
 
 ```bash
+docker compose config
 docker compose up
 ```
 
@@ -117,6 +154,7 @@ cp .env.example .env
 - `SMARTTRAFFIC_RESULTS_DIR`
 - `SMARTTRAFFIC_LOCAL_VIDEOS_DIR`
 - `SMARTTRAFFIC_LOCAL_MODELS_DIR`
+- `SMARTTRAFFIC_EVALS_DIR`
 - `YOLO_MODEL_PATH`
 - `YOLO_DRY_RUN`
 - `YOLO_CONF_THRESHOLD`
@@ -151,7 +189,8 @@ cp .env.example .env
 - Stage 8CD Bad Case API and frontend MVP completed
 - Stage 8EFG Evaluation artifacts, MVP metrics, API, CLI, and frontend MVP completed
 - Stage 8HI Bad Case / Evaluation link, regression summary MVP, and closeout audit completed
-- Stage 9AB final pre-delivery audit and documentation closeout in progress
+- Stage 9AB final pre-delivery audit and documentation closeout completed
+- Stage 9CD demo / sample / Docker / environment polish completed
 - Zone / Event Rule configuration API MVP, Event Evidence / Rule Execution artifacts, and Alert Center status workflow implemented
 
 `v0.5.0-event-alert-minimal` is an earlier minimal Event / Alert milestone tag and should not be moved to newer commits.
@@ -534,6 +573,7 @@ The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert mile
 - `v0.8.0-bad-case-evaluation-mvp`
 
 Stage 9 仍是最终交付收口阶段。Stage 9AB 只做最终审计与文档收口；Demo / sample / Docker / 环境细节留给 Stage 9CD，最终验收和后续 tag 留给 Stage 9EF。
+Stage 9CD 已补充小型 demo/sample 配置、seed script、Makefile 命令和本地环境说明，但仍不提交真实视频、模型权重或 generated results。
 
 ## 自查命令
 
@@ -541,8 +581,8 @@ Stage 9 仍是最终交付收口阶段。Stage 9AB 只做最终审计与文档�
 
 ```bash
 cd backend
-pytest -q
-python -m compileall app
+./.venv/bin/python -m pytest tests
+python3 -m compileall app
 ```
 
 前端检查：
@@ -561,6 +601,17 @@ git status --short --branch
 git diff --check
 docker compose config
 python3 scripts/danger_check.py
+```
+
+Makefile 汇总命令：
+
+```bash
+make backend-test
+make frontend-build
+make docker-config
+make danger-check
+make seed-demo
+make check
 ```
 
 大文件检查：

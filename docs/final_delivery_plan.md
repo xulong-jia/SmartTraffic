@@ -1,6 +1,6 @@
 # SmartTraffic 最终交付计划
 
-本文档用于 Stage 9AB 最终交付前审计和文档收口。它只描述计划、边界和检查清单，不引入核心业务功能、数据库迁移、权限系统、生产部署或新 tag。
+本文档用于 Stage 9 最终交付前审计和文档收口。它只描述计划、边界和检查清单，不引入核心业务功能、数据库迁移、权限系统、生产部署或新 tag。
 
 ## 1. 当前版本状态
 
@@ -34,6 +34,8 @@ video upload
 - Bad Case Center artifact-backed MVP，包括 `bad_cases.jsonl`、schema、service、API、React 页面、from-review 和 from-failed-case。
 - Evaluation Center artifact-backed MVP，包括 dataset / run / result / failed-case artifacts、MVP metrics、API、CLI、React 页面和 Bad Case regression summary MVP。
 - Docker Compose 本地开发骨架。
+- Stage 9AB final pre-delivery audit and documentation closeout。
+- Stage 9CD 小型 demo/sample config、toy expected annotations、seed script、Makefile 和环境命令收口。
 - pytest、frontend build、Node utility tests、danger check 和文档化自查命令。
 
 ## 3. 未完成边界
@@ -51,14 +53,15 @@ video upload
 
 ## 4. Stage 9CD 计划：Demo / Sample / Docker / 环境收口
 
-Stage 9CD 建议只做交付可运行性收口：
+Stage 9CD 已完成交付可运行性收口：
 
-- 准备小型 sample config，例如 zone / rule / evaluation dataset registry 示例。
-- 为 demo seed 提供 toy metadata / config 生成能力，不生成或提交真实大视频、真实模型权重或大规模结果。
-- 明确 Docker Compose 本地启动流程和常见环境变量。
-- 补充 Node 版本要求，建议本地使用 Node 20+，Docker Compose frontend 已使用 `node:20-alpine`。
-- 补充一条 dry-run demo 路径，确保无模型权重也可演示基础链路。
-- 保持 `samples/videos/`、`local_videos/`、`local_models/` 和 `results/` 只提交 `.gitkeep` 或小型文本配置。
+- 已准备小型 sample config：zone / rule / processing request。
+- 已准备 toy expected events / counts，作为 Evaluation MVP smoke input。
+- `scripts/seed_demo_data.py` 已提供 dry-run、force 和 output-root。
+- Makefile 已补充 `docker-config`、`seed-demo` 和 venv 优先的 `backend-test`。
+- Docker Compose 本地配置仍通过 `docker compose config`。
+- README 和 demo plan 已说明 dry-run demo 路径、安全边界和 Makefile 命令。
+- `samples/videos/`、`local_videos/`、`local_models/`、`results/` 和 `evals/results/` 仍不提交真实内容。
 
 Stage 9CD 不应实现新业务中心、数据库迁移、真实数据下载器、模型训练或生产部署。
 

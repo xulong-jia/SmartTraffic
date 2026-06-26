@@ -1,0 +1,79 @@
+{
+  "schema_version": "stage9.demo.rules.v1",
+  "description": "Toy Event Engine rules for local dry-run demos.",
+  "event_rules": [
+    {
+      "id": "rule_wrong_way_demo",
+      "name": "Demo wrong-way driving",
+      "event_type": "wrong_way_driving",
+      "enabled": true,
+      "zone_id": "zone_vehicle_lane_demo",
+      "target_classes": [
+        "car",
+        "bus",
+        "truck",
+        "motorcycle"
+      ],
+      "parameters": {
+        "allowed_angle": 335,
+        "angle_tolerance": 35,
+        "min_speed_px_per_frame": 1.0
+      },
+      "cooldown_seconds": 2.0,
+      "severity": "high",
+      "version": 1,
+      "min_track_length": 2
+    },
+    {
+      "id": "rule_danger_zone_demo",
+      "name": "Demo danger-zone intrusion",
+      "event_type": "danger_zone_intrusion",
+      "enabled": true,
+      "zone_id": "zone_danger_demo",
+      "target_classes": [
+        "person",
+        "bicycle",
+        "motorcycle"
+      ],
+      "parameters": {
+        "min_dwell_frames": 1
+      },
+      "cooldown_seconds": 1.0,
+      "severity": "critical",
+      "version": 1,
+      "min_track_length": 1
+    },
+    {
+      "id": "rule_flow_count_demo",
+      "name": "Demo flow counting",
+      "event_type": "flow_counting",
+      "enabled": true,
+      "zone_id": "zone_counting_line_demo",
+      "target_classes": [
+        "car",
+        "bus",
+        "truck",
+        "motorcycle",
+        "bicycle"
+      ],
+      "parameters": {
+        "line": [
+          [
+            300,
+            100
+          ],
+          [
+            300,
+            430
+          ]
+        ],
+        "direction": "any",
+        "count_once_per_track": true
+      },
+      "cooldown_seconds": 0.0,
+      "severity": "info",
+      "version": 1,
+      "min_track_length": 2
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "schema_version": "stage9.demo.expected_counts.v1",
+  "dataset_id": "demo_toy_dataset",
+  "description": "Tiny expected flow-count examples for Evaluation MVP smoke input.",
+  "summary": {
+    "total_count": 2,
+    "vehicle_count": 2,
+    "person_count": 0,
+    "by_class": {
+      "car": 1,
+      "bus": 1
+    },
+    "by_direction": {
+      "unknown": 2
+    }
+  },
+  "records": [
+    {
+      "line_id": "zone_counting_line_demo",
+      "class_name": "car",
+      "direction": "unknown",
+      "count": 1
+    },
+    {
+      "line_id": "zone_counting_line_demo",
+      "class_name": "bus",
+      "direction": "unknown",
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "schema_version": "stage9.demo.expected_events.v1",
+  "dataset_id": "demo_toy_dataset",
+  "description": "Tiny expected event examples for Evaluation MVP smoke input.",
+  "events": [
+    {
+      "event_id": "expected_wrong_way_001",
+      "event_type": "wrong_way_driving",
+      "track_id": 101,
+      "zone_id": "zone_vehicle_lane_demo",
+      "start_frame": 10,
+      "end_frame": 14,
+      "severity": "high"
+    },
+    {
+      "event_id": "expected_danger_zone_001",
+      "event_type": "danger_zone_intrusion",
+      "track_id": 202,
+      "zone_id": "zone_danger_demo",
+      "start_frame": 18,
+      "end_frame": 20,
+      "severity": "critical"
+    },
+    {
+      "event_id": "expected_flow_count_001",
+      "event_type": "flow_counting",
+      "track_id": 303,
+      "zone_id": "zone_counting_line_demo",
+      "frame_index": 25,
+      "severity": "info"
+    }
+  ]
+}

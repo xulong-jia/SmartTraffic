@@ -1,0 +1,198 @@
+{
+  "schema_version": "stage9.demo.processing_request.v1",
+  "description": "Toy process request body. Replace video_id in the URL with a locally uploaded video id.",
+  "endpoint_template": "POST /api/videos/{video_id}/process",
+  "body": {
+    "mode": "detection_tracking_trajectory",
+    "detector_dry_run": true,
+    "tracker_dry_run": true,
+    "frame_stride": 5,
+    "max_frames": 30,
+    "write_preview": false,
+    "direction_window": 2,
+    "dwell_speed_threshold": 1.0,
+    "max_history_points": 20,
+    "event_rules": [
+      {
+        "id": "rule_wrong_way_demo",
+        "name": "Demo wrong-way driving",
+        "event_type": "wrong_way_driving",
+        "enabled": true,
+        "zone_id": "zone_vehicle_lane_demo",
+        "target_classes": [
+          "car",
+          "bus",
+          "truck",
+          "motorcycle"
+        ],
+        "parameters": {
+          "allowed_angle": 335,
+          "angle_tolerance": 35,
+          "min_speed_px_per_frame": 1.0
+        },
+        "cooldown_seconds": 2.0,
+        "severity": "high",
+        "version": 1,
+        "min_track_length": 2
+      },
+      {
+        "id": "rule_danger_zone_demo",
+        "name": "Demo danger-zone intrusion",
+        "event_type": "danger_zone_intrusion",
+        "enabled": true,
+        "zone_id": "zone_danger_demo",
+        "target_classes": [
+          "person",
+          "bicycle",
+          "motorcycle"
+        ],
+        "parameters": {
+          "min_dwell_frames": 1
+        },
+        "cooldown_seconds": 1.0,
+        "severity": "critical",
+        "version": 1,
+        "min_track_length": 1
+      },
+      {
+        "id": "rule_flow_count_demo",
+        "name": "Demo flow counting",
+        "event_type": "flow_counting",
+        "enabled": true,
+        "zone_id": "zone_counting_line_demo",
+        "target_classes": [
+          "car",
+          "bus",
+          "truck",
+          "motorcycle",
+          "bicycle"
+        ],
+        "parameters": {
+          "line": [
+            [
+              300,
+              100
+            ],
+            [
+              300,
+              430
+            ]
+          ],
+          "direction": "any",
+          "count_once_per_track": true
+        },
+        "cooldown_seconds": 0.0,
+        "severity": "info",
+        "version": 1,
+        "min_track_length": 2
+      }
+    ],
+    "zones": [
+      {
+        "id": "zone_vehicle_lane_demo",
+        "name": "Demo vehicle lane",
+        "zone_type": "vehicle_lane",
+        "polygon": [
+          [
+            80,
+            120
+          ],
+          [
+            560,
+            120
+          ],
+          [
+            620,
+            420
+          ],
+          [
+            40,
+            420
+          ]
+        ],
+        "direction": {
+          "start_point": [
+            120,
+            360
+          ],
+          "end_point": [
+            520,
+            180
+          ],
+          "allowed_angle": 335,
+          "reverse_angle_threshold": 150
+        },
+        "enabled": true,
+        "video_id": "demo_video_local",
+        "camera_id": "demo_camera_01"
+      },
+      {
+        "id": "zone_danger_demo",
+        "name": "Demo pedestrian danger zone",
+        "zone_type": "danger_zone",
+        "polygon": [
+          [
+            420,
+            210
+          ],
+          [
+            590,
+            210
+          ],
+          [
+            610,
+            380
+          ],
+          [
+            410,
+            380
+          ]
+        ],
+        "enabled": true,
+        "video_id": "demo_video_local",
+        "camera_id": "demo_camera_01"
+      },
+      {
+        "id": "zone_counting_line_demo",
+        "name": "Demo counting line",
+        "zone_type": "counting_line",
+        "polygon": [
+          [
+            290,
+            90
+          ],
+          [
+            310,
+            90
+          ],
+          [
+            310,
+            440
+          ],
+          [
+            290,
+            440
+          ]
+        ],
+        "counting_line": {
+          "start_point": [
+            300,
+            100
+          ],
+          "end_point": [
+            300,
+            430
+          ],
+          "in_direction": "any",
+          "enabled": true
+        },
+        "enabled": true,
+        "video_id": "demo_video_local",
+        "camera_id": "demo_camera_01"
+      }
+    ],
+    "run_events": true,
+    "generate_alerts": true,
+    "record_not_matched": false
+  }
+}
