@@ -13,6 +13,7 @@ from app.analysis.evaluation_artifacts import (
     load_evaluation_summary,
     register_evaluation_dataset,
 )
+from app.services.bad_case_service import BadCaseService
 from app.services.evaluation_service import EvaluationService
 
 
@@ -152,7 +153,56 @@ def test_evaluation_service_runs_event_flow_trajectory_and_placeholder_metrics(
     assert detection_response["summary"]["summary"]["detection"]["detection_status"]["details"]["status"] == "not_applicable"
     assert service.list_results(run_id=run_id)
     assert service.list_failed_cases(run_id=run_id)
-    assert service.get_evaluation_summary(run_id)["summary"]["bad_case_regression"]["status"] == "planned"
+    assert service.get_evaluation_summary(run_id)["summary"]["bad_case_regression"]["status"] == "empty"
+
+
+def test_evaluation_service_regression_summary_counts_bad_cases(
+    tmp_path: Path,
+) -> None:
+    run_id = _create_evaluation_run(tmp_path)
+    bad_case_service = BadCaseService(
+        artifact_writer=TrafficArtifactWriter(tmp_path / "results")
+    )
+    bad_case_service.create_bad_case(
+        run_id=run_id,
+        record={
+            "case_type": "false_positive",
+            "module": "event_engine",
+            "description": "Open event false positive.",
+            "source": "evaluation_center",
+            "linked_failed_case_id": "failed_open",
+        },
+    )
+    fixed = bad_case_service.create_bad_case(
+        run_id=run_id,
+        record={
+            "case_type": "false_negative",
+            "module": "event_engine",
+            "description": "Fixed event false negative.",
+            "source": "evaluation_center",
+            "linked_failed_case_id": "failed_fixed",
+        },
+    )
+    bad_case_service.update_bad_case(
+        run_id=run_id,
+        case_id=fixed["case_id"],
+        updates={"status": "fixed"},
+    )
+    service = EvaluationService(results_dir=tmp_path / "results", eval_root=tmp_path / "evals")
+
+    response = service.run_evaluation(run_id=run_id, evaluation_type="regression")
+    regression = response["summary"]["summary"]["bad_case_regression"]
+
+    assert regression["status"] == "available"
+    assert regression["total_cases"] == 2
+    assert regression["open_cases"] == 1
+    assert regression["fixed_cases"] == 1
+    assert regression["verified_cases"] == 0
+    assert regression["ignored_cases"] == 0
+    assert regression["fixed_case_count"] == 1
+    assert regression["reopened_case_count"] == 0
+    assert regression["regression_pass_rate"] == 0.0
+    assert response["results"][0]["metric_name"] == "bad_case_regression_pass_rate"
 
 
 def _create_evaluation_run(tmp_path: Path) -> str:

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { createBadCaseFromFailedCase } from "../api/badCases";
 import {
   getEvaluationSummary,
   listEvaluationDatasets,
@@ -19,6 +20,7 @@ import type {
 } from "../types";
 import {
   EVALUATION_TYPE_KEYS,
+  buildBadCaseRegressionDisplaySummary,
   buildEvaluationResultDisplaySummary,
   buildEvaluationStatusCounts,
   formatEvaluationStatusLabel,
@@ -56,6 +58,7 @@ export default function EvaluationCenterPage() {
   const [datasetForm, setDatasetForm] = useState<DatasetFormState>(emptyDatasetForm);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState<"dataset" | "run" | null>(null);
+  const [convertingFailedCaseId, setConvertingFailedCaseId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -150,6 +153,27 @@ export default function EvaluationCenterPage() {
       setError(currentError instanceof Error ? currentError.message : "Evaluation run failed");
     } finally {
       setSubmitting(null);
+    }
+  }
+
+  async function convertFailedCase(failedCaseId: string, failedCaseRunId: string) {
+    setConvertingFailedCaseId(failedCaseId);
+    setError("");
+    setSuccessMessage("");
+    try {
+      const created = await createBadCaseFromFailedCase({
+        run_id: failedCaseRunId,
+        failed_case_id: failedCaseId,
+        tags: ["evaluation"]
+      });
+      setSuccessMessage(`Created ${created.case_id} from ${failedCaseId}.`);
+      await loadEvaluationState(failedCaseRunId);
+    } catch (currentError) {
+      setError(
+        currentError instanceof Error ? currentError.message : "Failed case conversion failed"
+      );
+    } finally {
+      setConvertingFailedCaseId(null);
     }
   }
 
@@ -327,7 +351,11 @@ export default function EvaluationCenterPage() {
           <div className="section-heading-row">
             <h3>Failed Cases</h3>
           </div>
-          <FailedCasesTable data={failedCases} />
+          <FailedCasesTable
+            data={failedCases}
+            convertingFailedCaseId={convertingFailedCaseId}
+            onConvert={convertFailedCase}
+          />
         </section>
 
         <section className="panel">
@@ -335,7 +363,10 @@ export default function EvaluationCenterPage() {
             <h3>Summary</h3>
           </div>
           {summary ? (
-            <pre>{JSON.stringify(summary.summary, null, 2)}</pre>
+            <>
+              <RegressionSummary summary={summary.summary.bad_case_regression} />
+              <pre>{JSON.stringify(summary.summary, null, 2)}</pre>
+            </>
           ) : (
             <p className="muted">Select a run to load summary.</p>
           )}
@@ -453,7 +484,15 @@ function ResultsTable({ data }: { data: EvaluationResultListResponse | null }) {
   );
 }
 
-function FailedCasesTable({ data }: { data: EvaluationFailedCaseListResponse | null }) {
+function FailedCasesTable({
+  data,
+  convertingFailedCaseId,
+  onConvert
+}: {
+  data: EvaluationFailedCaseListResponse | null;
+  convertingFailedCaseId: string | null;
+  onConvert: (failedCaseId: string, runId: string) => void;
+}) {
   const rows = data?.items ?? [];
   if (rows.length === 0) {
     return <p className="muted">No failed cases.</p>;
@@ -468,6 +507,7 @@ function FailedCasesTable({ data }: { data: EvaluationFailedCaseListResponse | n
           <th>Module</th>
           <th>Suggested</th>
           <th>Created</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody>
@@ -479,10 +519,41 @@ function FailedCasesTable({ data }: { data: EvaluationFailedCaseListResponse | n
             <td>{failedCase.module}</td>
             <td>{failedCase.suggested_bad_case_type || "-"}</td>
             <td>{failedCase.created_at}</td>
+            <td>
+              <button
+                type="button"
+                onClick={() => onConvert(failedCase.failed_case_id, failedCase.run_id)}
+                disabled={convertingFailedCaseId === failedCase.failed_case_id}
+              >
+                Convert
+              </button>
+            </td>
           </tr>
         ))}
       </tbody>
     </table>
+  );
+}
+
+function RegressionSummary({ summary }: { summary: unknown }) {
+  const display =
+    typeof summary === "object" && summary !== null
+      ? buildBadCaseRegressionDisplaySummary(summary as Record<string, unknown>)
+      : buildBadCaseRegressionDisplaySummary(null);
+  return (
+    <div className="summary-strip">
+      <div className="metric-row review-metric-row">
+        <MetricCard label="Regression total" value={display.totalCases} />
+        <MetricCard label="Open" value={display.openCases} />
+        <MetricCard label="Fixed" value={display.fixedCases} />
+        <MetricCard label="Pass rate" value={display.regressionPassRate} />
+      </div>
+      <p className="muted">
+        Status {display.statusLabel} | verified {display.verifiedCases} | ignored{" "}
+        {display.ignoredCases} | reopened {display.reopenedCaseCount}
+      </p>
+      <p className="muted">MVP regression: {display.definition}</p>
+    </div>
   );
 }
 

@@ -1,6 +1,7 @@
 import { apiGet, apiPatch, apiPost } from "./client";
 import type {
   BadCaseCreateRequest,
+  BadCaseFromFailedCaseRequest,
   BadCaseFromReviewRequest,
   BadCaseListParams,
   BadCaseListResponse,
@@ -45,6 +46,12 @@ export function createBadCaseFromReview(
   body: BadCaseFromReviewRequest
 ): Promise<BadCaseRecord> {
   return apiPost<BadCaseRecord>("/api/bad-cases/from-review", JSON.stringify(body));
+}
+
+export function createBadCaseFromFailedCase(
+  body: BadCaseFromFailedCaseRequest
+): Promise<BadCaseRecord> {
+  return apiPost<BadCaseRecord>("/api/bad-cases/from-failed-case", JSON.stringify(body));
 }
 
 function buildQueryString(params: object): string {

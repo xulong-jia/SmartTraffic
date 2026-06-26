@@ -4,13 +4,14 @@ from app.analysis.bad_case_artifacts import BadCaseArtifactError
 from app.schemas.bad_case import (
     BadCaseCreateApiRequest,
     BadCaseDetailResponse,
+    BadCaseFromFailedCaseRequest,
     BadCaseFromReviewRequest,
     BadCaseListResponse,
     BadCaseRecord,
     BadCaseSummary,
     BadCaseUpdateApiRequest,
 )
-from app.services.bad_case_service import BadCaseService
+from app.services.bad_case_service import BadCaseService, FailedCaseNotFound
 
 
 router = APIRouter(prefix="/api/bad-cases", tags=["bad-cases"])
@@ -92,6 +93,34 @@ def create_bad_case_from_review(
             else "review not found"
         )
         raise _not_found(detail) from exc
+    except ValueError as exc:
+        raise _bad_request(str(exc)) from exc
+    except BadCaseArtifactError as exc:
+        raise _bad_request("invalid bad case artifact") from exc
+
+
+@router.post("/from-failed-case", response_model=BadCaseDetailResponse)
+def create_bad_case_from_failed_case(
+    payload: BadCaseFromFailedCaseRequest,
+) -> BadCaseDetailResponse:
+    service = BadCaseService()
+    try:
+        record = service.create_bad_case_from_failed_case(
+            run_id=payload.run_id,
+            failed_case_id=payload.failed_case_id,
+            case_type=payload.case_type,
+            module=payload.module,
+            description=payload.description,
+            expected_result=payload.expected_result,
+            actual_result=payload.actual_result,
+            root_cause=payload.root_cause,
+            tags=payload.tags,
+        )
+        return BadCaseDetailResponse(**record)
+    except FailedCaseNotFound as exc:
+        raise _not_found("failed case not found") from exc
+    except KeyError as exc:
+        raise _not_found("analysis run not found") from exc
     except ValueError as exc:
         raise _bad_request(str(exc)) from exc
     except BadCaseArtifactError as exc:

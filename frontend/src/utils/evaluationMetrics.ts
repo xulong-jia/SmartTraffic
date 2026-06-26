@@ -1,4 +1,8 @@
-import type { EvaluationResultRecord, EvaluationType } from "../types";
+import type {
+  BadCaseRegressionSummary,
+  EvaluationResultRecord,
+  EvaluationType
+} from "../types";
 
 export const EVALUATION_STATUS_KEYS = [
   "available",
@@ -30,6 +34,19 @@ export interface EvaluationResultDisplaySummary {
   statusLabel: string;
   reason: string;
   createdAt: string;
+}
+
+export interface BadCaseRegressionDisplaySummary {
+  statusLabel: string;
+  totalCases: string;
+  openCases: string;
+  fixedCases: string;
+  verifiedCases: string;
+  ignoredCases: string;
+  fixedCaseCount: string;
+  reopenedCaseCount: string;
+  regressionPassRate: string;
+  definition: string;
 }
 
 export function buildEvaluationStatusCounts(
@@ -95,6 +112,25 @@ export function buildEvaluationResultDisplaySummary(
   };
 }
 
+export function buildBadCaseRegressionDisplaySummary(
+  summary: BadCaseRegressionSummary | Record<string, unknown> | null | undefined
+): BadCaseRegressionDisplaySummary {
+  const payload: Record<string, unknown> =
+    summary && typeof summary === "object" ? { ...summary } : {};
+  return {
+    statusLabel: formatEvaluationStatusLabel(readUnknownString(payload, "status")),
+    totalCases: normalizeMetricValue(readUnknownNumber(payload, "total_cases")),
+    openCases: normalizeMetricValue(readUnknownNumber(payload, "open_cases")),
+    fixedCases: normalizeMetricValue(readUnknownNumber(payload, "fixed_cases")),
+    verifiedCases: normalizeMetricValue(readUnknownNumber(payload, "verified_cases")),
+    ignoredCases: normalizeMetricValue(readUnknownNumber(payload, "ignored_cases")),
+    fixedCaseCount: normalizeMetricValue(readUnknownNumber(payload, "fixed_case_count")),
+    reopenedCaseCount: normalizeMetricValue(readUnknownNumber(payload, "reopened_case_count")),
+    regressionPassRate: normalizeMetricValue(readUnknownNumber(payload, "regression_pass_rate")),
+    definition: normalizeText(readUnknownString(payload, "definition"))
+  };
+}
+
 function emptyStatusCounts(): EvaluationStatusCounts {
   return {
     available: 0,
@@ -130,6 +166,22 @@ function readDetailString(
 ): string | null {
   const value = details?.[key];
   return typeof value === "string" ? value : null;
+}
+
+function readUnknownString(
+  details: Record<string, unknown>,
+  key: string
+): string | null {
+  const value = details[key];
+  return typeof value === "string" ? value : null;
+}
+
+function readUnknownNumber(
+  details: Record<string, unknown>,
+  key: string
+): number | null {
+  const value = details[key];
+  return typeof value === "number" ? value : null;
 }
 
 function normalizeText(value: string | null | undefined, fallback = "-"): string {

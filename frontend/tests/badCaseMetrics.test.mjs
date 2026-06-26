@@ -77,6 +77,7 @@ test("buildBadCaseStatusCounts counts known statuses and unknown fallback", () =
     open: 1,
     triaged: 0,
     fixed: 1,
+    verified: 0,
     wont_fix: 0,
     unknown: 1
   });
@@ -134,6 +135,7 @@ test("buildBadCaseDisplaySummary normalizes optional fields", () => {
       module: "event_engine",
       status: "open",
       source: "manual",
+      linked_failed_case_id: "failed_eval_1",
       event_id: "",
       track_id: null,
       frame_index: 10,
@@ -151,6 +153,7 @@ test("buildBadCaseDisplaySummary normalizes optional fields", () => {
       frame: "10",
       tags: "wrong_way",
       source: "manual",
+      linkedFailedCaseId: "failed_eval_1",
       updatedAt: "2026-01-01T00:00:00+00:00"
     }
   );

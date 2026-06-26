@@ -18,12 +18,14 @@ from app.analysis.evaluation_artifacts import (
     write_evaluation_summary,
 )
 from app.analysis.evaluation_metrics import (
+    compute_bad_case_regression_metrics,
     compute_detection_metrics,
     compute_event_metrics,
     compute_flow_counting_metrics,
     compute_tracking_metrics,
     compute_trajectory_metrics,
 )
+from app.analysis.bad_case_artifacts import load_bad_cases
 from app.core.config import get_settings
 from app.core.paths import PROJECT_DIR
 
@@ -221,11 +223,15 @@ class EvaluationService:
                 _read_jsonl(run_dir / "tracks.jsonl"),
             )
             return [("tracking_status", None, details)], []
-        details = {
-            "status": "planned",
-            "reason": "Bad Case regression workflow is reserved for Stage 8H",
-        }
-        return [("bad_case_regression_status", None, details)], []
+        details = self._bad_case_regression_summary(run_dir)
+        return [
+            (
+                "bad_case_regression_pass_rate",
+                details["regression_pass_rate"],
+                details,
+            ),
+            ("bad_case_regression_total_cases", details["total_cases"], details),
+        ], []
 
     def _write_run_summary(self, run_dir: Path, run_id: str) -> dict[str, Any]:
         results = self.list_results(run_id=run_id)
@@ -235,11 +241,7 @@ class EvaluationService:
             grouped.setdefault(str(result["evaluation_type"]), {})[
                 str(result["metric_name"])
             ] = result
-        grouped["bad_case_regression"] = {
-            "status": "planned",
-            "stage": "stage_8h",
-            "reason": "Failed case to Bad Case regression workflow is not implemented in Stage 8EFG.",
-        }
+        grouped["bad_case_regression"] = self._bad_case_regression_summary(run_dir)
         return write_evaluation_summary(
             run_dir,
             {
@@ -248,6 +250,9 @@ class EvaluationService:
                 "failed_cases": failed_cases,
             },
         )
+
+    def _bad_case_regression_summary(self, run_dir: Path) -> dict[str, Any]:
+        return compute_bad_case_regression_metrics(load_bad_cases(run_dir))
 
     def _dataset(self, dataset_id: str | None) -> dict[str, Any]:
         for dataset in self.list_datasets()["datasets"]:

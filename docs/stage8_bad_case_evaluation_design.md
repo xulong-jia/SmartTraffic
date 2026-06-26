@@ -1,8 +1,24 @@
 # Stage 8 Bad Case 与 Evaluation Center 设计文档
 
-本文档起源于 Stage 8A 的只读审计与设计文档。Stage 8B 已补充 Bad Case artifact / schema / service 的后端底座；Stage 8CD 已补充 Bad Case API 与 Bad Case Center 前端 MVP；Stage 8EFG 已补充 Evaluation artifacts、MVP metrics、API、CLI 与 Evaluation Center 前端 MVP。当前仍未实现数据库迁移、工业级 mAP / IDF1 / MOTA、Bad Case regression、failed case 转 Bad Case 或生产化评测平台。
+本文档起源于 Stage 8A 的只读审计与设计文档。Stage 8B 已补充 Bad Case artifact / schema / service 的后端底座；Stage 8CD 已补充 Bad Case API 与 Bad Case Center 前端 MVP；Stage 8EFG 已补充 Evaluation artifacts、MVP metrics、API、CLI 与 Evaluation Center 前端 MVP；Stage 8HI 已补充 failed case -> Bad Case 联动、Bad Case regression summary MVP 与 Stage 8 收尾审计。当前仍未实现数据库迁移、工业级 mAP / IDF1 / MOTA、真实 rerun-based regression 或生产化评测平台。
 
-本文档定义 Stage 8 后续开发边界、artifact contract、API contract、前端页面草案、测试策略和子阶段拆分。Stage 8A/B/CD/EFG 已完成 artifact-backed MVP 范围；它不代表 Stage 8H regression、数据库最终版或工业级评测体系已经完成。
+本文档定义 Stage 8 后续开发边界、artifact contract、API contract、前端页面草案、测试策略和子阶段拆分。Stage 8A/B/CD/EFG/HI 已完成 artifact-backed MVP 范围；它不代表数据库最终版、真实 rerun-based regression 或工业级评测体系已经完成。
+
+## 0. Stage 8 收尾审计矩阵
+
+| 项目 | 状态 | 说明 |
+| --- | --- | --- |
+| Bad Case artifact / schema / service | 已完成 | `bad_cases.jsonl`、`bad_case_updates.jsonl`、schema、service 与 manifest / metadata / artifact index 刷新已完成 |
+| Bad Case API / frontend MVP | 已完成 | `/api/bad-cases` 与 React Bad Case Center 支持 filters、list/detail、create、update、summary、from-review |
+| Evaluation artifacts / metrics MVP | 已完成 | datasets、runs、results、failed cases、summary、event / flow / trajectory MVP metrics 已完成 |
+| Evaluation API / frontend MVP | 已完成 | `/api/evaluation`、`scripts/run_evals.py` 与 React Evaluation Center 已完成 |
+| failed case -> Bad Case MVP | 已完成 | `POST /api/bad-cases/from-failed-case` 显式创建 `source=evaluation_center`、`linked_failed_case_id` Bad Case，且不修改 failed case 原始 artifact |
+| Bad Case regression summary MVP | 已完成 | `evaluation_summary.json.summary.bad_case_regression` 读取 Bad Case status 并输出 summary；不执行真实 rerun |
+| 工业级 mAP / IDF1 / MOTA | 未完成 | 当前 detection / tracking 无完整 ground truth evaluator，返回 `not_applicable` 边界 |
+| 真实大数据评测 | 未完成 | 不下载、不提交真实大数据集 |
+| DB-backed final | 未完成 | 当前仍是 artifact-backed MVP |
+| 权限 / 多用户 / 生产部署 | 未完成 | 不属于 Stage 8 MVP |
+| 真实 rerun-based regression | 未完成 | 当前只做 Bad Case status summary，不重新跑模型或规则 |
 
 ## 1. 阶段目标
 
@@ -59,8 +75,9 @@ Stage 8 暂不做：
 - `scripts/run_evals.py` 已成为 Stage 8EFG Evaluation runner CLI，调用 artifact-backed `EvaluationService`。
 - `scripts/seed_demo_data.py` 是 Stage 9 planned demo seed placeholder，不生成真实 demo/eval 数据。
 - `backend/app/analysis/evaluation_artifacts.py` 已实现 `evaluation_datasets.json`、`evaluation_runs.jsonl`、`evaluation_results.jsonl`、`failed_cases.jsonl` 与 run-level `evaluation_summary.json` 写入。
-- `backend/app/analysis/evaluation_metrics.py` 已实现 event / flow_counting / trajectory MVP 指标，并对 detection / tracking / regression 返回明确的 `not_applicable` 或 `planned` 边界。
+- `backend/app/analysis/evaluation_metrics.py` 已实现 event / flow_counting / trajectory MVP 指标，并对 detection / tracking 返回明确的 `not_applicable` 边界；Bad Case regression summary MVP 已按 Bad Case status 汇总。
 - `backend/app/services/evaluation_service.py`、`backend/app/api/evaluation.py`、`frontend/src/api/evaluation.ts`、`frontend/src/pages/EvaluationCenterPage.tsx` 已提供 Stage 8EFG Evaluation API 与前端 MVP。
+- `backend/app/services/bad_case_service.py` 与 `backend/app/api/bad_cases.py` 已提供 Stage 8HI failed case -> Bad Case MVP。
 - `backend/app/schemas/review.py` 已定义 review status/action 与 false-negative schema，可作为 Bad Case 来源之一。
 - `frontend/src/App.tsx` 已暴露 Bad Case Center 和 Evaluation Center 导航入口。
 
@@ -68,9 +85,8 @@ Stage 8 暂不做：
 
 当前未实现：
 
-- failed case 转 Bad Case。
 - Review false-positive / false-negative 的 Review 页面自动派生 Bad Case。
-- Bad Case regression。
+- 真实 rerun-based Bad Case regression。
 - 工业级 mAP、IDF1、MOTA。
 - 数据库模型、repository、migration。
 
@@ -1198,7 +1214,7 @@ python3 scripts/danger_check.py
 不做：
 
 - 前端页面。
-- failed case 转 Bad Case。
+- failed case 转 Bad Case 不属于 Stage 8CD，已在 Stage 8HI 补充。
 
 ### 12.4 Stage 8D：Bad Case Center frontend MVP
 
@@ -1352,11 +1368,16 @@ Stage 8C 与 Stage 8D 已合并为 Stage 8CD 完成。
 - `frontend/src/pages/BadCaseCenterPage.tsx` 提供 Bad Case Center MVP：filters、summary、list、detail、create、update。
 - `backend/tests/test_stage8_bad_case_api.py` 与 `frontend/tests/badCaseMetrics.test.mjs` 覆盖 Stage 8CD 行为。
 
-仍未完成：
+Stage 8CD 当时仍未完成、但后续已由 Stage 8EFG / Stage 8HI 补齐：
 
 - Evaluation artifacts / metrics / API / frontend。
-- `run_evals.py` 真实评测逻辑。
-- Bad Case regression workflow。
-- failed case -> Bad Case 联动。
-- DB-backed Bad Case state。
+- `run_evals.py` Evaluation runner MVP。
+- Bad Case regression summary MVP。
+- failed case -> Bad Case 联动 MVP。
+
+仍未完成：
+
+- DB-backed Bad Case / Evaluation state。
+- 真实 rerun-based regression pipeline。
+- 工业级 mAP / IDF1 / MOTA。
 - 权限系统、实时流和生产部署。

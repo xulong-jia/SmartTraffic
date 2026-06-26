@@ -121,3 +121,32 @@ test("buildEvaluationResultDisplaySummary normalizes table values", () => {
     createdAt: "2026-01-01T00:00:01+00:00"
   });
 });
+
+test("buildBadCaseRegressionDisplaySummary normalizes regression summary values", () => {
+  assert.deepEqual(
+    evaluationMetrics.buildBadCaseRegressionDisplaySummary({
+      status: "available",
+      total_cases: 4,
+      open_cases: 1,
+      fixed_cases: 2,
+      verified_cases: 1,
+      ignored_cases: 0,
+      fixed_case_count: 2,
+      reopened_case_count: 0,
+      regression_pass_rate: 0.333333,
+      definition: "verified_cases / max(fixed_cases + verified_cases + open_cases, 1)"
+    }),
+    {
+      statusLabel: "Available",
+      totalCases: "4",
+      openCases: "1",
+      fixedCases: "2",
+      verifiedCases: "1",
+      ignoredCases: "0",
+      fixedCaseCount: "2",
+      reopenedCaseCount: "0",
+      regressionPassRate: "0.333",
+      definition: "verified_cases / max(fixed_cases + verified_cases + open_cases, 1)"
+    }
+  );
+});

@@ -297,6 +297,7 @@ export default function BadCaseCenterPage() {
                 <th>Frame</th>
                 <th>Tags</th>
                 <th>Source</th>
+                <th>Failed Case</th>
                 <th>Updated</th>
               </tr>
             </thead>
@@ -329,6 +330,7 @@ export default function BadCaseCenterPage() {
                     <td>{display.frame}</td>
                     <td>{display.tags}</td>
                     <td>{display.source}</td>
+                    <td>{display.linkedFailedCaseId}</td>
                     <td>{display.updatedAt}</td>
                   </tr>
                 );
@@ -356,6 +358,7 @@ export default function BadCaseCenterPage() {
                 <DetailItem label="Root cause" value={detail.root_cause} />
                 <DetailItem label="Snapshot" value={detail.snapshot_path} />
                 <DetailItem label="Review" value={detail.linked_review_id} />
+                <DetailItem label="Failed Case" value={detail.linked_failed_case_id} />
                 <DetailItem label="Event" value={detail.event_id} />
                 <DetailItem label="Track" value={detail.track_id} />
                 <DetailItem label="Frame" value={detail.frame_index} />

@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import os
 from typing import Any
 
 from app.analysis.artifact_writer import TrafficArtifactWriter
@@ -11,8 +12,14 @@ from app.analysis.bad_case_artifacts import (
     summarize_bad_case_records,
     update_bad_case,
 )
+from app.analysis.evaluation_artifacts import load_failed_cases
 from app.analysis.review_artifacts import load_review_comments
 from app.core.config import get_settings
+from app.core.paths import PROJECT_DIR
+
+
+class FailedCaseNotFound(KeyError):
+    """Raised when an Evaluation failed case cannot be found."""
 
 
 class BadCaseService:
@@ -22,8 +29,14 @@ class BadCaseService:
     Evaluation Center metrics, and database persistence remain later stages.
     """
 
-    def __init__(self, artifact_writer: TrafficArtifactWriter | None = None) -> None:
+    def __init__(
+        self,
+        artifact_writer: TrafficArtifactWriter | None = None,
+        *,
+        eval_root: str | Path | None = None,
+    ) -> None:
         self.artifact_writer = artifact_writer
+        self.eval_root = Path(eval_root or os.environ.get("SMARTTRAFFIC_EVALS_DIR", PROJECT_DIR / "evals"))
 
     def status(self) -> dict[str, str]:
         return {"status": "ready", "stage": "stage_8b_bad_case_artifacts"}
@@ -133,6 +146,88 @@ class BadCaseService:
             },
         )
 
+    def create_bad_case_from_failed_case(
+        self,
+        *,
+        run_id: str,
+        failed_case_id: str,
+        case_type: str | None = None,
+        module: str | None = None,
+        description: str | None = None,
+        expected_result: str | None = None,
+        actual_result: str | None = None,
+        root_cause: str | None = None,
+        tags: list[str] | None = None,
+    ) -> dict[str, Any]:
+        run_dir = self._existing_run_dir(run_id)
+        existing = self._find_bad_case_by_failed_case(
+            run_id=run_id,
+            failed_case_id=failed_case_id,
+        )
+        if existing is not None:
+            return existing
+
+        failed_case = self._find_failed_case(run_id=run_id, failed_case_id=failed_case_id)
+        inferred_case_type = case_type or str(
+            failed_case.get("suggested_bad_case_type")
+            or failed_case.get("failure_type")
+            or "other"
+        )
+        inferred_module = module or str(failed_case.get("module") or "other")
+        frame_range = failed_case.get("frame_range")
+        frame_index = None
+        if isinstance(frame_range, dict):
+            frame_index = frame_range.get("start_frame") or frame_range.get("end_frame")
+
+        return append_bad_case(
+            run_dir,
+            {
+                "run_id": run_id,
+                "video_id": self._video_id(run_dir),
+                "frame_index": frame_index,
+                "case_type": inferred_case_type,
+                "module": inferred_module,
+                "description": description
+                if description is not None
+                else _description_from_failed_case(failed_case),
+                "expected_result": expected_result
+                if expected_result is not None
+                else _stringify_failed_case_side(failed_case.get("expected")),
+                "actual_result": actual_result
+                if actual_result is not None
+                else _stringify_failed_case_side(failed_case.get("actual")),
+                "root_cause": root_cause or "",
+                "tags": tags or ["evaluation"],
+                "source": "evaluation_center",
+                "linked_failed_case_id": failed_case_id,
+            },
+        )
+
+    def _find_bad_case_by_failed_case(
+        self,
+        *,
+        run_id: str,
+        failed_case_id: str,
+    ) -> dict[str, Any] | None:
+        for record in self.list_bad_cases(run_id=run_id):
+            if record.get("linked_failed_case_id") == failed_case_id:
+                return record
+        return None
+
+    def _find_failed_case(
+        self,
+        *,
+        run_id: str,
+        failed_case_id: str,
+    ) -> dict[str, Any]:
+        for failed_case in load_failed_cases(self.eval_root):
+            if (
+                failed_case.get("failed_case_id") == failed_case_id
+                and failed_case.get("run_id") == run_id
+            ):
+                return failed_case
+        raise FailedCaseNotFound(failed_case_id)
+
     def _find_review(
         self,
         run_dir: Path,
@@ -214,3 +309,14 @@ def _actual_result_from_review(review: dict[str, Any]) -> str:
         return f"review marked artifact as {after_status}"
     action = review.get("action")
     return f"review action recorded as {action}"
+
+
+def _description_from_failed_case(failed_case: dict[str, Any]) -> str:
+    failure_type = failed_case.get("failure_type")
+    return f"Converted from evaluation failed case {failed_case['failed_case_id']} ({failure_type})."
+
+
+def _stringify_failed_case_side(value: Any) -> str:
+    if value in (None, {}, []):
+        return ""
+    return json.dumps(value, ensure_ascii=False, sort_keys=True)

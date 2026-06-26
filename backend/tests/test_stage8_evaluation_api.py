@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from app.analysis.artifact_writer import TrafficArtifactWriter
+from app.services.bad_case_service import BadCaseService
 from app.main import app
 from app.services.processing_service import processing_service
 from app.services.traffic_analysis_service import traffic_analysis_service
@@ -53,7 +54,7 @@ def test_evaluation_api_list_register_run_results_summary_and_failed_cases(
     assert any(item["metric_name"] == "event_precision" for item in results.json()["items"])
     assert summary.status_code == 200
     assert summary.json()["run_id"] == run_id
-    assert summary.json()["summary"]["bad_case_regression"]["status"] == "planned"
+    assert summary.json()["summary"]["bad_case_regression"]["status"] == "empty"
     assert failed_cases.status_code == 200
     assert any(item["failure_type"] == "false_positive" for item in failed_cases.json()["items"])
 
@@ -82,6 +83,19 @@ def test_evaluation_api_missing_run_and_dataset_return_clear_errors(
 
 def test_run_evals_cli_smoke_outputs_json(tmp_path: Path) -> None:
     run_id = _create_cli_run(tmp_path)
+    bad_case_service = BadCaseService(
+        artifact_writer=TrafficArtifactWriter(tmp_path / "results")
+    )
+    bad_case_service.create_bad_case(
+        run_id=run_id,
+        record={
+            "case_type": "false_negative",
+            "module": "event_engine",
+            "description": "Regression smoke case.",
+            "source": "evaluation_center",
+            "linked_failed_case_id": "failed_cli",
+        },
+    )
     completed = subprocess.run(
         [
             sys.executable,
@@ -89,7 +103,7 @@ def test_run_evals_cli_smoke_outputs_json(tmp_path: Path) -> None:
             "--run-id",
             run_id,
             "--evaluation-type",
-            "trajectory",
+            "regression",
             "--results-root",
             str(tmp_path / "results"),
             "--eval-root",
@@ -104,8 +118,10 @@ def test_run_evals_cli_smoke_outputs_json(tmp_path: Path) -> None:
 
     payload = json.loads(completed.stdout)
     assert payload["evaluation_run"]["run_id"] == run_id
-    assert payload["evaluation_run"]["evaluation_type"] == "trajectory"
-    assert payload["summary"]["summary"]["bad_case_regression"]["status"] == "planned"
+    assert payload["evaluation_run"]["evaluation_type"] == "regression"
+    regression = payload["summary"]["summary"]["bad_case_regression"]
+    assert regression["status"] == "available"
+    assert regression["total_cases"] == 1
 
 
 def _client_for_tmp_evaluation(tmp_path: Path, monkeypatch) -> TestClient:

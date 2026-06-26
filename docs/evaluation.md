@@ -1,11 +1,11 @@
 # Evaluation Center
 
-本文档记录 Stage 8EFG 的 Evaluation Center artifact-backed MVP。它不是
+本文档记录 Stage 8HI 后的 Evaluation Center artifact-backed MVP。它不是
 数据库最终版，也不代表工业级检测 / 跟踪评测体系已经完成。
 
 ## 当前状态
 
-Stage 8EFG 已实现：
+Stage 8EFG / Stage 8HI 已实现：
 
 - `evals/datasets/evaluation_datasets.json` 数据集注册表。
 - `evals/results/evaluation_runs.jsonl` 评测运行记录。
@@ -13,11 +13,12 @@ Stage 8EFG 已实现：
 - `evals/results/failed_cases.jsonl` Evaluation failed cases。
 - `results/traffic_analysis/{run_id}/evaluation_summary.json` run-level summary。
 - Evaluation API、CLI 和 Evaluation Center 前端 MVP。
+- `POST /api/bad-cases/from-failed-case` failed case -> Bad Case MVP。
+- Bad Case regression summary MVP。
 
-Stage 8EFG 仍未实现：
+当前仍未实现：
 
-- Stage 8H Bad Case regression workflow。
-- failed case 自动转换为 Bad Case。
+- 真实 rerun-based Bad Case regression pipeline。
 - 工业级 mAP、IDF1、MOTA。
 - database-backed evaluation tables。
 - 权限、多用户、实时流或生产部署。
@@ -60,9 +61,14 @@ Stage 8EFG 提供以下 artifact-backed endpoints：
 - `GET /api/evaluation/summary/{run_id}`
 - `GET /api/evaluation/failed-cases`
 
+Bad Case / Evaluation 联动 endpoint：
+
+- `POST /api/bad-cases/from-failed-case`
+
 `POST /api/evaluation/run` 支持 `event`、`flow_counting`、`trajectory`、
-`detection`、`tracking`、`regression` 类型。其中 `regression` 仅返回
-`planned`，不执行 Stage 8H 回归工作流。
+`detection`、`tracking`、`regression` 类型。其中 `regression` 读取当前
+run 的 `bad_cases.jsonl`，输出 artifact-backed regression summary MVP；
+它不执行真实模型重跑。
 
 ## Metrics MVP
 
@@ -77,7 +83,18 @@ Stage 8EFG 提供以下 artifact-backed endpoints：
   point count、average track length、average speed、direction availability。
 - Detection：若没有检测标注，返回 `not_applicable`；不宣称 mAP 已实现。
 - Tracking：若没有跟踪标注，返回 `not_applicable`；不宣称 IDF1 / MOTA 已实现。
-- Regression：返回 `planned`，保留 Stage 8H 边界。
+- Regression：读取 Bad Case status，输出 `total_cases`、`open_cases`、
+  `fixed_cases`、`verified_cases`、`ignored_cases`、`fixed_case_count`、
+  `reopened_case_count` 和 `regression_pass_rate`。
+
+Bad Case regression MVP 口径：
+
+```text
+regression_pass_rate = verified_cases / max(fixed_cases + verified_cases + open_cases, 1)
+```
+
+当前没有 reopen 机制，因此 `reopened_case_count` 返回 0。该指标不是
+rerun-based regression，也不代表真实模型回归通过率。
 
 ## CLI
 
@@ -98,8 +115,10 @@ python3 scripts/run_evals.py \
 ## 与 Bad Case / Review 的边界
 
 Evaluation failed cases 是评测失败记录，不等于 Bad Case Center 的
-`bad_cases.jsonl`。Stage 8EFG 不提供 failed case 转 Bad Case 的按钮、API
-或自动同步。
+`bad_cases.jsonl`。Stage 8HI 提供显式转换 MVP：调用
+`POST /api/bad-cases/from-failed-case` 后创建 `source=evaluation_center`、
+`linked_failed_case_id=<failed_case_id>` 的 Bad Case。该操作不会修改
+`failed_cases.jsonl`、`evaluation_results.jsonl` 或原始 Review artifacts。
 
 Review Center 的 `false_positive` / `false_negative` 是人工复核状态，也不是
 Evaluation ground truth。Evaluation 可以读取 Stage 6/7 artifacts，但不修改

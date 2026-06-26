@@ -725,19 +725,26 @@ Bad Case artifacts return `400` with a stable error message.
 overwrite `review_comments.jsonl`, `event_review_state.json`,
 `false_negative_events.jsonl`, or `events.jsonl`.
 
+`POST /api/bad-cases/from-failed-case` creates or returns a Bad Case linked to
+an Evaluation failed case. It writes `source=evaluation_center` and
+`linked_failed_case_id=<failed_case_id>` to `bad_cases.jsonl`. The endpoint is
+idempotent for the same `run_id` and `failed_case_id`: if a Bad Case already
+links that failed case, the existing record is returned. It does not mutate
+`evals/results/failed_cases.jsonl` or `evaluation_results.jsonl`.
+
 HTTP behavior:
 
 - `400`: malformed Bad Case artifact or unsupported business update.
-- `404`: analysis run, Bad Case, or Review record not found.
+- `404`: analysis run, Bad Case, Review record, or Evaluation failed case not found.
 - `422`: request body validation error, including unsupported enum values.
 
-Stage 8EFG adds artifact-backed Evaluation APIs and MVP metrics. Failed case
-conversion, Bad Case regression, industrial mAP / IDF1 / MOTA, and
+Stage 8HI adds artifact-backed failed case conversion and Bad Case regression
+summary MVP. Industrial mAP / IDF1 / MOTA, rerun-based regression, and
 database-backed Bad Case / Evaluation state are still not implemented.
 
 ## Evaluation API
 
-Stage 8EFG implements an artifact-backed Evaluation API MVP. It stores
+Stage 8EFG / Stage 8HI implements an artifact-backed Evaluation API MVP. It stores
 dataset registry data under `evals/datasets/evaluation_datasets.json`, run and
 result indexes under `evals/results/`, and writes per-run
 `evaluation_summary.json` into the analysis run directory.
@@ -755,9 +762,11 @@ Available endpoints:
 `POST /api/evaluation/run` accepts `event`, `flow_counting`, `trajectory`,
 `detection`, `tracking`, and `regression`. Event / flow / trajectory are MVP
 artifact comparisons. Detection and tracking return `not_applicable` unless
-future annotation-backed metrics are added. Regression returns `planned`; it
-does not execute Stage 8H Bad Case regression or convert failed cases into Bad
-Cases.
+future annotation-backed metrics are added. Regression reads `bad_cases.jsonl`
+and writes an artifact-backed summary with `total_cases`, `open_cases`,
+`fixed_cases`, `verified_cases`, `ignored_cases`, `fixed_case_count`,
+`reopened_case_count`, and `regression_pass_rate`. This does not execute a real
+rerun-based regression pipeline.
 
 ## Not Implemented From The Manual Yet
 
@@ -770,7 +779,7 @@ implemented as working behavior yet:
 - advanced filtering on flow counts and zone statistics
 - database-backed aggregate statistics APIs
 - database-backed Review Center workflow
-- Bad Case regression and failed case conversion workflows
+- rerun-based Bad Case regression pipeline
 - industrial mAP / IDF1 / MOTA evaluation
 
 ## Placeholders For Later Phases
@@ -787,8 +796,8 @@ implemented as working behavior yet:
 - `GET /api/events`: contract-only placeholder. Use
   `GET /api/analysis-runs/{run_id}/events` for current event artifacts, or
   `/api/review` for Stage 7 review event workflows.
-Stage 8EFG Evaluation APIs are routed under `/api/evaluation` and documented
-above. Bad Case regression and failed case conversion remain later work.
+Stage 8EFG / Stage 8HI Evaluation APIs are routed under `/api/evaluation` and
+documented above.
 
 These placeholder endpoints exist to preserve module boundaries. Standalone
 event and alert center APIs remain separate from the artifact-based
@@ -797,4 +806,6 @@ documented above. Review API MVP is available under `/api/review`, the Stage 7
 Review Center frontend consumes it, and Stage 7F confirms the artifact-backed
 Review Center MVP boundary. Stage 8CD adds artifact-backed Bad Case APIs and
 frontend workflow. Stage 8EFG adds artifact-backed Evaluation APIs and frontend
-workflow. Failed case conversion and regression workflow belong to later phases.
+workflow. Stage 8HI adds failed case conversion and Bad Case regression summary
+MVP. Rerun-based regression, industrial metrics, and DB-backed final state
+belong to later phases.

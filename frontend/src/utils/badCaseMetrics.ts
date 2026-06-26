@@ -5,7 +5,7 @@ import type {
   BadCaseType
 } from "../types";
 
-export const BAD_CASE_STATUS_KEYS = ["open", "triaged", "fixed", "wont_fix"] as const;
+export const BAD_CASE_STATUS_KEYS = ["open", "triaged", "fixed", "verified", "wont_fix"] as const;
 export const BAD_CASE_TYPE_KEYS = [
   "false_positive",
   "false_negative",
@@ -46,6 +46,7 @@ export interface BadCaseDisplaySummary {
   frame: string;
   tags: string;
   source: string;
+  linkedFailedCaseId: string;
   updatedAt: string;
 }
 
@@ -105,6 +106,7 @@ export function buildBadCaseDisplaySummary(
     | "module"
     | "status"
     | "source"
+    | "linked_failed_case_id"
     | "event_id"
     | "track_id"
     | "frame_index"
@@ -123,6 +125,7 @@ export function buildBadCaseDisplaySummary(
     frame: normalizeValue(badCase.frame_index),
     tags: normalizeBadCaseTags(badCase.tags).join(", ") || "-",
     source: normalizeText(badCase.source),
+    linkedFailedCaseId: normalizeValue(badCase.linked_failed_case_id),
     updatedAt: normalizeText(badCase.updated_at)
   };
 }
@@ -132,7 +135,7 @@ export function normalizeBadCaseValue(value: string | number | null | undefined)
 }
 
 function emptyStatusCounts(): BadCaseStatusCounts {
-  return { open: 0, triaged: 0, fixed: 0, wont_fix: 0, unknown: 0 };
+  return { open: 0, triaged: 0, fixed: 0, verified: 0, wont_fix: 0, unknown: 0 };
 }
 
 function emptyTypeCounts(): BadCaseTypeCounts {

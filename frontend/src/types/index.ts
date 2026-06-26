@@ -645,8 +645,13 @@ export type BadCaseModule =
   | "visualization"
   | "other";
 
-export type BadCaseStatus = "open" | "triaged" | "fixed" | "wont_fix";
-export type BadCaseSource = "manual" | "review_center" | "evaluation" | "import";
+export type BadCaseStatus = "open" | "triaged" | "fixed" | "verified" | "wont_fix";
+export type BadCaseSource =
+  | "manual"
+  | "review_center"
+  | "evaluation"
+  | "evaluation_center"
+  | "import";
 
 export interface BadCaseRecord {
   case_id: string;
@@ -743,6 +748,18 @@ export interface BadCaseFromReviewRequest {
   tags?: string[] | null;
 }
 
+export interface BadCaseFromFailedCaseRequest {
+  run_id: string;
+  failed_case_id: string;
+  case_type?: BadCaseType | string | null;
+  module?: BadCaseModule | string | null;
+  description?: string | null;
+  expected_result?: string | null;
+  actual_result?: string | null;
+  root_cause?: string | null;
+  tags?: string[] | null;
+}
+
 export type EvaluationType =
   | "event"
   | "flow_counting"
@@ -822,6 +839,20 @@ export interface EvaluationSummaryArtifact {
   generated_at?: string | null;
   summary: Record<string, unknown>;
   failed_cases: EvaluationFailedCaseRecord[];
+}
+
+export interface BadCaseRegressionSummary {
+  status?: string;
+  total_cases?: number;
+  open_cases?: number;
+  fixed_cases?: number;
+  verified_cases?: number;
+  ignored_cases?: number;
+  fixed_case_count?: number;
+  reopened_case_count?: number;
+  regression_pass_rate?: number;
+  definition?: string;
+  reason?: string;
 }
 
 export interface EvaluationRunRequest {

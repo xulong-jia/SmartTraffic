@@ -4,6 +4,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from app.analysis.artifact_writer import TrafficArtifactWriter
+from app.analysis.evaluation_artifacts import append_failed_case
 from app.analysis.review_artifacts import append_review_comment
 from app.main import app
 from app.services.processing_service import processing_service
@@ -183,6 +184,60 @@ def test_bad_case_from_review_creates_reference_without_mutating_review_artifact
     ) == original_review_comments
 
 
+def test_bad_case_from_failed_case_creates_evaluation_reference_and_deduplicates(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    client = _client_for_tmp_results(tmp_path, monkeypatch)
+    run_id = _create_bad_case_run(tmp_path)
+    failed_case = append_failed_case(
+        tmp_path / "evals",
+        {
+            "failed_case_id": "failed_eval_1",
+            "evaluation_run_id": "eval_run_1",
+            "run_id": run_id,
+            "failure_type": "false_negative",
+            "module": "event_engine",
+            "expected": {"event_type": "illegal_parking"},
+            "actual": {},
+            "frame_range": {"start_frame": 40, "end_frame": 50},
+            "suggested_bad_case_type": "false_negative",
+            "created_at": "2026-01-01T00:00:01+00:00",
+        },
+    )
+
+    first = client.post(
+        "/api/bad-cases/from-failed-case",
+        json={
+            "run_id": run_id,
+            "failed_case_id": failed_case["failed_case_id"],
+            "description": "Converted from evaluation failed case.",
+            "root_cause": "to be analyzed",
+            "tags": ["evaluation"],
+        },
+    )
+    second = client.post(
+        "/api/bad-cases/from-failed-case",
+        json={"run_id": run_id, "failed_case_id": failed_case["failed_case_id"]},
+    )
+    missing = client.post(
+        "/api/bad-cases/from-failed-case",
+        json={"run_id": run_id, "failed_case_id": "missing_failed_case"},
+    )
+
+    assert first.status_code == 200
+    payload = first.json()
+    assert payload["source"] == "evaluation_center"
+    assert payload["case_type"] == "false_negative"
+    assert payload["module"] == "event_engine"
+    assert payload["linked_failed_case_id"] == failed_case["failed_case_id"]
+    assert payload["root_cause"] == "to be analyzed"
+    assert second.status_code == 200
+    assert second.json()["case_id"] == payload["case_id"]
+    assert missing.status_code == 404
+    assert missing.json()["detail"] == "failed case not found"
+
+
 def test_bad_case_api_missing_resources_and_invalid_artifact_errors(
     tmp_path: Path,
     monkeypatch,
@@ -234,6 +289,7 @@ def test_bad_case_api_invalid_enum_returns_validation_error(
 def _client_for_tmp_results(tmp_path: Path, monkeypatch) -> TestClient:
     monkeypatch.setenv("SMARTTRAFFIC_LOCAL_VIDEOS_DIR", str(tmp_path / "videos"))
     monkeypatch.setenv("SMARTTRAFFIC_RESULTS_DIR", str(tmp_path / "results"))
+    monkeypatch.setenv("SMARTTRAFFIC_EVALS_DIR", str(tmp_path / "evals"))
     monkeypatch.setenv("YOLO_DRY_RUN", "true")
     monkeypatch.setenv("DEEPSORT_DRY_RUN", "true")
     video_registry.clear()

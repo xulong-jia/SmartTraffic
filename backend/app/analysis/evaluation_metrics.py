@@ -184,6 +184,36 @@ def compute_tracking_metrics(
     }
 
 
+def compute_bad_case_regression_metrics(
+    bad_cases: list[dict[str, Any]],
+) -> dict[str, Any]:
+    total_cases = len(bad_cases)
+    status_counts: dict[str, int] = {}
+    for bad_case in bad_cases:
+        status = str(bad_case.get("status") or "open")
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    open_cases = status_counts.get("open", 0)
+    fixed_cases = status_counts.get("fixed", 0)
+    verified_cases = status_counts.get("verified", 0)
+    ignored_cases = status_counts.get("wont_fix", 0) + status_counts.get("ignored", 0)
+    denominator = max(fixed_cases + verified_cases + open_cases, 1)
+    return {
+        "status": "available" if total_cases else "empty",
+        "total_cases": total_cases,
+        "open_cases": open_cases,
+        "fixed_cases": fixed_cases,
+        "verified_cases": verified_cases,
+        "ignored_cases": ignored_cases,
+        "regression_pass_rate": _safe_ratio(verified_cases, denominator) or 0.0,
+        "reopened_case_count": 0,
+        "fixed_case_count": fixed_cases,
+        "definition": "verified_cases / max(fixed_cases + verified_cases + open_cases, 1)",
+        "rerun_based": False,
+        "reason": "Artifact-backed MVP summary; no real rerun-based regression is executed.",
+    }
+
+
 def _events_match(
     expected: Mapping[str, Any],
     actual: Mapping[str, Any],

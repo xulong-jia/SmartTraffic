@@ -24,8 +24,8 @@ BadCaseModule = Literal[
     "visualization",
     "other",
 ]
-BadCaseStatus = Literal["open", "triaged", "fixed", "wont_fix"]
-BadCaseSource = Literal["manual", "review_center", "evaluation", "import"]
+BadCaseStatus = Literal["open", "triaged", "fixed", "verified", "wont_fix"]
+BadCaseSource = Literal["manual", "review_center", "evaluation", "evaluation_center", "import"]
 
 BAD_CASE_TYPES = {
     "false_positive",
@@ -48,8 +48,8 @@ BAD_CASE_MODULES = {
     "visualization",
     "other",
 }
-BAD_CASE_STATUSES = {"open", "triaged", "fixed", "wont_fix"}
-BAD_CASE_SOURCES = {"manual", "review_center", "evaluation", "import"}
+BAD_CASE_STATUSES = {"open", "triaged", "fixed", "verified", "wont_fix"}
+BAD_CASE_SOURCES = {"manual", "review_center", "evaluation", "evaluation_center", "import"}
 
 
 class BadCaseRecord(BaseModel):
@@ -134,6 +134,18 @@ class BadCaseFromReviewRequest(BaseModel):
     review_id: str | None = None
     case_type: BadCaseType | None = None
     module: BadCaseModule = "review_center"
+    description: str | None = None
+    expected_result: str | None = None
+    actual_result: str | None = None
+    root_cause: str | None = None
+    tags: list[str] | None = None
+
+
+class BadCaseFromFailedCaseRequest(BaseModel):
+    run_id: str
+    failed_case_id: str
+    case_type: BadCaseType | None = None
+    module: BadCaseModule | None = None
     description: str | None = None
     expected_result: str | None = None
     actual_result: str | None = None

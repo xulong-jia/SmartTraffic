@@ -1,4 +1,4 @@
-"""Run the Stage 8EFG artifact-backed Evaluation MVP."""
+"""Run the Stage 8HI artifact-backed Evaluation MVP."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ sys.path.insert(0, str(PROJECT_DIR / "backend"))
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Run SmartTraffic Stage 8EFG artifact-backed evaluation."
+        description="Run SmartTraffic Stage 8HI artifact-backed evaluation."
     )
     parser.add_argument("--run-id", required=True, help="Analysis run id to evaluate.")
     parser.add_argument("--dataset-id", help="Registered evaluation dataset id.")
@@ -66,6 +66,17 @@ def main() -> None:
     )
     print(f"Results: {len(response['results'])}")
     print(f"Failed cases: {len(response['failed_cases'])}")
+    regression = response.get("summary", {}).get("summary", {}).get("bad_case_regression")
+    if isinstance(regression, dict):
+        print(
+            "Bad Case regression: "
+            f"status={regression.get('status')} "
+            f"total={regression.get('total_cases')} "
+            f"open={regression.get('open_cases')} "
+            f"fixed={regression.get('fixed_cases')} "
+            f"verified={regression.get('verified_cases')} "
+            f"pass_rate={regression.get('regression_pass_rate')}"
+        )
 
 
 if __name__ == "__main__":
