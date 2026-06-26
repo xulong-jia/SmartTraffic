@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
 
 from app.analysis.evaluation_artifacts import EvaluationArtifactError
+from app.db.session import get_db
 from app.schemas.evaluation import (
     EvaluationDatasetCreate,
     EvaluationDatasetListResponse,
@@ -25,9 +27,11 @@ router = APIRouter(prefix="/api/evaluation", tags=["evaluation"])
 
 
 @router.get("/datasets", response_model=EvaluationDatasetListResponse)
-def list_evaluation_datasets() -> EvaluationDatasetListResponse:
+def list_evaluation_datasets(
+    db: Session = Depends(get_db),
+) -> EvaluationDatasetListResponse:
     try:
-        return EvaluationDatasetListResponse(**EvaluationService().list_datasets())
+        return EvaluationDatasetListResponse(**EvaluationService(session=db).list_datasets())
     except EvaluationArtifactError as exc:
         raise _bad_request("invalid evaluation artifact") from exc
 
@@ -35,9 +39,11 @@ def list_evaluation_datasets() -> EvaluationDatasetListResponse:
 @router.post("/datasets", response_model=EvaluationDatasetRecord)
 def register_evaluation_dataset(
     payload: EvaluationDatasetCreate,
+    db: Session = Depends(get_db),
 ) -> EvaluationDatasetRecord:
     try:
-        record = EvaluationService().register_dataset(payload.model_dump())
+        record = EvaluationService(session=db).register_dataset(payload.model_dump())
+        db.commit()
         return EvaluationDatasetRecord(**record)
     except ValueError as exc:
         raise _bad_request(str(exc)) from exc
@@ -52,9 +58,10 @@ def list_evaluation_runs(
     evaluation_type: str | None = Query(default=None),
     limit: int = Query(default=50, ge=0, le=1000),
     offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
 ) -> EvaluationRunListResponse:
     try:
-        items = EvaluationService().list_evaluation_runs(
+        items = EvaluationService(session=db).list_evaluation_runs(
             run_id=run_id,
             dataset_id=dataset_id,
             evaluation_type=evaluation_type,
@@ -71,14 +78,18 @@ def list_evaluation_runs(
 
 
 @router.post("/run", response_model=EvaluationRunResponse)
-def run_evaluation(payload: EvaluationRunRequest) -> EvaluationRunResponse:
+def run_evaluation(
+    payload: EvaluationRunRequest,
+    db: Session = Depends(get_db),
+) -> EvaluationRunResponse:
     try:
-        response = EvaluationService().run_evaluation(
+        response = EvaluationService(session=db).run_evaluation(
             run_id=payload.run_id,
             dataset_id=payload.dataset_id,
             evaluation_type=payload.evaluation_type,
             config=payload.config,
         )
+        db.commit()
         return EvaluationRunResponse(**response)
     except EvaluationDatasetNotFound as exc:
         raise _not_found("evaluation dataset not found") from exc
@@ -97,9 +108,10 @@ def list_evaluation_results(
     evaluation_type: str | None = Query(default=None),
     limit: int = Query(default=50, ge=0, le=1000),
     offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
 ) -> EvaluationResultListResponse:
     try:
-        items = EvaluationService().list_results(
+        items = EvaluationService(session=db).list_results(
             run_id=run_id,
             evaluation_run_id=evaluation_run_id,
             evaluation_type=evaluation_type,
@@ -116,10 +128,13 @@ def list_evaluation_results(
 
 
 @router.get("/summary/{run_id}", response_model=EvaluationSummaryArtifact)
-def get_evaluation_summary(run_id: str) -> EvaluationSummaryArtifact:
+def get_evaluation_summary(
+    run_id: str,
+    db: Session = Depends(get_db),
+) -> EvaluationSummaryArtifact:
     try:
         return EvaluationSummaryArtifact(
-            **EvaluationService().get_evaluation_summary(run_id)
+            **EvaluationService(session=db).get_evaluation_summary(run_id)
         )
     except KeyError as exc:
         raise _not_found("analysis run not found") from exc
@@ -133,9 +148,10 @@ def list_failed_cases(
     evaluation_run_id: str | None = Query(default=None),
     limit: int = Query(default=50, ge=0, le=1000),
     offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
 ) -> FailedCaseListResponse:
     try:
-        items = EvaluationService().list_failed_cases(
+        items = EvaluationService(session=db).list_failed_cases(
             run_id=run_id,
             evaluation_run_id=evaluation_run_id,
         )

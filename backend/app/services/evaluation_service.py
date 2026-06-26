@@ -4,6 +4,8 @@ import json
 import os
 from pathlib import Path
 from typing import Any
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from app.analysis.evaluation_artifacts import (
     append_failed_case,
@@ -28,6 +30,11 @@ from app.analysis.evaluation_metrics import (
 from app.analysis.bad_case_artifacts import load_bad_cases
 from app.core.config import get_settings
 from app.core.paths import PROJECT_DIR
+from app.repositories import (
+    EvaluationDatasetRepository,
+    EvaluationResultRepository,
+    TrafficAnalysisRunRepository,
+)
 
 
 class EvaluationDatasetNotFound(KeyError):
@@ -42,15 +49,38 @@ class EvaluationService:
         *,
         results_dir: str | Path | None = None,
         eval_root: str | Path | None = None,
+        session: Session | None = None,
     ) -> None:
         self.results_dir = Path(results_dir or get_settings().results_dir)
         self.eval_root = Path(eval_root or os.environ.get("SMARTTRAFFIC_EVALS_DIR", PROJECT_DIR / "evals"))
+        self.session = session
 
     def list_datasets(self) -> dict[str, Any]:
+        datasets = self._list_db_datasets()
+        if datasets:
+            return {"schema_version": "stage8efg.v1", "datasets": datasets}
         return load_evaluation_datasets(self.eval_root)
 
     def register_dataset(self, record: Mapping[str, Any]) -> dict[str, Any]:
-        return register_evaluation_dataset(self.eval_root, record)
+        artifact_record = register_evaluation_dataset(self.eval_root, record)
+        if self.session is not None:
+            try:
+                repo = EvaluationDatasetRepository(self.session)
+                existing = repo.get(str(artifact_record["dataset_id"]))
+                values = {
+                    "name": artifact_record["name"],
+                    "dataset_type": artifact_record["dataset_type"],
+                    "version": str(artifact_record.get("metadata", {}).get("version") or ""),
+                    "status": "active",
+                    "config": artifact_record,
+                }
+                if existing is None:
+                    repo.create(id=artifact_record["dataset_id"], **values)
+                else:
+                    repo.update(artifact_record["dataset_id"], **values)
+            except SQLAlchemyError:
+                pass
+        return artifact_record
 
     def list_evaluation_runs(
         self,
@@ -59,6 +89,13 @@ class EvaluationService:
         dataset_id: str | None = None,
         evaluation_type: str | None = None,
     ) -> list[dict[str, Any]]:
+        db_runs = self._list_db_evaluation_runs(
+            run_id=run_id,
+            dataset_id=dataset_id,
+            evaluation_type=evaluation_type,
+        )
+        if db_runs:
+            return db_runs
         return [
             run
             for run in load_evaluation_runs(self.eval_root)
@@ -74,6 +111,13 @@ class EvaluationService:
         evaluation_run_id: str | None = None,
         evaluation_type: str | None = None,
     ) -> list[dict[str, Any]]:
+        db_results = self._list_db_results(
+            run_id=run_id,
+            evaluation_run_id=evaluation_run_id,
+            evaluation_type=evaluation_type,
+        )
+        if db_results:
+            return db_results
         return [
             result
             for result in load_evaluation_results(self.eval_root)
@@ -88,6 +132,12 @@ class EvaluationService:
         run_id: str | None = None,
         evaluation_run_id: str | None = None,
     ) -> list[dict[str, Any]]:
+        db_failed_cases = self._list_db_failed_cases(
+            run_id=run_id,
+            evaluation_run_id=evaluation_run_id,
+        )
+        if db_failed_cases:
+            return db_failed_cases
         return [
             failed_case
             for failed_case in load_failed_cases(self.eval_root)
@@ -96,6 +146,9 @@ class EvaluationService:
         ]
 
     def get_evaluation_summary(self, run_id: str) -> dict[str, Any]:
+        db_summary = self._db_evaluation_summary(run_id)
+        if db_summary is not None:
+            return db_summary
         return load_evaluation_summary(self._existing_run_dir(run_id))
 
     def run_evaluation(
@@ -158,6 +211,15 @@ class EvaluationService:
             for failed_case in failed_cases
         ]
         summary = self._write_run_summary(run_dir, run_id)
+        if self._db_run_exists(run_id):
+            self._persist_db_evaluation(
+                run_id=run_id,
+                requested_dataset_id=dataset_id,
+                evaluation_run=evaluation_run,
+                results=results,
+                summary=summary,
+                failed_cases=saved_failed_cases,
+            )
         return {
             "evaluation_run": evaluation_run,
             "results": results,
@@ -255,16 +317,244 @@ class EvaluationService:
         return compute_bad_case_regression_metrics(load_bad_cases(run_dir))
 
     def _dataset(self, dataset_id: str | None) -> dict[str, Any]:
+        db_dataset = self._db_dataset(dataset_id)
+        if db_dataset is not None:
+            return db_dataset
         for dataset in self.list_datasets()["datasets"]:
             if dataset["dataset_id"] == dataset_id:
                 return dataset
         raise EvaluationDatasetNotFound(dataset_id or "")
 
     def _existing_run_dir(self, run_id: str) -> Path:
+        if self.session is not None:
+            try:
+                run = TrafficAnalysisRunRepository(self.session).get(run_id)
+            except SQLAlchemyError:
+                run = None
+            if run is not None and run.result_dir:
+                run_dir = Path(run.result_dir)
+                if run_dir.is_dir():
+                    return run_dir
         run_dir = self.results_dir / run_id
         if not run_dir.is_dir():
             raise KeyError(run_id)
         return run_dir
+
+    def _db_run_exists(self, run_id: str) -> bool:
+        if self.session is None:
+            return False
+        try:
+            return TrafficAnalysisRunRepository(self.session).get(run_id) is not None
+        except SQLAlchemyError:
+            return False
+
+    def _list_db_datasets(self) -> list[dict[str, Any]]:
+        if self.session is None:
+            return []
+        try:
+            return [
+                _dataset_from_model(row)
+                for row in EvaluationDatasetRepository(self.session).list()
+            ]
+        except SQLAlchemyError:
+            return []
+
+    def _db_dataset(self, dataset_id: str | None) -> dict[str, Any] | None:
+        if self.session is None or dataset_id is None:
+            return None
+        try:
+            row = EvaluationDatasetRepository(self.session).get(dataset_id)
+        except SQLAlchemyError:
+            return None
+        return _dataset_from_model(row) if row is not None else None
+
+    def _ensure_db_dataset(
+        self,
+        dataset_id: str | None,
+        evaluation_type: str,
+    ) -> str:
+        assert self.session is not None
+        if dataset_id is not None:
+            if EvaluationDatasetRepository(self.session).get(dataset_id) is not None:
+                return dataset_id
+            dataset = self._dataset(dataset_id)
+            EvaluationDatasetRepository(self.session).create(
+                id=dataset["dataset_id"],
+                name=dataset["name"],
+                dataset_type=str(dataset["dataset_type"]),
+                version=str(dataset.get("metadata", {}).get("version") or ""),
+                status="active",
+                config=dataset,
+            )
+            return dataset_id
+        default_id = f"adhoc-{evaluation_type}"[:64]
+        repo = EvaluationDatasetRepository(self.session)
+        if repo.get(default_id) is None:
+            now = _utc_now_iso()
+            repo.create(
+                id=default_id,
+                name=f"Ad hoc {evaluation_type}",
+                dataset_type=evaluation_type,
+                version="stage3ef",
+                status="active",
+                config={
+                    "dataset_id": default_id,
+                    "name": f"Ad hoc {evaluation_type}",
+                    "dataset_type": evaluation_type,
+                    "source": "ad_hoc",
+                    "metadata": {},
+                    "created_at": now,
+                },
+            )
+        return default_id
+
+    def _persist_db_evaluation(
+        self,
+        *,
+        run_id: str,
+        requested_dataset_id: str | None,
+        evaluation_run: dict[str, Any],
+        results: list[dict[str, Any]],
+        summary: dict[str, Any],
+        failed_cases: list[dict[str, Any]],
+    ) -> None:
+        if self.session is None:
+            return
+        dataset_id = self._ensure_db_dataset(
+            requested_dataset_id,
+            str(evaluation_run["evaluation_type"]),
+        )
+        repo = EvaluationResultRepository(self.session)
+        for result in results:
+            row_summary = {
+                "evaluation_run": evaluation_run,
+                "requested_dataset_id": requested_dataset_id,
+                "summary": summary.get("summary", {}),
+                "failed_cases": failed_cases,
+            }
+            if repo.get(result["evaluation_result_id"]) is None:
+                repo.create(
+                    id=result["evaluation_result_id"],
+                    dataset_id=dataset_id,
+                    run_id=run_id,
+                    evaluation_type=str(result["evaluation_type"]),
+                    status=str(evaluation_run["status"]),
+                    metrics={
+                        "metric_name": result["metric_name"],
+                        "metric_value": result.get("metric_value"),
+                        "details": result.get("details", {}),
+                    },
+                    summary=row_summary,
+                )
+
+    def _list_db_results(
+        self,
+        *,
+        run_id: str | None,
+        evaluation_run_id: str | None,
+        evaluation_type: str | None,
+    ) -> list[dict[str, Any]]:
+        if self.session is None:
+            return []
+        try:
+            rows = EvaluationResultRepository(self.session).list(
+                run_id=run_id,
+                evaluation_type=evaluation_type,
+            )
+        except SQLAlchemyError:
+            return []
+        records = [_result_from_model(row) for row in rows]
+        if evaluation_run_id is not None:
+            records = [
+                record
+                for record in records
+                if record.get("evaluation_run_id") == evaluation_run_id
+            ]
+        return records
+
+    def _list_db_evaluation_runs(
+        self,
+        *,
+        run_id: str | None,
+        dataset_id: str | None,
+        evaluation_type: str | None,
+    ) -> list[dict[str, Any]]:
+        runs_by_id: dict[str, dict[str, Any]] = {}
+        for result in self._list_db_results(
+            run_id=run_id,
+            evaluation_run_id=None,
+            evaluation_type=evaluation_type,
+        ):
+            evaluation_run_id = result["evaluation_run_id"]
+            run_record = dict(result.get("_evaluation_run") or {})
+            if not run_record:
+                run_record = {
+                    "evaluation_run_id": evaluation_run_id,
+                    "dataset_id": result.get("dataset_id"),
+                    "run_id": result["run_id"],
+                    "evaluation_type": result["evaluation_type"],
+                    "status": "completed",
+                    "started_at": result["created_at"],
+                    "finished_at": result["created_at"],
+                    "config": {},
+                }
+            if dataset_id is not None and run_record.get("dataset_id") != dataset_id:
+                continue
+            runs_by_id[evaluation_run_id] = run_record
+        return list(runs_by_id.values())
+
+    def _list_db_failed_cases(
+        self,
+        *,
+        run_id: str | None,
+        evaluation_run_id: str | None,
+    ) -> list[dict[str, Any]]:
+        failed_by_id: dict[str, dict[str, Any]] = {}
+        for row in self._db_result_rows(run_id=run_id):
+            for failed_case in _failed_cases_from_model(row):
+                if evaluation_run_id is not None and failed_case.get("evaluation_run_id") != evaluation_run_id:
+                    continue
+                failed_by_id[str(failed_case["failed_case_id"])] = failed_case
+        return list(failed_by_id.values())
+
+    def _db_evaluation_summary(self, run_id: str) -> dict[str, Any] | None:
+        rows = self._db_result_rows(run_id=run_id)
+        if not rows:
+            if self._db_run_exists(run_id):
+                return {
+                    "schema_version": "stage8efg.v1",
+                    "run_id": run_id,
+                    "generated_at": None,
+                    "summary": {},
+                    "failed_cases": [],
+                }
+            return None
+        grouped: dict[str, dict[str, Any]] = {}
+        failed_cases: dict[str, dict[str, Any]] = {}
+        generated_at = None
+        for row in rows:
+            record = _result_from_model(row)
+            grouped.setdefault(record["evaluation_type"], {})[record["metric_name"]] = {
+                key: value for key, value in record.items() if not key.startswith("_")
+            }
+            generated_at = record["created_at"]
+            for failed_case in _failed_cases_from_model(row):
+                failed_cases[str(failed_case["failed_case_id"])] = failed_case
+        return {
+            "schema_version": "stage8efg.v1",
+            "run_id": run_id,
+            "generated_at": generated_at,
+            "summary": grouped,
+            "failed_cases": list(failed_cases.values()),
+        }
+
+    def _db_result_rows(self, *, run_id: str | None) -> list[Any]:
+        if self.session is None:
+            return []
+        try:
+            return EvaluationResultRepository(self.session).list(run_id=run_id)
+        except SQLAlchemyError:
+            return []
 
 
 def _load_expected_events(
@@ -339,3 +629,62 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
 
 def _utc_now_iso() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat()
+
+
+def _dataset_from_model(row: Any) -> dict[str, Any]:
+    config = dict(row.config or {})
+    return {
+        "dataset_id": row.id,
+        "name": row.name,
+        "dataset_type": row.dataset_type,
+        "source": config.get("source") or "custom_annotation",
+        "annotation_path": config.get("annotation_path"),
+        "expected_events_path": config.get("expected_events_path"),
+        "expected_counts_path": config.get("expected_counts_path"),
+        "metadata": config.get("metadata") or {},
+        "created_at": config.get("created_at") or _datetime_iso(row.created_at),
+    }
+
+
+def _result_from_model(row: Any) -> dict[str, Any]:
+    metrics = dict(row.metrics or {})
+    summary = dict(row.summary or {})
+    evaluation_run = dict(summary.get("evaluation_run") or {})
+    evaluation_run_id = str(
+        evaluation_run.get("evaluation_run_id")
+        or summary.get("evaluation_run_id")
+        or row.id
+    )
+    requested_dataset_id = summary.get("requested_dataset_id")
+    return {
+        "evaluation_result_id": row.id,
+        "evaluation_run_id": evaluation_run_id,
+        "run_id": row.run_id,
+        "dataset_id": requested_dataset_id if requested_dataset_id is not None else row.dataset_id,
+        "evaluation_type": row.evaluation_type,
+        "metric_name": str(metrics.get("metric_name") or "summary"),
+        "metric_value": metrics.get("metric_value"),
+        "details": dict(metrics.get("details") or {}),
+        "created_at": _datetime_iso(row.created_at),
+        "_evaluation_run": evaluation_run,
+    }
+
+
+def _failed_cases_from_model(row: Any) -> list[dict[str, Any]]:
+    summary = dict(row.summary or {})
+    failed_cases = summary.get("failed_cases")
+    if isinstance(failed_cases, list):
+        return [item for item in failed_cases if isinstance(item, dict)]
+    metrics = dict(row.metrics or {})
+    details = metrics.get("details")
+    if isinstance(details, dict) and isinstance(details.get("failed_cases"), list):
+        return [item for item in details["failed_cases"] if isinstance(item, dict)]
+    return []
+
+
+def _datetime_iso(value: datetime | None) -> str:
+    if value is None:
+        return _utc_now_iso()
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC).replace(microsecond=0).isoformat()
+    return value.astimezone(UTC).replace(microsecond=0).isoformat()

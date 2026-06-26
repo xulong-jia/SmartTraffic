@@ -42,6 +42,23 @@ def main() -> None:
         help="Evaluation artifact root. Defaults to evals/ or SMARTTRAFFIC_EVALS_DIR.",
     )
     parser.add_argument(
+        "--database-url",
+        help="SQLAlchemy database URL used with --write-db.",
+    )
+    parser.add_argument(
+        "--write-db",
+        dest="write_db",
+        action="store_true",
+        help="Also persist evaluation dataset/result records to the database.",
+    )
+    parser.add_argument(
+        "--no-write-db",
+        dest="write_db",
+        action="store_false",
+        help="Do not write evaluation records to the database.",
+    )
+    parser.set_defaults(write_db=False)
+    parser.add_argument(
         "--json",
         action="store_true",
         help="Print the full response as JSON.",
@@ -50,12 +67,29 @@ def main() -> None:
 
     from app.services.evaluation_service import EvaluationService
 
-    service = EvaluationService(results_dir=args.results_root, eval_root=args.eval_root)
-    response = service.run_evaluation(
-        run_id=args.run_id,
-        dataset_id=args.dataset_id,
-        evaluation_type=args.evaluation_type,
-    )
+    if args.write_db:
+        from app.db.session import get_sessionmaker
+
+        session_factory = get_sessionmaker(database_url=args.database_url)
+        with session_factory() as session:
+            service = EvaluationService(
+                results_dir=args.results_root,
+                eval_root=args.eval_root,
+                session=session,
+            )
+            response = service.run_evaluation(
+                run_id=args.run_id,
+                dataset_id=args.dataset_id,
+                evaluation_type=args.evaluation_type,
+            )
+            session.commit()
+    else:
+        service = EvaluationService(results_dir=args.results_root, eval_root=args.eval_root)
+        response = service.run_evaluation(
+            run_id=args.run_id,
+            dataset_id=args.dataset_id,
+            evaluation_type=args.evaluation_type,
+        )
     if args.json:
         print(json.dumps(response, ensure_ascii=False, indent=2, sort_keys=True))
         return

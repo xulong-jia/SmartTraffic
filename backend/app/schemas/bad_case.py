@@ -10,8 +10,11 @@ BadCaseType = Literal[
     "detection_false_positive",
     "tracking_fragmentation",
     "id_switch",
+    "track_lost",
     "trajectory_error",
     "event_rule_error",
+    "rule_error",
+    "zone_config_error",
     "annotation_error",
     "other",
 ]
@@ -20,11 +23,15 @@ BadCaseModule = Literal[
     "tracker",
     "trajectory",
     "event_engine",
+    "zone_config",
+    "review",
+    "evaluation",
     "review_center",
+    "evaluation_center",
     "visualization",
     "other",
 ]
-BadCaseStatus = Literal["open", "triaged", "fixed", "verified", "wont_fix"]
+BadCaseStatus = Literal["open", "triaged", "fixed", "verified", "ignored", "wont_fix"]
 BadCaseSource = Literal["manual", "review_center", "evaluation", "evaluation_center", "import"]
 
 BAD_CASE_TYPES = {
@@ -34,8 +41,11 @@ BAD_CASE_TYPES = {
     "detection_false_positive",
     "tracking_fragmentation",
     "id_switch",
+    "track_lost",
     "trajectory_error",
     "event_rule_error",
+    "rule_error",
+    "zone_config_error",
     "annotation_error",
     "other",
 }
@@ -44,11 +54,15 @@ BAD_CASE_MODULES = {
     "tracker",
     "trajectory",
     "event_engine",
+    "zone_config",
+    "review",
+    "evaluation",
     "review_center",
+    "evaluation_center",
     "visualization",
     "other",
 }
-BAD_CASE_STATUSES = {"open", "triaged", "fixed", "verified", "wont_fix"}
+BAD_CASE_STATUSES = {"open", "triaged", "fixed", "verified", "ignored", "wont_fix"}
 BAD_CASE_SOURCES = {"manual", "review_center", "evaluation", "evaluation_center", "import"}
 
 

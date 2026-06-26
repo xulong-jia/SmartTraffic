@@ -1,7 +1,8 @@
 # Evaluation Center
 
-本文档记录 Stage 8HI 后的 Evaluation Center artifact-backed MVP。它不是
-数据库最终版，也不代表工业级检测 / 跟踪评测体系已经完成。
+本文档记录 Stage 8HI 后的 Evaluation Center artifact-backed MVP，以及 Full
+Stage 3EF 后的 Evaluation DB workflow。它仍不代表工业级检测 / 跟踪评测体系
+已经完成。
 
 ## 当前状态
 
@@ -16,11 +17,22 @@ Stage 8EFG / Stage 8HI 已实现：
 - `POST /api/bad-cases/from-failed-case` failed case -> Bad Case MVP。
 - Bad Case regression summary MVP。
 
+Full Stage 3EF 已实现：
+
+- `evaluation_datasets` DB-backed dataset registry。
+- `evaluation_results` DB-backed result persistence。
+- failed cases 持久化在 `evaluation_results.summary["failed_cases"]` 中；没有新增
+  failed_cases 独立表。
+- Evaluation API DB-first 查询，DB 缺失时 fallback 到 artifacts。
+- `scripts/run_evals.py --write-db --database-url ...` 可选写入 DB，同时保留
+  artifact 输出。
+- failed cases 可通过 `POST /api/bad-cases/from-failed-case` 转为 DB Bad Case，
+  同一 `run_id + failed_case_id` 幂等。
+
 当前仍未实现：
 
 - 真实 rerun-based Bad Case regression pipeline。
 - 工业级 mAP、IDF1、MOTA。
-- database-backed evaluation tables。
 - 权限、多用户、实时流或生产部署。
 
 ## Artifacts
@@ -52,7 +64,8 @@ event、alert、review 或 Bad Case 原始 artifacts。
 
 ## API
 
-Stage 8EFG 提供以下 artifact-backed endpoints：
+Stage 8EFG 提供以下 endpoints；Full Stage 3EF 后这些接口对 DB run 使用
+DB-first 行为，并保留 artifact fallback：
 
 - `GET /api/evaluation/datasets`
 - `POST /api/evaluation/datasets`
@@ -112,14 +125,19 @@ python3 scripts/run_evals.py \
 - `--results-root`
 - `--eval-root`
 - `--evaluation-type event|flow_counting|trajectory|detection|tracking|regression`
+- `--write-db`
+- `--no-write-db`
+- `--database-url sqlite:///...`
 
 ## 与 Bad Case / Review 的边界
 
 Evaluation failed cases 是评测失败记录，不等于 Bad Case Center 的
-`bad_cases.jsonl`。Stage 8HI 提供显式转换 MVP：调用
-`POST /api/bad-cases/from-failed-case` 后创建 `source=evaluation_center`、
-`linked_failed_case_id=<failed_case_id>` 的 Bad Case。该操作不会修改
-`failed_cases.jsonl`、`evaluation_results.jsonl` 或原始 Review artifacts。
+`bad_cases.jsonl` 或 `bad_cases` DB rows。Stage 8HI 提供显式转换 MVP；Full
+Stage 3EF 后，调用 `POST /api/bad-cases/from-failed-case` 会优先查 DB
+`evaluation_results.summary["failed_cases"]`，创建 `source=evaluation_center`、
+`linked_failed_case_id=<failed_case_id>` 的 DB Bad Case；DB 缺失时 fallback 到
+`evals/results/failed_cases.jsonl` 和 artifact-backed Bad Case 行为。该操作不会
+修改 failed case 原始记录。
 
 Review Center 的 `false_positive` / `false_negative` 是人工复核状态，也不是
 Evaluation ground truth。Evaluation 可以读取 Stage 6/7 artifacts，但不修改

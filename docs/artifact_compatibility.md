@@ -3,9 +3,9 @@
 Full Stage 1EF adds a compatibility layer between existing local run artifacts
 and the new SQLAlchemy schema/repository foundation.
 
-This is not a business API migration. Existing FastAPI endpoints continue to
-use the artifact-backed MVP path unless a later stage explicitly wires them to
-DB-backed services.
+This started as a foundation layer in Full Stage 1EF. Later stages now wire
+selected FastAPI endpoints to DB-first behavior while preserving artifact
+fallback for legacy runs.
 
 ## Supported Artifacts
 
@@ -76,12 +76,15 @@ Later DB-backed core-flow stages now complete:
 
 - Full Stage 2AB: Video / Processing DB-backed flow
 - Full Stage 2CD: Core result persistence and Analysis Runs DB-first reads
+- Full Stage 3AB: Zone / Rule config and top-level Event API DB flow
+- Full Stage 3CD: Event / Alert / Review DB lifecycle
+- Full Stage 3EF: Bad Case / Evaluation DB workflow, including failed cases in
+  `evaluation_results.summary["failed_cases"]`
 
-Still not complete after Full Stage 2:
+Still not complete after Full Stage 3EF:
 
-- full business API DB-backed migration beyond the core video / processing /
-  result path
-- Event / Alert / Review / Bad Case / Evaluation DB-backed workflow
-- Zone / Rule DB snapshot
+- full final production-grade DB-backed version
 - real evaluation metrics beyond the existing MVP artifacts
+- real mAP / IDF1 / MOTA
+- real rerun-based Bad Case regression
 - realtime, permissions, production security, and reporting

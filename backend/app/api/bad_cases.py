@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
 
 from app.analysis.bad_case_artifacts import BadCaseArtifactError
+from app.db.session import get_db
 from app.schemas.bad_case import (
     BadCaseCreateApiRequest,
     BadCaseDetailResponse,
@@ -20,17 +22,22 @@ router = APIRouter(prefix="/api/bad-cases", tags=["bad-cases"])
 @router.get("", response_model=BadCaseListResponse)
 def list_bad_cases(
     run_id: str | None = Query(default=None),
+    video_id: str | None = Query(default=None),
+    event_id: str | None = Query(default=None),
     case_type: str | None = Query(default=None),
     module: str | None = Query(default=None),
     case_status: str | None = Query(default=None, alias="status"),
     tag: str | None = Query(default=None),
     limit: int = Query(default=50, ge=0, le=1000),
     offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
 ) -> BadCaseListResponse:
     try:
-        service = BadCaseService()
+        service = BadCaseService(session=db)
         items = service.list_bad_cases(
             run_id=run_id,
+            video_id=video_id,
+            event_id=event_id,
             case_type=case_type,
             module=module,
             status=case_status,
@@ -53,9 +60,10 @@ def list_bad_cases(
 @router.get("/summary", response_model=BadCaseSummary)
 def summarize_bad_cases(
     run_id: str | None = Query(default=None),
+    db: Session = Depends(get_db),
 ) -> BadCaseSummary:
     try:
-        return BadCaseSummary(**BadCaseService().summarize_bad_cases(run_id=run_id))
+        return BadCaseSummary(**BadCaseService(session=db).summarize_bad_cases(run_id=run_id))
     except KeyError as exc:
         raise _not_found("analysis run not found") from exc
     except BadCaseArtifactError as exc:
@@ -65,8 +73,9 @@ def summarize_bad_cases(
 @router.post("/from-review", response_model=BadCaseDetailResponse)
 def create_bad_case_from_review(
     payload: BadCaseFromReviewRequest,
+    db: Session = Depends(get_db),
 ) -> BadCaseDetailResponse:
-    service = BadCaseService()
+    service = BadCaseService(session=db)
     try:
         record = service.create_bad_case_from_review(
             run_id=payload.run_id,
@@ -85,6 +94,7 @@ def create_bad_case_from_review(
                 case_id=record["case_id"],
                 updates={"root_cause": payload.root_cause},
             )
+        db.commit()
         return BadCaseDetailResponse(**record)
     except KeyError as exc:
         detail = (
@@ -102,8 +112,9 @@ def create_bad_case_from_review(
 @router.post("/from-failed-case", response_model=BadCaseDetailResponse)
 def create_bad_case_from_failed_case(
     payload: BadCaseFromFailedCaseRequest,
+    db: Session = Depends(get_db),
 ) -> BadCaseDetailResponse:
-    service = BadCaseService()
+    service = BadCaseService(session=db)
     try:
         record = service.create_bad_case_from_failed_case(
             run_id=payload.run_id,
@@ -116,6 +127,7 @@ def create_bad_case_from_failed_case(
             root_cause=payload.root_cause,
             tags=payload.tags,
         )
+        db.commit()
         return BadCaseDetailResponse(**record)
     except FailedCaseNotFound as exc:
         raise _not_found("failed case not found") from exc
@@ -131,9 +143,10 @@ def create_bad_case_from_failed_case(
 def get_bad_case(
     case_id: str,
     run_id: str | None = Query(default=None),
+    db: Session = Depends(get_db),
 ) -> BadCaseDetailResponse:
     try:
-        service = BadCaseService()
+        service = BadCaseService(session=db)
         record = (
             service.get_bad_case(run_id=run_id, case_id=case_id)
             if run_id
@@ -148,12 +161,16 @@ def get_bad_case(
 
 
 @router.post("", response_model=BadCaseDetailResponse)
-def create_bad_case(payload: BadCaseCreateApiRequest) -> BadCaseDetailResponse:
+def create_bad_case(
+    payload: BadCaseCreateApiRequest,
+    db: Session = Depends(get_db),
+) -> BadCaseDetailResponse:
     try:
-        record = BadCaseService().create_bad_case(
+        record = BadCaseService(session=db).create_bad_case(
             run_id=payload.run_id,
             record=payload.model_dump(exclude={"run_id"}),
         )
+        db.commit()
         return BadCaseDetailResponse(**record)
     except KeyError as exc:
         raise _not_found("analysis run not found") from exc
@@ -167,8 +184,9 @@ def create_bad_case(payload: BadCaseCreateApiRequest) -> BadCaseDetailResponse:
 def update_bad_case(
     case_id: str,
     payload: BadCaseUpdateApiRequest,
+    db: Session = Depends(get_db),
 ) -> BadCaseDetailResponse:
-    service = BadCaseService()
+    service = BadCaseService(session=db)
     try:
         run_id = payload.run_id
         if run_id is None:
@@ -179,6 +197,7 @@ def update_bad_case(
             case_id=case_id,
             updates=updates,
         )
+        db.commit()
         return BadCaseDetailResponse(**record)
     except KeyError as exc:
         detail = (

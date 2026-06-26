@@ -760,14 +760,17 @@ separate.
 
 ## Bad Case API
 
-Stage 8CD implements an artifact-backed Bad Case API MVP. It reads and writes
-per-run `bad_cases.jsonl`, records auditable updates in `bad_case_updates.jsonl`,
-and refreshes manifest / metadata / artifact index summaries through the Stage
-8B artifact helper. It is not database-backed final Bad Case state.
+Stage 8CD implements an artifact-backed Bad Case API MVP. Full Stage 3EF makes
+these endpoints DB-first for DB-backed runs while preserving artifact fallback.
+DB rows store core fields in `bad_cases` and extended fields such as `video_id`,
+`track_id`, `frame_index`, `module`, `root_cause`, `expected_result`,
+`actual_result`, `snapshot_path`, `linked_review_id`, and
+`linked_failed_case_id` in the JSON payload. Artifact-only runs still read and
+write per-run `bad_cases.jsonl`.
 
 Implemented endpoints:
 
-- `GET /api/bad-cases?run_id=&case_type=&module=&status=&tag=&limit=50&offset=0`
+- `GET /api/bad-cases?run_id=&video_id=&event_id=&case_type=&module=&status=&tag=&limit=50&offset=0`
 - `GET /api/bad-cases/{case_id}?run_id=`
 - `POST /api/bad-cases`
 - `PATCH /api/bad-cases/{case_id}`
@@ -780,16 +783,18 @@ Implemented endpoints:
 Bad Case artifacts return `400` with a stable error message.
 
 `POST /api/bad-cases/from-review` creates a Bad Case that references
-`review_comments.jsonl.review_id` through `linked_review_id`; it does not
-overwrite `review_comments.jsonl`, `event_review_state.json`,
-`false_negative_events.jsonl`, or `events.jsonl`.
+DB `review_comments.id` or `review_comments.jsonl.review_id` through
+`linked_review_id`; it does not overwrite Review artifacts or original event
+artifacts.
 
 `POST /api/bad-cases/from-failed-case` creates or returns a Bad Case linked to
-an Evaluation failed case. It writes `source=evaluation_center` and
-`linked_failed_case_id=<failed_case_id>` to `bad_cases.jsonl`. The endpoint is
-idempotent for the same `run_id` and `failed_case_id`: if a Bad Case already
-links that failed case, the existing record is returned. It does not mutate
-`evals/results/failed_cases.jsonl` or `evaluation_results.jsonl`.
+an Evaluation failed case. It first searches DB
+`evaluation_results.summary["failed_cases"]`, then falls back to
+`evals/results/failed_cases.jsonl`. It writes `source=evaluation_center` and
+`linked_failed_case_id=<failed_case_id>`. The endpoint is idempotent for the
+same `run_id` and `failed_case_id`: if a Bad Case already links that failed
+case, the existing record is returned. It does not mutate failed case source
+records.
 
 HTTP behavior:
 
@@ -798,15 +803,19 @@ HTTP behavior:
 - `422`: request body validation error, including unsupported enum values.
 
 Stage 8HI adds artifact-backed failed case conversion and Bad Case regression
-summary MVP. Industrial mAP / IDF1 / MOTA, rerun-based regression, and
-database-backed Bad Case / Evaluation state are still not implemented.
+summary MVP. Full Stage 3EF adds DB-backed Bad Case workflow and failed-case
+conversion. Industrial mAP / IDF1 / MOTA and true rerun-based regression are
+still not implemented.
 
 ## Evaluation API
 
-Stage 8EFG / Stage 8HI implements an artifact-backed Evaluation API MVP. It stores
-dataset registry data under `evals/datasets/evaluation_datasets.json`, run and
-result indexes under `evals/results/`, and writes per-run
-`evaluation_summary.json` into the analysis run directory.
+Stage 8EFG / Stage 8HI implements an artifact-backed Evaluation API MVP. Full
+Stage 3EF adds DB-first Evaluation workflow using `evaluation_datasets` and
+`evaluation_results`. Failed cases are persisted inside
+`evaluation_results.summary["failed_cases"]`; no separate failed-cases table is
+introduced in this stage. Artifacts remain available under
+`evals/datasets/evaluation_datasets.json`, `evals/results/`, and per-run
+`evaluation_summary.json`.
 
 Available endpoints:
 
@@ -820,12 +829,12 @@ Available endpoints:
 
 `POST /api/evaluation/run` accepts `event`, `flow_counting`, `trajectory`,
 `detection`, `tracking`, and `regression`. Event / flow / trajectory are MVP
-artifact comparisons. Detection and tracking return `not_applicable` unless
-future annotation-backed metrics are added. Regression reads `bad_cases.jsonl`
-and writes an artifact-backed summary with `total_cases`, `open_cases`,
-`fixed_cases`, `verified_cases`, `ignored_cases`, `fixed_case_count`,
-`reopened_case_count`, and `regression_pass_rate`. This does not execute a real
-rerun-based regression pipeline.
+comparisons that can be written to DB. Detection and tracking return
+`not_applicable` unless future annotation-backed metrics are added. Regression
+reads Bad Case DB rows or `bad_cases.jsonl` and writes a summary with
+`total_cases`, `open_cases`, `fixed_cases`, `verified_cases`, `ignored_cases`,
+`fixed_case_count`, `reopened_case_count`, and `regression_pass_rate`. This does
+not execute a real rerun-based regression pipeline.
 
 ## Not Implemented From The Manual Yet
 
@@ -834,7 +843,6 @@ implemented as working behavior yet:
 
 - advanced filtering on flow counts and zone statistics
 - database-backed aggregate statistics APIs
-- database-backed Review Center workflow
 - rerun-based Bad Case regression pipeline
 - industrial mAP / IDF1 / MOTA evaluation
 

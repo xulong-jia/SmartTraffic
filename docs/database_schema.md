@@ -5,10 +5,10 @@ This document describes the target database schema from
 has a DB foundation plus core SQLAlchemy models, migrations, repositories,
 artifact compatibility helpers, Stage 2AB DB-backed video / processing task
 foundation, Stage 2CD DB-backed core result persistence, Stage 3AB DB-backed
-config / event API flow, and Stage 3CD DB-backed event / alert / review
-lifecycle foundation.
+config / event API flow, Stage 3CD DB-backed event / alert / review lifecycle
+foundation, and Stage 3EF DB-backed Bad Case / Evaluation workflow foundation.
 
-本文描述当前 schema/repository foundation、Full Stage 2 DB-backed 核心流、Full Stage 3AB config / event API、Full Stage 3CD event / alert / review 范围和目标数据库边界，不代表当前仓库已经完成 DB-backed 全量业务迁移。
+本文描述当前 schema/repository foundation、Full Stage 2 DB-backed 核心流、Full Stage 3AB config / event API、Full Stage 3CD event / alert / review、Full Stage 3EF Bad Case / Evaluation 范围和目标数据库边界，不代表当前仓库已经完成 DB-backed 全量业务迁移。
 
 Current implementation notes:
 
@@ -36,18 +36,22 @@ Current implementation notes:
   read-through, DB-first Alert Center status transitions, Review workflow audit
   records in `review_comments`, false-negative event records, and
   `processing_tasks.mode=rule_rerun` request rows.
+- Full Stage 3EF has added DB-first Bad Case workflow over `bad_cases`, DB-first
+  Evaluation dataset/result workflow over `evaluation_datasets` and
+  `evaluation_results`, failed cases persisted in
+  `evaluation_results.summary["failed_cases"]`, and optional CLI DB writes via
+  `scripts/run_evals.py --write-db`.
 - The default local database URL is `sqlite:///./smarttraffic.db`.
 - Videos, processing tasks, processing-created run indexes, detections, tracks,
   trajectory points, flow counts, zone statistics, zones, event rules,
   top-level event reads/status updates, event evidence, rule executions, alert
-  status transitions, and review audit records are DB-backed.
-- Bad case and evaluation workflows have not been fully migrated to
-  database-backed persistence.
+  status transitions, review audit records, Bad Case workflow, Evaluation
+  dataset/result workflow, and failed-case conversion are DB-backed.
 - `event_rules` and `zones` now use DB-backed CRUD APIs. The frontend
   ZoneEditor has not been redesigned in this stage.
 - `review_comments` now stores DB-backed Review action audit records for DB
-  events. `bad_cases`, `evaluation_datasets`, and `evaluation_results` still
-  have artifact-backed MVP implementations and schema foundation tables.
+  events. `bad_cases`, `evaluation_datasets`, and `evaluation_results` now have
+  DB-first API workflows while preserving artifact fallback.
 - Event / alert artifacts still come from local artifacts under
   `results/traffic_analysis/<run_id>/` for legacy and artifact-only runs.
 - Full Stage 3 and later stages are expected to continue Event / Alert, Review,
@@ -84,13 +88,16 @@ DB-backed processing lifecycle. Full Stage 2CD writes the generated core result
 artifacts into the corresponding DB tables after processing succeeds. Full
 Stage 3CD persists event evidence, rule execution rows, alert status changes,
 review audit comments, false-negative event records, and rule rerun request
-tasks while preserving artifact fallback. Full Stage 1EF can import structured
+tasks while preserving artifact fallback. Full Stage 3EF persists Bad Case
+records in `bad_cases`, Evaluation dataset records in `evaluation_datasets`,
+Evaluation metric results in `evaluation_results.metrics`, and run summary /
+failed cases in `evaluation_results.summary`. Full Stage 1EF can import structured
 artifacts such as
 `metadata.json`, `detections.csv`, `tracks.csv`, `trajectory_points.csv`,
 `events.jsonl`, `alerts.jsonl`, `flow_counts.json`, `zone_statistics.json`,
 `evaluation_summary.json`, and `bad_cases.jsonl` / `bad_cases.csv` into those
 tables. Full Stage 3AB stores zone/rule config snapshots inside
 `traffic_analysis_runs.summary["event_config_snapshot"]` without adding a new
-table. Current Bad Case full workflow and Evaluation workflow endpoints still
-use artifact-backed MVP paths or minimal DB linkage; this is not the DB-backed
-full final version.
+table. Current real mAP / IDF1 / MOTA and real rerun-based Bad Case regression
+are still outside this schema workflow and remain Full Stage 4 work; this is
+not the DB-backed full final version.
