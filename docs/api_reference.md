@@ -737,6 +737,11 @@ the rule engine or mutate result artifacts.
 False-negative and rerun endpoints do not automatically create Bad Cases and do
 not automatically feed Evaluation Center.
 
+Full Stage 5E Review UI uses these endpoints through a ReviewDrawer workflow:
+confirm / false-positive / ignore / resolve / comment stay in Review, Review ->
+Bad Case calls `POST /api/bad-cases/from-review`, and rule rerun request records
+only the `rule_rerun` task described above.
+
 HTTP behavior:
 
 - `400`: missing required `run_id`, invalid state transition, or malformed
@@ -744,13 +749,14 @@ HTTP behavior:
 - `404`: run or event not found.
 - `422`: request body validation error.
 
-The Stage 7 frontend does not create Bad Case records, does not feed
-Evaluation Center, and Stage 7E navigation does not auto-sync Alert Center
-status with Event review status. Stage 8B adds backend artifact/schema/service
-support for Bad Case records. Stage 8CD adds routed Bad Case API and a Bad
-Case Center frontend MVP. Full Stage 3EF makes Bad Case DB workflow available
-under `/api/bad-cases`, but Review API actions still do not modify Bad Case
-records automatically.
+The Stage 7 frontend did not create Bad Case records or feed Evaluation Center,
+and Stage 7E navigation does not auto-sync Alert Center status with Event
+review status. Stage 8B adds backend artifact/schema/service support for Bad
+Case records. Stage 8CD adds routed Bad Case API and a Bad Case Center frontend
+MVP. Full Stage 3EF makes Bad Case DB workflow available under
+`/api/bad-cases`. Full Stage 5E adds an explicit Review -> Bad Case UI action,
+but Review API status actions still do not modify Bad Case records
+automatically.
 
 Stage 7E frontend URL query contract:
 
@@ -857,6 +863,11 @@ passed open / triaged cases are marked `fixed`, while failed fixed / verified
 cases are reopened as `open`. Missing replay payload returns
 `insufficient_data` and does not emit a fake pass. This does not execute a
 complete video-level rerun pipeline.
+
+Full Stage 5E Evaluation UI presents run / dataset / type filters, result cards,
+JSON-friendly result details, failed-case -> Bad Case conversion, regression
+summary, and the same non-COCO / non-TrackEval / deterministic replay /
+`insufficient_data` boundary labels.
 
 ## Not Implemented From The Manual Yet
 

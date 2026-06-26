@@ -4,7 +4,7 @@
 
 ## 1. 当前版本状态
 
-当前已完成 Stage 9EF 最终验收准备。最新工程交付 commit 是 Stage 9CD 后的 `5538a3a`，当前建议 final engineering delivery tag 为 `v0.9.0-final-engineering-delivery`。该 tag 不是 `v1.0.0`，不代表 DB-backed final version、production deployment 或执法级系统。Full Stage 1AB 已在最终交付后补充 DB Foundation：SQLAlchemy Declarative Base、engine/session dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 已接入。Full Stage 1CD 已新增 core models、业务表 migration、repositories 和 CRUD tests。Full Stage 1EF 已新增 artifact compatibility / import / read-through helper 和 dry-run CLI。Full Stage 2AB 已完成 Video API、Processing Task 生命周期和 `traffic_analysis_runs` run index 的 DB-backed 迁移；Full Stage 2CD 已完成 detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic Analysis Center DB-first index；Full Stage 3AB 已完成 Zone / Event Rule DB CRUD、run-level config snapshot 和 top-level Event APIs；Full Stage 3CD 已完成 Event / EventEvidence / RuleExecution DB lifecycle、Alert Center DB 状态流转、Review DB workflow / `review_comments` audit trail，以及 rule rerun request 的 `processing_tasks.mode=rule_rerun` 记录；Full Stage 3EF 已完成 Bad Case DB workflow、Evaluation Dataset / Result DB workflow、failed cases DB persistence 方案和 failed-case -> Bad Case DB 转换；Full Stage 4AB 已完成 Trajectory final features 和六类 Event Rule final behavior；Full Stage 4CD 已完成 Detection / Tracking benchmark algorithm foundation；Full Stage 4E 已完成 Bad Case deterministic replay / rule replay regression evaluation；Full Stage 5AB 已完成 ZoneEditor UI + API integration；Full Stage 5CD 已完成 Video Overlay UI + EventTimeline。Stage 1-9 已完成 artifact-backed MVP 与最终工程交付准备主链路：
+当前已完成 Stage 9EF 最终验收准备。最新工程交付 commit 是 Stage 9CD 后的 `5538a3a`，当前建议 final engineering delivery tag 为 `v0.9.0-final-engineering-delivery`。该 tag 不是 `v1.0.0`，不代表 DB-backed final version、production deployment 或执法级系统。Full Stage 1AB 已在最终交付后补充 DB Foundation：SQLAlchemy Declarative Base、engine/session dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 已接入。Full Stage 1CD 已新增 core models、业务表 migration、repositories 和 CRUD tests。Full Stage 1EF 已新增 artifact compatibility / import / read-through helper 和 dry-run CLI。Full Stage 2AB 已完成 Video API、Processing Task 生命周期和 `traffic_analysis_runs` run index 的 DB-backed 迁移；Full Stage 2CD 已完成 detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic Analysis Center DB-first index；Full Stage 3AB 已完成 Zone / Event Rule DB CRUD、run-level config snapshot 和 top-level Event APIs；Full Stage 3CD 已完成 Event / EventEvidence / RuleExecution DB lifecycle、Alert Center DB 状态流转、Review DB workflow / `review_comments` audit trail，以及 rule rerun request 的 `processing_tasks.mode=rule_rerun` 记录；Full Stage 3EF 已完成 Bad Case DB workflow、Evaluation Dataset / Result DB workflow、failed cases DB persistence 方案和 failed-case -> Bad Case DB 转换；Full Stage 4AB 已完成 Trajectory final features 和六类 Event Rule final behavior；Full Stage 4CD 已完成 Detection / Tracking benchmark algorithm foundation；Full Stage 4E 已完成 Bad Case deterministic replay / rule replay regression evaluation；Full Stage 5AB 已完成 ZoneEditor UI + API integration；Full Stage 5CD 已完成 Video Overlay UI + EventTimeline；Full Stage 5E 已完成 Review UX + Evaluation UI。Stage 1-9 已完成 artifact-backed MVP 与最终工程交付准备主链路：
 
 ```text
 video upload
@@ -47,6 +47,7 @@ video upload
 - Full Stage 4E Regression Evaluation：已实现 status-based deterministic replay、stored rule replay fixture、per-case regression result、failed regression cases、`regression_pass_rate`、fixed / reopened / failed counts、DB-backed evaluation result persistence 和 CLI/API config 透传；`apply_updates=false` 为默认策略，完整视频级 rerun 不在本阶段。
 - Full Stage 5AB ZoneEditor UI：已将 ZoneEditor 从 placeholder 改为真实交互组件，支持 polygon、direction line、counting line 绘制，DB-backed zones / event_rules 保存、更新、删除、读取回显，enabled/version 展示，基础 loading/error/empty 状态和前端 utility tests。
 - Full Stage 5CD Video Overlay / EventTimeline：DetectionOverlay、TrackOverlay 和 Zone overlay 已不再是 placeholder；AnalysisDetailPage 已接入 detections、tracks、trajectory_points、zones 和 events 数据叠加展示；EventTimeline 支持过滤、选中和点击事件跳转到对应 timestamp。
+- Full Stage 5E Review UX + Evaluation UI：ReviewDrawer 支持 confirm / false_positive / false_negative / ignore / resolve、comments、Review -> Bad Case 和 rule rerun request；Evaluation Center 支持 dataset/run/type selector、result cards、detail JSON、failed cases table、failed-case -> Bad Case、regression summary 和边界标签。
 - Stage 9AB final pre-delivery audit and documentation closeout。
 - Stage 9CD 小型 demo/sample config、toy expected annotations、seed script、Makefile 和环境命令收口。
 - Stage 9EF final acceptance and final tag preparation。
@@ -60,7 +61,6 @@ video upload
 - TrackEval official IDF1 / MOTA benchmark。
 - Real dataset benchmark。
 - Complete video-level Bad Case rerun pipeline；当前是 deterministic replay / rule replay。
-- ReviewDrawer UX 和 Evaluation charts；留给 Full Stage 5E。
 - Report Center；留给 Full Stage 6。
 - Production-grade evaluation platform。
 - Permissions / multi-user audit。

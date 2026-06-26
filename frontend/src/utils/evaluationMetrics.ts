@@ -7,6 +7,7 @@ import type {
 export const EVALUATION_STATUS_KEYS = [
   "available",
   "empty",
+  "insufficient_data",
   "not_applicable",
   "planned"
 ] as const;
@@ -135,6 +136,7 @@ function emptyStatusCounts(): EvaluationStatusCounts {
   return {
     available: 0,
     empty: 0,
+    insufficient_data: 0,
     not_applicable: 0,
     planned: 0,
     unknown: 0

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { getAlert } from "../api/alerts";
+import { createBadCaseFromReview } from "../api/badCases";
 import {
   addFalseNegative,
   addReviewComment,
@@ -9,11 +10,12 @@ import {
   ignoreReviewEvent,
   listReviewEvents,
   markReviewEventFalsePositive,
+  requestReviewRuleRerun,
   resolveReviewEvent
 } from "../api/review";
+import ReviewDrawer from "../components/ReviewDrawer";
 import type {
   FalseNegativeRequest,
-  ReviewActionRequest,
   ReviewEventDetail,
   ReviewEventListResponse,
   ReviewEventSummary
@@ -21,7 +23,6 @@ import type {
 import {
   buildReviewEventDisplaySummary,
   buildReviewStatusCounts,
-  formatReviewStatusLabel,
   normalizeReviewValue
 } from "../utils/reviewMetrics";
 import {
@@ -30,9 +31,16 @@ import {
   parseReviewQuery,
   type ReviewFilterState
 } from "../utils/reviewNavigation";
+import {
+  buildBadCaseFromReviewRequest,
+  buildReviewActionRequest,
+  buildReviewCommentRequest,
+  buildReviewSuccessMessage,
+  type ReviewWorkflowAction,
+  validateReviewWorkflowAction
+} from "../utils/reviewWorkflow";
 
-type ReviewSubmitAction = "confirm" | "false-positive" | "ignore" | "resolve";
-type SubmittingState = ReviewSubmitAction | "comment" | "false-negative" | null;
+type SubmittingState = ReviewWorkflowAction | "false-negative" | null;
 
 interface FalseNegativeFormState {
   run_id: string;
@@ -252,20 +260,23 @@ export default function ReviewCenterPage({
     }
   }
 
-  async function runReviewAction(action: ReviewSubmitAction) {
+  async function runReviewWorkflowAction(action: ReviewWorkflowAction) {
     const currentEventId = selectedEventId;
     const normalizedRunId = runId.trim();
-    if (!currentEventId || !normalizedRunId) {
-      setDetailError("Select an event and run_id before submitting a review action.");
+    const form = {
+      runId: normalizedRunId,
+      eventId: currentEventId,
+      reviewer,
+      comment,
+      alertId: openedAlertId
+    };
+    const validation = validateReviewWorkflowAction(action, form);
+    if (!validation.valid) {
+      setDetailError(validation.message);
       return;
     }
+    const eventId = currentEventId ?? "";
 
-    const body: ReviewActionRequest = {
-      run_id: normalizedRunId,
-      comment: comment.trim(),
-      reviewer: reviewer.trim() || "local_reviewer",
-      alert_id: openedAlertId
-    };
     const actionMap = {
       confirm: confirmReviewEvent,
       "false-positive": markReviewEventFalsePositive,
@@ -277,46 +288,42 @@ export default function ReviewCenterPage({
     setDetailError("");
     setSuccessMessage("");
     try {
-      await actionMap[action](currentEventId, body);
+      if (action === "comment") {
+        const response = await addReviewComment(buildReviewCommentRequest(form));
+        setComment("");
+        setSuccessMessage(buildReviewSuccessMessage(action, response));
+        await loadEvents(eventId);
+        return;
+      }
+      if (action === "bad-case") {
+        if (!detail) {
+          throw new Error("Select an event before creating a Bad Case.");
+        }
+        const response = await createBadCaseFromReview(
+          buildBadCaseFromReviewRequest(detail, form)
+        );
+        setSuccessMessage(buildReviewSuccessMessage(action, response));
+        await loadEvents(eventId);
+        return;
+      }
+      if (action === "rerun-rule") {
+        const response = await requestReviewRuleRerun(
+          eventId,
+          buildReviewActionRequest(form)
+        );
+        setComment("");
+        setSuccessMessage(buildReviewSuccessMessage(action, response));
+        await loadEvents(eventId);
+        return;
+      }
+      const response = await actionMap[action](eventId, buildReviewActionRequest(form));
       setComment("");
-      setSuccessMessage(`Review action saved: ${action}`);
-      await loadEvents(currentEventId);
+      setSuccessMessage(buildReviewSuccessMessage(action, response));
+      await loadEvents(eventId);
     } catch (currentError) {
-      setDetailError(currentError instanceof Error ? currentError.message : "Review action failed");
-    } finally {
-      setSubmitting(null);
-    }
-  }
-
-  async function submitComment() {
-    const currentEventId = selectedEventId;
-    const normalizedRunId = runId.trim();
-    const trimmedComment = comment.trim();
-    if (!currentEventId || !normalizedRunId) {
-      setDetailError("Select an event and run_id before adding a comment.");
-      return;
-    }
-    if (!trimmedComment) {
-      setDetailError("Comment is required.");
-      return;
-    }
-
-    setSubmitting("comment");
-    setDetailError("");
-    setSuccessMessage("");
-    try {
-      await addReviewComment({
-        run_id: normalizedRunId,
-        event_id: currentEventId,
-        comment: trimmedComment,
-        reviewer: reviewer.trim() || "local_reviewer",
-        alert_id: openedAlertId
-      });
-      setComment("");
-      setSuccessMessage("Comment added.");
-      await loadEvents(currentEventId);
-    } catch (currentError) {
-      setDetailError(currentError instanceof Error ? currentError.message : "Comment request failed");
+      setDetailError(
+        currentError instanceof Error ? currentError.message : "Review action failed"
+      );
     } finally {
       setSubmitting(null);
     }
@@ -455,76 +462,18 @@ export default function ReviewCenterPage({
           )}
         </section>
 
-        <section className="panel">
-          <div className="section-heading-row">
-            <h3>Event Detail</h3>
-            {loadingDetail ? <span className="muted">Loading</span> : null}
-          </div>
-          {detailError ? <p className="muted">{detailError}</p> : null}
-          {!detail && !loadingDetail ? (
-            <p className="muted">Select an event to inspect review state, comments, alerts, and artifact references.</p>
-          ) : null}
-          {detail ? (
-            <>
-              <ReviewEventDetailPanel detail={detail} openedAlertId={openedAlertId} />
-              <section className="summary-strip">
-                <h3>Review Actions</h3>
-                <div className="toolbar compact">
-                  <label>
-                    Reviewer
-                    <input
-                      value={reviewer}
-                      onChange={(event) => setReviewer(event.target.value)}
-                    />
-                  </label>
-                </div>
-                <label className="stacked-control">
-                  Comment
-                  <textarea
-                    rows={4}
-                    value={comment}
-                    onChange={(event) => setComment(event.target.value)}
-                  />
-                </label>
-                <div className="toolbar compact">
-                  <button
-                    type="button"
-                    disabled={submitting !== null}
-                    onClick={() => runReviewAction("confirm")}
-                  >
-                    Confirm
-                  </button>
-                  <button
-                    type="button"
-                    disabled={submitting !== null}
-                    onClick={() => runReviewAction("false-positive")}
-                  >
-                    Mark false positive
-                  </button>
-                  <button
-                    type="button"
-                    disabled={submitting !== null}
-                    onClick={() => runReviewAction("ignore")}
-                  >
-                    Ignore
-                  </button>
-                  <button
-                    type="button"
-                    disabled={submitting !== null}
-                    onClick={() => runReviewAction("resolve")}
-                  >
-                    Resolve
-                  </button>
-                  <button type="button" disabled={submitting !== null} onClick={submitComment}>
-                    Add comment
-                  </button>
-                </div>
-                {submitting ? <p className="muted">Submitting {submitting}</p> : null}
-              </section>
-              <CommentsList detail={detail} />
-            </>
-          ) : null}
-        </section>
+        <ReviewDrawer
+          detail={detail}
+          openedAlertId={openedAlertId}
+          loading={loadingDetail}
+          error={detailError}
+          reviewer={reviewer}
+          comment={comment}
+          submitting={submitting}
+          onReviewerChange={setReviewer}
+          onCommentChange={setComment}
+          onAction={runReviewWorkflowAction}
+        />
       </div>
 
       <section className="panel">
@@ -659,114 +608,6 @@ function ReviewEventRow({
   );
 }
 
-function ReviewEventDetailPanel({
-  detail,
-  openedAlertId
-}: {
-  detail: ReviewEventDetail;
-  openedAlertId: string | null;
-}) {
-  const event = detail.event;
-  return (
-    <>
-      {openedAlertId ? (
-        <p className="muted">Opened from alert: {openedAlertId}</p>
-      ) : null}
-      <dl className="detail-grid">
-        <DetailItem label="Event ID" value={event.event_id} />
-        <DetailItem label="Run ID" value={detail.run_id} />
-        <DetailItem label="Event type" value={event.event_type} />
-        <DetailItem label="Review status" value={formatReviewStatusLabel(event.review_status)} />
-        <DetailItem label="Original status" value={event.original_status} />
-        <DetailItem label="Severity" value={event.severity} />
-        <DetailItem label="Track" value={event.track_id} />
-        <DetailItem label="Zone" value={event.zone_id} />
-        <DetailItem label="Start frame" value={event.start_frame} />
-        <DetailItem label="End frame" value={event.end_frame} />
-        <DetailItem label="Start ms" value={event.start_time_ms} />
-        <DetailItem label="End ms" value={event.end_time_ms} />
-        <DetailItem label="Comments" value={event.comment_count} />
-        <DetailItem label="Last action" value={event.last_action} />
-      </dl>
-
-      <section className="summary-strip">
-        <h3>Linked Alerts</h3>
-        {detail.linked_alerts.length === 0 ? (
-          <p className="muted">No linked alerts.</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Alert</th>
-                <th>Status</th>
-                <th>Level</th>
-                <th>Message</th>
-              </tr>
-            </thead>
-            <tbody>
-              {detail.linked_alerts.map((alert) => (
-                <tr
-                  className={isOpenedAlert(alert, openedAlertId) ? "selected-row" : ""}
-                  key={alert.alert_id || alert.id}
-                >
-                  <td>{alert.alert_id || alert.id}</td>
-                  <td>{alert.status}</td>
-                  <td>{alert.level}</td>
-                  <td>{alert.message}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
-
-      <section className="summary-strip">
-        <h3>Visual Artifacts</h3>
-        <dl className="detail-grid">
-          <DetailItem label="Keyframes" value={artifactField(detail.visual_artifacts, "keyframes", "status")} />
-          <DetailItem label="Keyframes path" value={artifactField(detail.visual_artifacts, "keyframes", "path")} />
-          <DetailItem label="Annotated video" value={artifactField(detail.visual_artifacts, "annotated_video", "status")} />
-          <DetailItem label="Video path" value={artifactField(detail.visual_artifacts, "annotated_video", "path")} />
-        </dl>
-      </section>
-    </>
-  );
-}
-
-function CommentsList({ detail }: { detail: ReviewEventDetail }) {
-  return (
-    <section className="summary-strip">
-      <h3>Comments</h3>
-      {detail.comments.length === 0 ? (
-        <p className="muted">No review comments.</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Action</th>
-              <th>After</th>
-              <th>Reviewer</th>
-              <th>Comment</th>
-              <th>Created</th>
-            </tr>
-          </thead>
-          <tbody>
-            {detail.comments.map((item) => (
-              <tr key={item.review_id}>
-                <td>{item.action}</td>
-                <td>{item.after_status}</td>
-                <td>{item.reviewer}</td>
-                <td>{item.comment || "-"}</td>
-                <td>{item.created_at}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </section>
-  );
-}
-
 function Metric({ label, value }: { label: string; value: number }) {
   return (
     <div className="card metric-card">
@@ -774,25 +615,6 @@ function Metric({ label, value }: { label: string; value: number }) {
       <span className="muted">{label}</span>
     </div>
   );
-}
-
-function DetailItem({ label, value }: { label: string; value: unknown }) {
-  return (
-    <div>
-      <dt>{label}</dt>
-      <dd>{formatDetailValue(value)}</dd>
-    </div>
-  );
-}
-
-function formatDetailValue(value: unknown): string {
-  if (typeof value === "string" || typeof value === "number") {
-    return normalizeReviewValue(value);
-  }
-  if (typeof value === "boolean") {
-    return String(value);
-  }
-  return "-";
 }
 
 function normalizeOptionalString(value: string): string | undefined {
@@ -857,23 +679,6 @@ function parseOptionalInteger(value: string, label: string): number | null {
   return parsed;
 }
 
-function artifactField(
-  artifacts: Record<string, unknown>,
-  artifactKey: string,
-  field: string
-): string {
-  const artifact = artifacts[artifactKey];
-  if (isRecord(artifact)) {
-    const value = artifact[field];
-    return typeof value === "string" || typeof value === "number" ? String(value) : "-";
-  }
-  return "-";
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 function syncReviewUrl({
   runId,
   eventId,
@@ -897,16 +702,6 @@ function syncReviewUrl({
   if (`${window.location.pathname}${window.location.search}` !== href) {
     window.history.replaceState(null, "", href);
   }
-}
-
-function isOpenedAlert(
-  alert: { alert_id?: string | null; id?: string | null },
-  openedAlertId: string | null
-): boolean {
-  if (!openedAlertId) {
-    return false;
-  }
-  return alert.alert_id === openedAlertId || alert.id === openedAlertId;
 }
 
 function currentLocationSearch(): string {

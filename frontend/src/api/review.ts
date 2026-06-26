@@ -74,6 +74,16 @@ export function resolveReviewEvent(
   );
 }
 
+export function requestReviewRuleRerun(
+  eventId: string,
+  body: ReviewActionRequest
+): Promise<Record<string, unknown>> {
+  return postReviewJson<Record<string, unknown>>(
+    `/api/review/events/${encodeURIComponent(eventId)}/rerun-rule`,
+    body
+  );
+}
+
 export function addReviewComment(
   body: ReviewCommentRequest
 ): Promise<ReviewActionResponse> {

@@ -247,6 +247,50 @@ button:disabled {
   margin: 16px 0;
 }
 
+.review-drawer {
+  min-width: 0;
+}
+
+.review-action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.evaluation-card-grid {
+  margin-top: 12px;
+}
+
+.compact-list {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+
+.json-panel {
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid #d9e0e7;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #273644;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 10px;
+}
+
+.compact-json {
+  max-width: 420px;
+  max-height: 180px;
+  margin: 0;
+}
+
+.evaluation-status-cell .status-pill {
+  white-space: normal;
+}
+
 .metric-card {
   padding: 12px;
 }
@@ -612,6 +656,10 @@ button:disabled {
   .zone-editor-grid,
   .zone-form-grid,
   .rule-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .review-action-grid {
     grid-template-columns: 1fr;
   }
 }

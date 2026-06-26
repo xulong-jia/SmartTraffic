@@ -41,6 +41,7 @@ export function listEvaluationResults(
   params: {
     run_id?: string;
     evaluation_run_id?: string;
+    dataset_id?: string;
     evaluation_type?: string;
     limit?: number;
     offset?: number;

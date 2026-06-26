@@ -1,8 +1,8 @@
 # Evaluation Center
 
-本文档记录 Stage 8HI 后的 Evaluation Center artifact-backed MVP，以及 Full
-Stage 3EF 后的 Evaluation DB workflow。它仍不代表工业级检测 / 跟踪评测体系
-已经完成。
+本文档记录 Stage 8HI 后的 Evaluation Center artifact-backed MVP、Full
+Stage 3EF 后的 Evaluation DB workflow，以及 Full Stage 5E 的 Evaluation
+前端展示增强。它仍不代表工业级检测 / 跟踪评测体系已经完成。
 
 ## 当前状态
 
@@ -64,6 +64,18 @@ Full Stage 4E 已实现：
   `fixed`，fixed / verified 且 replay failed 的 case 会重新打开为 `open`。
 - failed regression cases 会作为 Evaluation failed cases 写入 artifacts 和
   DB-backed `evaluation_results.summary["failed_cases"]`。
+
+Full Stage 5E 已实现：
+
+- Evaluation Center 提供 run / dataset / evaluation type 选择和过滤。
+- Results 区展示 metric cards、结果列表和 JSON-friendly detail payload。
+- Failed Cases 区展示 failed-case 表，并可调用
+  `POST /api/bad-cases/from-failed-case` 创建 Bad Case。
+- Summary 区展示 Bad Case regression summary cards 和完整 summary JSON。
+- UI 明确标注边界：detection mAP 是 VOC-style single-IoU，不是 COCO
+  official；tracking IDF1 / MOTA 是 lightweight deterministic，不是 TrackEval
+  official；regression 是 deterministic replay / stored rule replay，不是完整视频
+  rerun；`insufficient_data` 表示缺少 annotations / replay data，不是零分或失败。
 
 当前仍未实现：
 

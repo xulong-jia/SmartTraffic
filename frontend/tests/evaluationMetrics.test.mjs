@@ -90,6 +90,7 @@ test("buildEvaluationStatusCounts counts available, planned, not applicable, and
   assert.deepEqual(evaluationMetrics.buildEvaluationStatusCounts(results), {
     available: 1,
     empty: 0,
+    insufficient_data: 0,
     not_applicable: 1,
     planned: 1,
     unknown: 1

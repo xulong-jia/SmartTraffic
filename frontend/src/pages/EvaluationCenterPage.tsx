@@ -23,10 +23,19 @@ import {
   buildBadCaseRegressionDisplaySummary,
   buildEvaluationResultDisplaySummary,
   buildEvaluationStatusCounts,
-  formatEvaluationStatusLabel,
   formatEvaluationTypeLabel,
   normalizeMetricValue
 } from "../utils/evaluationMetrics";
+import {
+  EVALUATION_BOUNDARY_NOTICES,
+  buildEvaluationMetricCards,
+  buildEvaluationResultJson,
+  buildFailedCaseBadCaseRequest,
+  buildFailedCaseRows,
+  buildInsufficientDataLabel,
+  buildRegressionSummaryCards,
+  formatEvaluationBoundaryForType
+} from "../utils/evaluationDisplay";
 
 interface DatasetFormState {
   dataset_id: string;
@@ -64,6 +73,8 @@ export default function EvaluationCenterPage() {
 
   const resultItems = results?.items ?? [];
   const statusCounts = buildEvaluationStatusCounts(resultItems);
+  const metricCards = buildEvaluationMetricCards(resultItems).slice(0, 6);
+  const regressionCards = buildRegressionSummaryCards(summary);
 
   useEffect(() => {
     void loadEvaluationState();
@@ -75,12 +86,20 @@ export default function EvaluationCenterPage() {
     setSuccessMessage("");
     try {
       const normalizedRunId = normalizeOptional(targetRunId);
+      const normalizedDatasetId = normalizeOptional(datasetId);
       const [datasetPayload, runPayload, resultPayload, failedCasePayload] =
         await Promise.all([
           listEvaluationDatasets(),
-          listEvaluationRuns({ run_id: normalizedRunId, limit: 100, offset: 0 }),
+          listEvaluationRuns({
+            run_id: normalizedRunId,
+            dataset_id: normalizedDatasetId,
+            evaluation_type: normalizeOptional(evaluationType),
+            limit: 100,
+            offset: 0
+          }),
           listEvaluationResults({
             run_id: normalizedRunId,
+            dataset_id: normalizedDatasetId,
             evaluation_type: normalizeOptional(evaluationType),
             limit: 100,
             offset: 0
@@ -156,18 +175,21 @@ export default function EvaluationCenterPage() {
     }
   }
 
-  async function convertFailedCase(failedCaseId: string, failedCaseRunId: string) {
+  async function convertFailedCase(failedCaseId: string) {
+    const failedCase = failedCases?.items.find((item) => item.failed_case_id === failedCaseId);
+    if (!failedCase) {
+      setError("Failed case is not loaded.");
+      return;
+    }
     setConvertingFailedCaseId(failedCaseId);
     setError("");
     setSuccessMessage("");
     try {
-      const created = await createBadCaseFromFailedCase({
-        run_id: failedCaseRunId,
-        failed_case_id: failedCaseId,
-        tags: ["evaluation"]
-      });
+      const created = await createBadCaseFromFailedCase(
+        buildFailedCaseBadCaseRequest(failedCase)
+      );
       setSuccessMessage(`Created ${created.case_id} from ${failedCaseId}.`);
-      await loadEvaluationState(failedCaseRunId);
+      await loadEvaluationState(failedCase.run_id);
     } catch (currentError) {
       setError(
         currentError instanceof Error ? currentError.message : "Failed case conversion failed"
@@ -238,9 +260,31 @@ export default function EvaluationCenterPage() {
         <div className="metric-row">
           <MetricCard label="Results" value={String(results?.total ?? 0)} />
           <MetricCard label="Available" value={String(statusCounts.available)} />
-          <MetricCard label="Planned" value={String(statusCounts.planned)} />
+          <MetricCard label="Insufficient" value={String(statusCounts.insufficient_data)} />
           <MetricCard label="Failed Cases" value={String(failedCases?.total ?? 0)} />
         </div>
+        <div className="summary-strip">
+          <h3>Evaluation Boundaries</h3>
+          <ul className="compact-list">
+            {EVALUATION_BOUNDARY_NOTICES.map((notice) => (
+              <li key={notice.key}>
+                <strong>{notice.label}:</strong> {notice.detail}
+              </li>
+            ))}
+          </ul>
+          <p className="muted">{formatEvaluationBoundaryForType(String(evaluationType))}</p>
+        </div>
+        {metricCards.length > 0 ? (
+          <div className="metric-row evaluation-card-grid">
+            {metricCards.map((card) => (
+              <MetricCard
+                key={card.key}
+                label={`${card.label} (${card.status})`}
+                value={card.value}
+              />
+            ))}
+          </div>
+        ) : null}
       </section>
 
       <div className="grid two">
@@ -364,8 +408,17 @@ export default function EvaluationCenterPage() {
           </div>
           {summary ? (
             <>
+              <div className="metric-row evaluation-card-grid">
+                {regressionCards.map((card) => (
+                  <MetricCard
+                    key={card.key}
+                    label={`${card.label} (${card.status})`}
+                    value={card.value}
+                  />
+                ))}
+              </div>
               <RegressionSummary summary={summary.summary.bad_case_regression} />
-              <pre>{JSON.stringify(summary.summary, null, 2)}</pre>
+              <pre className="json-panel">{JSON.stringify(summary.summary, null, 2)}</pre>
             </>
           ) : (
             <p className="muted">Select a run to load summary.</p>
@@ -455,11 +508,12 @@ function ResultsTable({ data }: { data: EvaluationResultListResponse | null }) {
           <th>Type</th>
           <th>Metric</th>
           <th>Value</th>
-          <th>Status</th>
-          <th>Reason</th>
-        </tr>
-      </thead>
-      <tbody>
+              <th>Status</th>
+              <th>Reason</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
         {rows.map((result) => {
           const summary = buildEvaluationResultDisplaySummary(result);
           return (
@@ -470,12 +524,17 @@ function ResultsTable({ data }: { data: EvaluationResultListResponse | null }) {
               <td>{summary.evaluationType}</td>
               <td>{summary.metricName}</td>
               <td>{summary.metricValue}</td>
-              <td>
+              <td className="evaluation-status-cell">
                 <span className={`status-pill status-${statusClassName(summary.statusLabel)}`}>
-                  {summary.statusLabel}
+                  {buildInsufficientDataLabel(result)}
                 </span>
               </td>
               <td>{summary.reason}</td>
+              <td>
+                <pre className="json-panel compact-json">
+                  {buildEvaluationResultJson(result)}
+                </pre>
+              </td>
             </tr>
           );
         })}
@@ -491,9 +550,9 @@ function FailedCasesTable({
 }: {
   data: EvaluationFailedCaseListResponse | null;
   convertingFailedCaseId: string | null;
-  onConvert: (failedCaseId: string, runId: string) => void;
+  onConvert: (failedCaseId: string) => void;
 }) {
-  const rows = data?.items ?? [];
+  const rows = buildFailedCaseRows(data?.items ?? []);
   if (rows.length === 0) {
     return <p className="muted">No failed cases.</p>;
   }
@@ -512,20 +571,20 @@ function FailedCasesTable({
       </thead>
       <tbody>
         {rows.map((failedCase) => (
-          <tr key={failedCase.failed_case_id}>
-            <td>{failedCase.failed_case_id}</td>
-            <td>{failedCase.run_id}</td>
-            <td>{failedCase.failure_type}</td>
+          <tr key={failedCase.failedCaseId}>
+            <td>{failedCase.failedCaseId}</td>
+            <td>{failedCase.runId}</td>
+            <td>{failedCase.failureType}</td>
             <td>{failedCase.module}</td>
-            <td>{failedCase.suggested_bad_case_type || "-"}</td>
-            <td>{failedCase.created_at}</td>
+            <td>{failedCase.suggestedBadCaseType}</td>
+            <td>{failedCase.createdAt}</td>
             <td>
               <button
                 type="button"
-                onClick={() => onConvert(failedCase.failed_case_id, failedCase.run_id)}
-                disabled={convertingFailedCaseId === failedCase.failed_case_id}
+                onClick={() => onConvert(failedCase.failedCaseId)}
+                disabled={convertingFailedCaseId === failedCase.failedCaseId}
               >
-                Convert
+                Create Bad Case
               </button>
             </td>
           </tr>
