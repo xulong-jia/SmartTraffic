@@ -193,13 +193,13 @@ def test_evaluation_service_regression_summary_counts_bad_cases(
     response = service.run_evaluation(run_id=run_id, evaluation_type="regression")
     regression = response["summary"]["summary"]["bad_case_regression"]
 
-    assert regression["status"] == "available"
+    assert regression["status"] == "insufficient_data"
     assert regression["total_cases"] == 2
     assert regression["open_cases"] == 1
     assert regression["fixed_cases"] == 1
     assert regression["verified_cases"] == 0
     assert regression["ignored_cases"] == 0
-    assert regression["fixed_case_count"] == 1
+    assert regression["fixed_case_count"] == 0
     assert regression["reopened_case_count"] == 0
     assert regression["regression_pass_rate"] == 0.0
     assert response["results"][0]["metric_name"] == "bad_case_regression_pass_rate"

@@ -49,9 +49,25 @@ Full Stage 4CD 已实现：
 - 没有 annotation 时返回 `status=insufficient_data`、
   `reason=not_enough_annotations`，不写假指标。
 
+Full Stage 4E 已实现：
+
+- Bad Case regression evaluation 不再只是 status summary。
+- 支持 status-based deterministic replay：读取 Bad Case 的
+  `regression_replay.actual_result` / `passed`，与 expected result 比较。
+- 支持 rule replay fixture：读取 Bad Case payload 中的 `rule_replay.rules`、
+  `trajectory_frames` 和 expected event count，调用 EventEngine 做确定性回放。
+- 输出 per-case regression results、`regression_pass_rate`、
+  `fixed_case_count`、`reopened_case_count`、`failed_case_count`、
+  `by_case_type` 和 `by_module`。
+- `apply_updates` 默认 `false`，只返回 fixed / reopened 建议；显式设置
+  `apply_updates=true` 时，open / triaged 且 replay passed 的 case 会更新为
+  `fixed`，fixed / verified 且 replay failed 的 case 会重新打开为 `open`。
+- failed regression cases 会作为 Evaluation failed cases 写入 artifacts 和
+  DB-backed `evaluation_results.summary["failed_cases"]`。
+
 当前仍未实现：
 
-- 真实 rerun-based Bad Case regression pipeline。
+- 完整视频级 YOLO / DeepSORT / Trajectory pipeline rerun。
 - COCO official multi-threshold mAP。
 - TrackEval official tracking metrics。
 - 权限、多用户、实时流或生产部署。
@@ -101,9 +117,9 @@ Bad Case / Evaluation 联动 endpoint：
 - `POST /api/bad-cases/from-failed-case`
 
 `POST /api/evaluation/run` 支持 `event`、`flow_counting`、`trajectory`、
-`detection`、`tracking`、`regression` 类型。其中 `regression` 读取当前
-run 的 `bad_cases.jsonl`，输出 artifact-backed regression summary MVP；
-它不执行真实模型重跑。
+`detection`、`tracking`、`regression` 类型。其中 `regression` 读取 DB
+bad cases 或当前 run 的 `bad_cases.jsonl`，执行 deterministic replay /
+rule replay regression；它不执行完整视频模型重跑。
 
 ## Metrics MVP
 
@@ -126,18 +142,21 @@ run 的 `bad_cases.jsonl`，输出 artifact-backed regression summary MVP；
   implementation。
 - Detection / Tracking：若没有 annotation，返回 `insufficient_data` /
   `not_enough_annotations`；不伪造真实 benchmark dataset 指标。
-- Regression：读取 Bad Case status，输出 `total_cases`、`open_cases`、
-  `fixed_cases`、`verified_cases`、`ignored_cases`、`fixed_case_count`、
-  `reopened_case_count` 和 `regression_pass_rate`。
+- Regression：读取 Bad Case replay payload，输出 per-case replay result、
+  `total_case_count`、`evaluated_case_count`、`passed_case_count`、
+  `failed_case_count`、`fixed_case_count`、`reopened_case_count`、
+  `ignored_case_count`、`insufficient_data_count` 和 `regression_pass_rate`。
+  没有 replay payload 时返回 `insufficient_data`，不伪造 pass。
 
-Bad Case regression MVP 口径：
+Bad Case regression 口径：
 
 ```text
-regression_pass_rate = verified_cases / max(fixed_cases + verified_cases + open_cases, 1)
+regression_pass_rate = passed_case_count / max(passed_case_count + failed_case_count, 1)
 ```
 
-当前没有 reopen 机制，因此 `reopened_case_count` 返回 0。该指标不是
-rerun-based regression，也不代表真实模型回归通过率。
+该指标来自 deterministic replay / rule replay。`apply_updates=false` 为默认
+策略，不修改 Bad Case；`apply_updates=true` 才会按 replay 结果更新 fixed 或
+reopened 状态。该阶段不是完整视频 pipeline rerun。
 
 ## CLI
 
@@ -157,6 +176,8 @@ python3 scripts/run_evals.py \
 - `--write-db`
 - `--no-write-db`
 - `--database-url sqlite:///...`
+- regression filters：`--case-type`、`--module`、`--status`、`--tag`
+- regression update switch：`--apply-updates`
 
 ## 与 Bad Case / Review 的边界
 

@@ -809,7 +809,8 @@ HTTP behavior:
 Stage 8HI adds artifact-backed failed case conversion and Bad Case regression
 summary MVP. Full Stage 3EF adds DB-backed Bad Case workflow and failed-case
 conversion. Full Stage 4CD adds annotation-backed detection / tracking
-benchmark rows for tiny fixtures. True rerun-based regression is still not
+benchmark rows for tiny fixtures. Full Stage 4E adds deterministic replay /
+rule replay regression for Bad Cases. Complete video-level rerun is still not
 implemented.
 
 ## Evaluation API
@@ -843,10 +844,14 @@ return `insufficient_data` with `reason=not_enough_annotations` and do not emit
 fake benchmark numbers. Detection mAP is VOC-style single-IoU AP, not COCO
 official mAP. Tracking metrics are lightweight deterministic frame-level
 association, not TrackEval official implementation. Regression reads Bad Case
-DB rows or `bad_cases.jsonl` and writes a summary with
-`total_cases`, `open_cases`, `fixed_cases`, `verified_cases`, `ignored_cases`,
-`fixed_case_count`, `reopened_case_count`, and `regression_pass_rate`. This does
-not execute a real rerun-based regression pipeline.
+DB rows or `bad_cases.jsonl` and uses `config` filters such as `case_type`,
+`module`, `status`, `tag`, and `apply_updates`. It writes per-case replay
+results plus `regression_pass_rate`, `failed_case_count`, `fixed_case_count`,
+and `reopened_case_count`. `apply_updates` defaults to false; when true,
+passed open / triaged cases are marked `fixed`, while failed fixed / verified
+cases are reopened as `open`. Missing replay payload returns
+`insufficient_data` and does not emit a fake pass. This does not execute a
+complete video-level rerun pipeline.
 
 ## Not Implemented From The Manual Yet
 
@@ -855,7 +860,7 @@ implemented as working behavior yet:
 
 - advanced filtering on flow counts and zone statistics
 - database-backed aggregate statistics APIs
-- rerun-based Bad Case regression pipeline
+- complete video-level Bad Case rerun pipeline
 - COCO official mAP / TrackEval official evaluation
 
 ## Placeholders For Later Phases

@@ -108,6 +108,8 @@ def test_run_evals_cli_smoke_outputs_json(tmp_path: Path) -> None:
             str(tmp_path / "results"),
             "--eval-root",
             str(tmp_path / "evals"),
+            "--case-type",
+            "false_negative",
             "--json",
         ],
         cwd=Path(__file__).resolve().parents[2],
@@ -120,7 +122,7 @@ def test_run_evals_cli_smoke_outputs_json(tmp_path: Path) -> None:
     assert payload["evaluation_run"]["run_id"] == run_id
     assert payload["evaluation_run"]["evaluation_type"] == "regression"
     regression = payload["summary"]["summary"]["bad_case_regression"]
-    assert regression["status"] == "available"
+    assert regression["status"] == "insufficient_data"
     assert regression["total_cases"] == 1
 
 

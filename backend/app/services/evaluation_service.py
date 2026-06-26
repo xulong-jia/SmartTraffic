@@ -28,6 +28,8 @@ from app.analysis.evaluation_metrics import (
     compute_trajectory_metrics,
 )
 from app.analysis.bad_case_artifacts import load_bad_cases
+from app.analysis.artifact_writer import TrafficArtifactWriter
+from app.analysis.regression_metrics import regression_failed_cases
 from app.core.config import get_settings
 from app.core.paths import PROJECT_DIR
 from app.repositories import (
@@ -35,6 +37,7 @@ from app.repositories import (
     EvaluationResultRepository,
     TrafficAnalysisRunRepository,
 )
+from app.services.bad_case_service import BadCaseService
 
 
 class EvaluationDatasetNotFound(KeyError):
@@ -306,15 +309,22 @@ class EvaluationService:
                 ("tracking_id_switches", details.get("id_switch_count"), details),
                 ("tracking_track_lost", details.get("track_lost_count"), details),
             ], []
-        details = self._bad_case_regression_summary(run_dir)
+        details = self._bad_case_regression_summary(
+            run_id=run_dir.name,
+            run_dir=run_dir,
+            config=config,
+        )
         return [
             (
                 "bad_case_regression_pass_rate",
                 details["regression_pass_rate"],
                 details,
             ),
-            ("bad_case_regression_total_cases", details["total_cases"], details),
-        ], []
+            ("bad_case_regression_total_cases", details["total_case_count"], details),
+            ("bad_case_regression_failed_cases", details["failed_case_count"], details),
+            ("bad_case_regression_fixed_cases", details["fixed_case_count"], details),
+            ("bad_case_regression_reopened_cases", details["reopened_case_count"], details),
+        ], regression_failed_cases(details)
 
     def _write_run_summary(self, run_dir: Path, run_id: str) -> dict[str, Any]:
         results = self.list_results(run_id=run_id)
@@ -324,7 +334,15 @@ class EvaluationService:
             grouped.setdefault(str(result["evaluation_type"]), {})[
                 str(result["metric_name"])
             ] = result
-        grouped["bad_case_regression"] = self._bad_case_regression_summary(run_dir)
+        regression = grouped.get("regression")
+        if isinstance(regression, dict) and isinstance(regression.get("bad_case_regression_pass_rate"), dict):
+            grouped["bad_case_regression"] = regression["bad_case_regression_pass_rate"].get("details", {})
+        else:
+            grouped["bad_case_regression"] = self._bad_case_regression_summary(
+                run_id=run_id,
+                run_dir=run_dir,
+                config={},
+            )
         return write_evaluation_summary(
             run_dir,
             {
@@ -334,8 +352,61 @@ class EvaluationService:
             },
         )
 
-    def _bad_case_regression_summary(self, run_dir: Path) -> dict[str, Any]:
-        return compute_bad_case_regression_metrics(load_bad_cases(run_dir))
+    def _bad_case_regression_summary(
+        self,
+        *,
+        run_id: str,
+        run_dir: Path,
+        config: dict[str, Any],
+    ) -> dict[str, Any]:
+        service = BadCaseService(
+            artifact_writer=TrafficArtifactWriter(self.results_dir),
+            eval_root=self.eval_root,
+            session=self.session,
+        )
+        records = service.list_bad_cases(run_id=run_id)
+        if not records and self.session is None:
+            records = load_bad_cases(run_dir)
+        details = compute_bad_case_regression_metrics(
+            records,
+            config={
+                **config,
+                "dataset_id": config.get("dataset_id"),
+            },
+        )
+        if config.get("apply_updates"):
+            updated_count = self._apply_regression_updates(
+                service=service,
+                run_id=run_id,
+                details=details,
+            )
+            details["updated_case_count"] = updated_count
+        return details
+
+    def _apply_regression_updates(
+        self,
+        *,
+        service: BadCaseService,
+        run_id: str,
+        details: dict[str, Any],
+    ) -> int:
+        updated_count = 0
+        for result in details.get("case_results", []):
+            if not isinstance(result, dict):
+                continue
+            case_id = str(result.get("bad_case_id") or "")
+            suggested_status = result.get("suggested_status")
+            if not case_id or suggested_status == result.get("previous_status"):
+                continue
+            if suggested_status not in {"fixed", "open"}:
+                continue
+            service.update_bad_case(
+                run_id=run_id,
+                case_id=case_id,
+                updates={"status": suggested_status},
+            )
+            updated_count += 1
+        return updated_count
 
     def _dataset(self, dataset_id: str | None) -> dict[str, Any]:
         db_dataset = self._db_dataset(dataset_id)
@@ -561,6 +632,11 @@ class EvaluationService:
             generated_at = record["created_at"]
             for failed_case in _failed_cases_from_model(row):
                 failed_cases[str(failed_case["failed_case_id"])] = failed_case
+        if (
+            isinstance(grouped.get("regression"), dict)
+            and isinstance(grouped["regression"].get("bad_case_regression_pass_rate"), dict)
+        ):
+            grouped["bad_case_regression"] = grouped["regression"]["bad_case_regression_pass_rate"].get("details", {})
         return {
             "schema_version": "stage8efg.v1",
             "run_id": run_id,
