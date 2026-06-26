@@ -934,6 +934,70 @@ JSON-friendly result details, failed-case -> Bad Case conversion, regression
 summary, and the same non-COCO / non-TrackEval / deterministic replay /
 `insufficient_data` boundary labels.
 
+## Cameras API
+
+Full Stage 7AB adds DB-backed camera CRUD for realtime preview configuration.
+Supported `source_type` values are `upload`, `rtsp`, `file`, and `mock`.
+Normal responses do not return the full `stream_url`; they return
+`masked_stream_url` instead. Do not commit real RTSP addresses, local video
+paths, secrets, or generated realtime outputs.
+
+Available endpoints:
+
+- `POST /api/cameras`
+- `GET /api/cameras?source_type=&enabled=`
+- `GET /api/cameras/{camera_id}`
+- `PATCH /api/cameras/{camera_id}`
+- `DELETE /api/cameras/{camera_id}`
+- `POST /api/cameras/{camera_id}/enable`
+- `POST /api/cameras/{camera_id}/disable`
+
+Camera response fields include `id`, `name`, `location`, `source_type`,
+`masked_stream_url`, `enabled`, `status`, `width`, `height`, `fps`,
+`metadata`, `created_at`, and `updated_at`. `stream_url` is accepted on create
+and update so the backend can store configuration, but it is not exposed by the
+default response models.
+
+HTTP behavior:
+
+- `400`: unsupported source type.
+- `404`: camera not found.
+- `422`: request body validation error.
+
+## Realtime Preview API
+
+Full Stage 7AB adds a lightweight realtime preview service. It is a metadata
+preview, not production realtime monitoring. It does not open real RTSP
+connections, does not run Celery or a complex queue, and does not generate video
+or frame artifacts. Start creates a DB `processing_tasks` row with
+`mode=realtime_process` and a lightweight realtime pseudo-video row so the
+existing processing task contract remains linked.
+
+Available endpoints:
+
+- `POST /api/realtime/{camera_id}/start`
+- `POST /api/realtime/{camera_id}/stop`
+- `GET /api/realtime/{camera_id}/status`
+- `GET /api/realtime/{camera_id}/recent-frames`
+- `GET /api/realtime/{camera_id}/recent-events`
+- `GET /api/realtime/{camera_id}/recent-alerts`
+
+Preview behavior:
+
+- `mock`: generates deterministic recent frame metadata plus one preview event
+  and one preview alert.
+- `file`: performs local file smoke-level metadata preview and returns only a
+  safe source label such as the basename.
+- `rtsp`: accepts masked RTSP configuration and returns a no-connect preview
+  status without network dependency.
+- `upload`: returns upload-preview placeholder metadata.
+
+Recent frames / events / alerts are kept in a bounded in-memory cache
+(`max_items=20` per camera). Disabled cameras return `400` on start. Missing
+cameras return `404`. Security, permissions, audit trails, operational
+hardening, and production realtime streaming remain for Full Stage 7CD and
+Full Stage 8.
+
 ## Not Implemented From The Manual Yet
 
 The following API capabilities are planned by the execution manual but are not
@@ -943,7 +1007,7 @@ implemented as working behavior yet:
 - database-backed aggregate statistics APIs
 - complete video-level Bad Case rerun pipeline
 - COCO official mAP / TrackEval official evaluation
-- Realtime / Security remain for Full Stage 7
+- Production Realtime / Security remain for Full Stage 7CD and Full Stage 8
 - Full final release hardening and `v1.0.0` remain for Full Stage 8
 
 ## Placeholders For Later Phases

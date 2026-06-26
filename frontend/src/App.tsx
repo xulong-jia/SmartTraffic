@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import AlertCenterPage from "./pages/AlertCenterPage";
 import AnalysisDetailPage from "./pages/AnalysisDetailPage";
 import BadCaseCenterPage from "./pages/BadCaseCenterPage";
+import CameraCenterPage from "./pages/CameraCenterPage";
 import DashboardPage from "./pages/DashboardPage";
 import EvaluationCenterPage from "./pages/EvaluationCenterPage";
 import ReportCenterPage from "./pages/ReportCenterPage";
@@ -12,6 +13,7 @@ import ZoneRuleConfigPage from "./pages/ZoneRuleConfigPage";
 
 type PageKey =
   | "dashboard"
+  | "cameras"
   | "videos"
   | "analysis"
   | "zones"
@@ -23,6 +25,7 @@ type PageKey =
 
 const pages: Array<{ key: PageKey; label: string }> = [
   { key: "dashboard", label: "Dashboard" },
+  { key: "cameras", label: "Camera Center" },
   { key: "videos", label: "Video Center" },
   { key: "analysis", label: "Analysis Detail" },
   { key: "zones", label: "Zone & Rules" },
@@ -35,6 +38,7 @@ const pages: Array<{ key: PageKey; label: string }> = [
 
 const pagePaths: Record<PageKey, string> = {
   dashboard: "/",
+  cameras: "/cameras",
   videos: "/videos",
   analysis: "/analysis",
   zones: "/zones",
@@ -118,6 +122,8 @@ function renderPage(
   locationSearch: string
 ) {
   switch (page) {
+    case "cameras":
+      return <CameraCenterPage />;
     case "videos":
       return <VideoCenterPage onOpenAnalysisRun={openAnalysisRun} />;
     case "analysis":
@@ -142,6 +148,8 @@ function renderPage(
 
 function pageFromPath(pathname: string): PageKey {
   switch (pathname) {
+    case "/cameras":
+      return "cameras";
     case "/videos":
       return "videos";
     case "/analysis":

@@ -9,6 +9,96 @@ export interface VideoRecord {
   total_frames: number;
 }
 
+export type CameraSourceType = "upload" | "rtsp" | "file" | "mock";
+
+export interface CameraRecord {
+  id: string;
+  name: string;
+  location?: string | null;
+  source_type: CameraSourceType;
+  masked_stream_url?: string | null;
+  enabled: boolean;
+  status: string;
+  width?: number | null;
+  height?: number | null;
+  fps?: number | null;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CameraCreatePayload {
+  name: string;
+  location?: string | null;
+  source_type: CameraSourceType;
+  stream_url?: string | null;
+  enabled?: boolean;
+  width?: number | null;
+  height?: number | null;
+  fps?: number | null;
+}
+
+export type CameraUpdatePayload = Partial<CameraCreatePayload>;
+
+export interface RealtimeStatus {
+  camera_id: string;
+  status: "running" | "stopped" | string;
+  task_id?: string | null;
+  task_type: string;
+  video_id?: string | null;
+  source_type: CameraSourceType;
+  started_at?: string | null;
+  stopped_at?: string | null;
+  frame_count: number;
+  event_count: number;
+  alert_count: number;
+  camera?: CameraRecord;
+}
+
+export interface RealtimeFrame {
+  id: string;
+  camera_id: string;
+  frame_index: number;
+  timestamp_ms: number;
+  source_type: CameraSourceType;
+  source_label?: string | null;
+  width?: number | null;
+  height?: number | null;
+  fps?: number | null;
+  status: string;
+  description: string;
+  created_at: string;
+}
+
+export interface RealtimeEvent {
+  id: string;
+  camera_id: string;
+  event_type: string;
+  severity: string;
+  status: string;
+  frame_index: number;
+  description: string;
+  evidence?: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface RealtimeAlert {
+  id: string;
+  camera_id: string;
+  level: string;
+  status: string;
+  event_type: string;
+  message: string;
+  created_at: string;
+}
+
+export interface RealtimeRecentResponse<T> {
+  camera_id: string;
+  items: T[];
+  total: number;
+  max_items: number;
+}
+
 export interface ProcessingTask {
   id: string;
   video_id: string;

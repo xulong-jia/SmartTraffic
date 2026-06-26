@@ -56,6 +56,11 @@ Current implementation notes:
   `results/traffic_analysis/<run_id>/` for legacy and artifact-only runs.
 - Full Stage 3 and later stages are expected to continue Event / Alert, Review,
   Bad Case, Evaluation, and broader workflow migrations.
+- Full Stage 7AB extends `cameras` with realtime preview configuration fields:
+  `source_type`, `enabled`, `width`, `height`, and `fps`. Realtime preview
+  start creates `processing_tasks.mode=realtime_process` rows linked through a
+  lightweight realtime video record; recent preview frames / events / alerts
+  remain bounded in-memory metadata and are not persisted as generated files.
 
 The schema target from the execution manual remains:
 
@@ -98,6 +103,8 @@ artifacts such as
 `evaluation_summary.json`, and `bad_cases.jsonl` / `bad_cases.csv` into those
 tables. Full Stage 3AB stores zone/rule config snapshots inside
 `traffic_analysis_runs.summary["event_config_snapshot"]` without adding a new
-table. Current real mAP / IDF1 / MOTA and real rerun-based Bad Case regression
-are still outside this schema workflow and remain Full Stage 4 work; this is
-not the DB-backed full final version.
+table. Full Stage 7AB extends `cameras` for preview source configuration and
+uses `processing_tasks.mode=realtime_process` for preview lifecycle records;
+recent preview metadata remains in memory. Current production realtime streams,
+real mAP / IDF1 / MOTA, and real rerun-based Bad Case regression are still
+outside this schema workflow; this is not the DB-backed full final version.

@@ -4,7 +4,7 @@
 
 ## 1. 当前版本状态
 
-当前已完成 Stage 9EF 最终验收准备。最新工程交付 commit 是 Stage 9CD 后的 `5538a3a`，当前建议 final engineering delivery tag 为 `v0.9.0-final-engineering-delivery`。该 tag 不是 `v1.0.0`，不代表 DB-backed final version、production deployment 或执法级系统。Full Stage 1AB 已在最终交付后补充 DB Foundation：SQLAlchemy Declarative Base、engine/session dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 已接入。Full Stage 1CD 已新增 core models、业务表 migration、repositories 和 CRUD tests。Full Stage 1EF 已新增 artifact compatibility / import / read-through helper 和 dry-run CLI。Full Stage 2AB 已完成 Video API、Processing Task 生命周期和 `traffic_analysis_runs` run index 的 DB-backed 迁移；Full Stage 2CD 已完成 detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic Analysis Center DB-first index；Full Stage 3AB 已完成 Zone / Event Rule DB CRUD、run-level config snapshot 和 top-level Event APIs；Full Stage 3CD 已完成 Event / EventEvidence / RuleExecution DB lifecycle、Alert Center DB 状态流转、Review DB workflow / `review_comments` audit trail，以及 rule rerun request 的 `processing_tasks.mode=rule_rerun` 记录；Full Stage 3EF 已完成 Bad Case DB workflow、Evaluation Dataset / Result DB workflow、failed cases DB persistence 方案和 failed-case -> Bad Case DB 转换；Full Stage 4AB 已完成 Trajectory final features 和六类 Event Rule final behavior；Full Stage 4CD 已完成 Detection / Tracking benchmark algorithm foundation；Full Stage 4E 已完成 Bad Case deterministic replay / rule replay regression evaluation；Full Stage 5AB 已完成 ZoneEditor UI + API integration；Full Stage 5CD 已完成 Video Overlay UI + EventTimeline；Full Stage 5E 已完成 Review UX + Evaluation UI；Full Stage 6AB 已完成 Report Center 页面、Report API、CSV export 和 JSON export；Full Stage 6CD 已完成 PDF export、report bundle metadata、keyframe summary 和 annotated video artifact reference。Stage 1-9 已完成 artifact-backed MVP 与最终工程交付准备主链路：
+当前已完成 Stage 9EF 最终验收准备。最新工程交付 commit 是 Stage 9CD 后的 `5538a3a`，当前建议 final engineering delivery tag 为 `v0.9.0-final-engineering-delivery`。该 tag 不是 `v1.0.0`，不代表 DB-backed final version、production deployment 或执法级系统。Full Stage 1AB 已在最终交付后补充 DB Foundation：SQLAlchemy Declarative Base、engine/session dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 已接入。Full Stage 1CD 已新增 core models、业务表 migration、repositories 和 CRUD tests。Full Stage 1EF 已新增 artifact compatibility / import / read-through helper 和 dry-run CLI。Full Stage 2AB 已完成 Video API、Processing Task 生命周期和 `traffic_analysis_runs` run index 的 DB-backed 迁移；Full Stage 2CD 已完成 detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic Analysis Center DB-first index；Full Stage 3AB 已完成 Zone / Event Rule DB CRUD、run-level config snapshot 和 top-level Event APIs；Full Stage 3CD 已完成 Event / EventEvidence / RuleExecution DB lifecycle、Alert Center DB 状态流转、Review DB workflow / `review_comments` audit trail，以及 rule rerun request 的 `processing_tasks.mode=rule_rerun` 记录；Full Stage 3EF 已完成 Bad Case DB workflow、Evaluation Dataset / Result DB workflow、failed cases DB persistence 方案和 failed-case -> Bad Case DB 转换；Full Stage 4AB 已完成 Trajectory final features 和六类 Event Rule final behavior；Full Stage 4CD 已完成 Detection / Tracking benchmark algorithm foundation；Full Stage 4E 已完成 Bad Case deterministic replay / rule replay regression evaluation；Full Stage 5AB 已完成 ZoneEditor UI + API integration；Full Stage 5CD 已完成 Video Overlay UI + EventTimeline；Full Stage 5E 已完成 Review UX + Evaluation UI；Full Stage 6AB 已完成 Report Center 页面、Report API、CSV export 和 JSON export；Full Stage 6CD 已完成 PDF export、report bundle metadata、keyframe summary 和 annotated video artifact reference；Full Stage 7AB 已完成 Cameras DB API、stream_url masking、realtime preview metadata、recent frame/event/alert cache、`processing_tasks.mode=realtime_process` 记录和 Camera Center 最小前端接入。Stage 1-9 已完成 artifact-backed MVP 与最终工程交付准备主链路：
 
 ```text
 video upload
@@ -50,6 +50,7 @@ video upload
 - Full Stage 5E Review UX + Evaluation UI：ReviewDrawer 支持 confirm / false_positive / false_negative / ignore / resolve、comments、Review -> Bad Case 和 rule rerun request；Evaluation Center 支持 dataset/run/type selector、result cards、detail JSON、failed cases table、failed-case -> Bad Case、regression summary 和边界标签。
 - Full Stage 6AB Report Center：已新增 `/api/reports` run list / summary / JSON export / CSV export，支持 events、alerts、flow_counts、zone_statistics、bad_cases、evaluation_results 六类导出；前端新增 Report Center 页面、run selector、summary cards、CSV download、JSON preview/download、loading/error/empty 状态和非执法边界提示。
 - Full Stage 6CD Report Export：已新增 `/api/reports/{run_id}/export.pdf`、`/api/reports/{run_id}/bundle`、keyframe summary、annotated video artifact reference、前端 PDF download 和 bundle / visual artifact summary panel；PDF 与 bundle 均不写入仓库，不复制大视频或图片。
+- Full Stage 7AB Camera / Realtime Preview：已新增 DB-backed Cameras API、`upload` / `rtsp` / `file` / `mock` source_type、enable / disable、`stream_url` masking、mock stream preview、local file smoke-level preview、RTSP no-connect preview、recent frames / events / alerts bounded cache、`processing_tasks.mode=realtime_process` linkage、Camera Center 最小前端页面、后端与前端测试和文档。该阶段不是 production realtime monitoring。
 - Stage 9AB final pre-delivery audit and documentation closeout。
 - Stage 9CD 小型 demo/sample config、toy expected annotations、seed script、Makefile 和环境命令收口。
 - Stage 9EF final acceptance and final tag preparation。
@@ -64,7 +65,7 @@ video upload
 - Real dataset benchmark。
 - Complete video-level Bad Case rerun pipeline；当前是 deterministic replay / rule replay。
 - Production-grade evaluation platform。
-- Realtime streams、Permissions / multi-user audit、Security hardening；留给 Full Stage 7。
+- Production realtime streams、Permissions / multi-user audit、Security hardening；留给 Full Stage 7CD 和 Full Stage 8。
 - Full final release hardening、production deployment readiness、monitoring readiness 和 `v1.0.0`；留给 Full Stage 8。
 - Law-enforcement-grade violation judgement。
 
@@ -124,7 +125,7 @@ Stage 9EF 用于最终验收和 final tag 准备：
 - 不新增核心业务功能。
 - 不做不属于当前阶段的数据库 migration。
 - 不做权限系统。
-- 不做实时流。
+- 不做 production realtime stream；Full Stage 7AB 只提供 realtime preview metadata。
 - 不做生产部署。
 - 不做模型训练。
 - 不下载或提交大视频、数据集或模型权重。

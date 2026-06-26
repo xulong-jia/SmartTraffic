@@ -5,12 +5,14 @@ from app.api import (
     alerts,
     analysis_runs,
     bad_cases,
+    cameras,
     detections,
     event_rules,
     evaluation,
     events,
     health,
     processing,
+    realtime,
     reports,
     review,
     tracks,
@@ -34,6 +36,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(health.router)
+    app.include_router(cameras.router)
     app.include_router(videos.router)
     app.include_router(processing.router)
     app.include_router(detections.router)
@@ -48,6 +51,7 @@ def create_app() -> FastAPI:
     app.include_router(bad_cases.router)
     app.include_router(evaluation.router)
     app.include_router(reports.router)
+    app.include_router(realtime.router)
     return app
 
 
