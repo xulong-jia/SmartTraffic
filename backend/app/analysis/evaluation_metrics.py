@@ -1,6 +1,9 @@
 from collections.abc import Mapping
 from typing import Any
 
+from app.analysis.detection_metrics import compute_detection_benchmark
+from app.analysis.tracking_metrics import compute_tracking_benchmark
+
 
 def compute_event_metrics(
     expected_events: list[dict[str, Any]],
@@ -150,38 +153,24 @@ def compute_detection_metrics(
     annotation_payload: dict[str, Any] | None,
     detections: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    if not annotation_payload:
-        return {
-            "status": "not_applicable",
-            "reason": "missing detection annotations",
-            "industrial_metrics": ["mAP"],
-            "total_detections": len(detections),
-        }
-    return {
-        "status": "not_applicable",
-        "reason": "industrial mAP is outside the Stage 8EFG MVP",
-        "industrial_metrics": ["mAP"],
-        "total_detections": len(detections),
-    }
+    details = compute_detection_benchmark(
+        predictions=detections,
+        ground_truth=annotation_payload,
+    )
+    details["benchmark_definition"] = "VOC-style single-IoU AP; not COCO official mAP"
+    return details
 
 
 def compute_tracking_metrics(
     annotation_payload: dict[str, Any] | None,
     tracks: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    if not annotation_payload:
-        return {
-            "status": "not_applicable",
-            "reason": "missing tracking annotations",
-            "industrial_metrics": ["IDF1", "MOTA"],
-            "total_tracks": len(tracks),
-        }
-    return {
-        "status": "not_applicable",
-        "reason": "industrial IDF1/MOTA are outside the Stage 8EFG MVP",
-        "industrial_metrics": ["IDF1", "MOTA"],
-        "total_tracks": len(tracks),
-    }
+    details = compute_tracking_benchmark(
+        predictions=tracks,
+        ground_truth=annotation_payload,
+    )
+    details["benchmark_definition"] = "Lightweight deterministic frame-level association; not TrackEval official"
+    return details
 
 
 def compute_bad_case_regression_metrics(

@@ -278,13 +278,34 @@ class EvaluationService:
                 _load_annotation_payload(self.eval_root, dataset),
                 _read_jsonl(run_dir / "detections.jsonl"),
             )
-            return [("detection_status", None, details)], []
+            if details.get("status") != "available":
+                return [("detection_status", None, details)], []
+            overall = dict(details.get("overall") or {})
+            rows: list[tuple[str, int | float | str | None, dict[str, Any]]] = [
+                ("detection_mAP", overall.get("mAP"), details),
+                ("detection_precision", overall.get("precision"), details),
+                ("detection_recall", overall.get("recall"), details),
+            ]
+            per_class = details.get("per_class")
+            if isinstance(per_class, dict):
+                for class_name in sorted(per_class):
+                    class_details = per_class[class_name]
+                    if isinstance(class_details, dict):
+                        rows.append((f"detection_ap_{class_name}", class_details.get("ap"), details))
+            return rows, []
         if evaluation_type == "tracking":
             details = compute_tracking_metrics(
                 _load_annotation_payload(self.eval_root, dataset),
                 _read_jsonl(run_dir / "tracks.jsonl"),
             )
-            return [("tracking_status", None, details)], []
+            if details.get("status") != "available":
+                return [("tracking_status", None, details)], []
+            return [
+                ("tracking_idf1", details.get("idf1"), details),
+                ("tracking_mota", details.get("mota"), details),
+                ("tracking_id_switches", details.get("id_switch_count"), details),
+                ("tracking_track_lost", details.get("track_lost_count"), details),
+            ], []
         details = self._bad_case_regression_summary(run_dir)
         return [
             (

@@ -35,14 +35,25 @@ Full Stage 4AB 已实现：
   `dwell_time_ms`、像素速度、`moving_angle` 和 `direction_consistency`。
 - 六类 Event Rule final behavior：wrong-way、illegal parking、danger zone、
   pedestrian lane、congestion 和 flow counting 使用稳定 trajectory features。
-- 这些 features 可被后续 evaluation 使用，但当前 Detection / Tracking
-  benchmark 尚未完成。
+- 这些 features 可被后续 evaluation 使用。
+
+Full Stage 4CD 已实现：
+
+- Detection benchmark algorithm foundation：IoU、按 class 和单一 IoU threshold
+  贪心匹配、precision、recall、per-class AP 和 mAP。
+- Tracking benchmark algorithm foundation：逐帧 IoU association、IDF1、MOTA、
+  ID switch 和 track lost segment 统计。
+- `evaluation_type=detection` / `tracking` 已接入 EvaluationService；
+  有 tiny fixture annotations 时可把 mAP / precision / recall / per-class AP
+  以及 IDF1 / MOTA / ID switch / track lost 写入 `evaluation_results`。
+- 没有 annotation 时返回 `status=insufficient_data`、
+  `reason=not_enough_annotations`，不写假指标。
 
 当前仍未实现：
 
 - 真实 rerun-based Bad Case regression pipeline。
-- 工业级 mAP / Precision / Recall detection benchmark，留给 Full Stage 4CD。
-- 工业级 IDF1 / MOTA / ID Switch tracking benchmark，留给 Full Stage 4CD。
+- COCO official multi-threshold mAP。
+- TrackEval official tracking metrics。
 - 权限、多用户、实时流或生产部署。
 
 ## Artifacts
@@ -105,8 +116,16 @@ run 的 `bad_cases.jsonl`，输出 artifact-backed regression summary MVP；
   class、direction 误差，输出 absolute error、MAE、MAPE。
 - Trajectory：从 `trajectory_points.jsonl` 统计 track count、trajectory
   point count、average track length、average speed、direction availability。
-- Detection：若没有检测标注，返回 `not_applicable`；不宣称 mAP 已实现。
-- Tracking：若没有跟踪标注，返回 `not_applicable`；不宣称 IDF1 / MOTA 已实现。
+- Detection：读取 detection annotations 与 `detections.jsonl`，输出
+  `detection_mAP`、`detection_precision`、`detection_recall` 和
+  `detection_ap_<class>`。当前 mAP 是 VOC-style single-IoU AP，默认 IoU
+  threshold 为 0.5；它不是 COCO official mAP。
+- Tracking：读取 tracking annotations 与 `tracks.jsonl`，输出 `tracking_idf1`、
+  `tracking_mota`、`tracking_id_switches` 和 `tracking_track_lost`。当前实现是
+  lightweight deterministic frame-level association；它不是 TrackEval official
+  implementation。
+- Detection / Tracking：若没有 annotation，返回 `insufficient_data` /
+  `not_enough_annotations`；不伪造真实 benchmark dataset 指标。
 - Regression：读取 Bad Case status，输出 `total_cases`、`open_cases`、
   `fixed_cases`、`verified_cases`、`ignored_cases`、`fixed_case_count`、
   `reopened_case_count` 和 `regression_pass_rate`。

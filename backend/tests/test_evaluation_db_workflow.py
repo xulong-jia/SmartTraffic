@@ -100,7 +100,7 @@ def test_evaluation_db_run_results_summary_failed_cases_and_not_applicable(
     assert detection_response.status_code == 200
     detection_result = detection_response.json()["results"][0]
     assert detection_result["metric_name"] == "detection_status"
-    assert detection_result["details"]["status"] == "not_applicable"
+    assert detection_result["details"]["status"] == "insufficient_data"
     assert results.status_code == 200
     assert {item["metric_name"] for item in results.json()["items"]} >= {
         "event_precision",

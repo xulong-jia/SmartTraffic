@@ -808,8 +808,9 @@ HTTP behavior:
 
 Stage 8HI adds artifact-backed failed case conversion and Bad Case regression
 summary MVP. Full Stage 3EF adds DB-backed Bad Case workflow and failed-case
-conversion. Industrial mAP / IDF1 / MOTA and true rerun-based regression are
-still not implemented.
+conversion. Full Stage 4CD adds annotation-backed detection / tracking
+benchmark rows for tiny fixtures. True rerun-based regression is still not
+implemented.
 
 ## Evaluation API
 
@@ -833,9 +834,16 @@ Available endpoints:
 
 `POST /api/evaluation/run` accepts `event`, `flow_counting`, `trajectory`,
 `detection`, `tracking`, and `regression`. Event / flow / trajectory are MVP
-comparisons that can be written to DB. Detection and tracking return
-`not_applicable` unless future annotation-backed metrics are added. Regression
-reads Bad Case DB rows or `bad_cases.jsonl` and writes a summary with
+comparisons that can be written to DB. Detection writes `detection_mAP`,
+`detection_precision`, `detection_recall`, and `detection_ap_<class>` when
+annotation fixtures are available. Tracking writes `tracking_idf1`,
+`tracking_mota`, `tracking_id_switches`, and `tracking_track_lost` when
+annotation fixtures are available. Without annotations, detection / tracking
+return `insufficient_data` with `reason=not_enough_annotations` and do not emit
+fake benchmark numbers. Detection mAP is VOC-style single-IoU AP, not COCO
+official mAP. Tracking metrics are lightweight deterministic frame-level
+association, not TrackEval official implementation. Regression reads Bad Case
+DB rows or `bad_cases.jsonl` and writes a summary with
 `total_cases`, `open_cases`, `fixed_cases`, `verified_cases`, `ignored_cases`,
 `fixed_case_count`, `reopened_case_count`, and `regression_pass_rate`. This does
 not execute a real rerun-based regression pipeline.
@@ -848,7 +856,7 @@ implemented as working behavior yet:
 - advanced filtering on flow counts and zone statistics
 - database-backed aggregate statistics APIs
 - rerun-based Bad Case regression pipeline
-- industrial mAP / IDF1 / MOTA evaluation
+- COCO official mAP / TrackEval official evaluation
 
 ## Placeholders For Later Phases
 

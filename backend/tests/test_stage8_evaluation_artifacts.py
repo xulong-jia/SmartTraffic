@@ -150,7 +150,7 @@ def test_evaluation_service_runs_event_flow_trajectory_and_placeholder_metrics(
     assert event_response["summary"]["summary"]["event"]["event_precision"]["metric_value"] == 0.5
     assert flow_response["summary"]["summary"]["flow_counting"]["flow_mae"]["metric_value"] == 0
     assert trajectory_response["summary"]["summary"]["trajectory"]["trajectory_track_count"]["metric_value"] == 1
-    assert detection_response["summary"]["summary"]["detection"]["detection_status"]["details"]["status"] == "not_applicable"
+    assert detection_response["summary"]["summary"]["detection"]["detection_status"]["details"]["status"] == "insufficient_data"
     assert service.list_results(run_id=run_id)
     assert service.list_failed_cases(run_id=run_id)
     assert service.get_evaluation_summary(run_id)["summary"]["bad_case_regression"]["status"] == "empty"

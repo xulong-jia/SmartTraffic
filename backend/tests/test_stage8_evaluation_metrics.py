@@ -88,6 +88,6 @@ def test_trajectory_metrics_summarize_points() -> None:
     assert metrics["direction_available_count"] == 2
 
 
-def test_detection_and_tracking_without_annotations_are_not_applicable() -> None:
-    assert compute_detection_metrics(None, [])["status"] == "not_applicable"
-    assert compute_tracking_metrics(None, [])["status"] == "not_applicable"
+def test_detection_and_tracking_without_annotations_are_insufficient_data() -> None:
+    assert compute_detection_metrics(None, [])["status"] == "insufficient_data"
+    assert compute_tracking_metrics(None, [])["status"] == "insufficient_data"
