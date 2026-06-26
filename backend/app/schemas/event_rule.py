@@ -1,8 +1,10 @@
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
 from app.events.rules import SUPPORTED_EVENT_TYPES
+
+EventRuleSeverity = Literal["low", "medium", "high"]
 
 
 class EventRuleBase(BaseModel):
@@ -13,7 +15,7 @@ class EventRuleBase(BaseModel):
     target_classes: list[str] = Field(default_factory=list)
     parameters: dict[str, Any] = Field(default_factory=dict)
     cooldown_seconds: float = 0.0
-    severity: str = "medium"
+    severity: EventRuleSeverity = "medium"
     version: int = 1
     min_track_length: int = 1
 
@@ -51,7 +53,7 @@ class EventRuleUpdate(BaseModel):
     target_classes: list[str] | None = None
     parameters: dict[str, Any] | None = None
     cooldown_seconds: float | None = None
-    severity: str | None = None
+    severity: EventRuleSeverity | None = None
     version: int | None = None
     min_track_length: int | None = None
 

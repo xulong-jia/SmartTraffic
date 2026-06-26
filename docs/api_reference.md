@@ -50,6 +50,23 @@ count, duration, camera id, and metadata. `GET /api/videos/{video_id}/frames`
 returns rows from the `frames` table; Stage 2CD does not auto-extract frame
 images.
 
+`v1.0.3-final-hardening` validates upload extension, size, duration, and codec
+before creating the DB video row. Supported extensions remain `.mp4`, `.avi`,
+`.mov`, `.mkv`, and `.webm`. Default local limits are
+`SMARTTRAFFIC_MAX_UPLOAD_MB=200`,
+`SMARTTRAFFIC_MAX_VIDEO_DURATION_SECONDS=600`, and
+`SMARTTRAFFIC_ALLOWED_VIDEO_CODECS=avc1,h264,mp4v,xvid,mjpg`. Unsupported
+extension, empty upload, unreadable metadata, unsupported codec, or excessive
+duration return a clear client error; oversized uploads return `413`. OpenCV
+FOURCC / codec detection can vary by platform and container, so unsupported or
+undetectable codec errors are validation boundaries rather than production
+transcoding guarantees. Error responses do not expose tracebacks or local
+absolute paths.
+
+The `frames` API is a frame metadata / query contract for DB-backed local
+validation. It is not a guarantee that the processing pipeline persists every
+decoded frame image by default.
+
 `POST /api/videos/{video_id}/process` supports:
 
 - `mode=detection_only`
@@ -177,8 +194,11 @@ Supported `event_type` values:
 - `flow_counting`
 
 Event rule severity values are limited to `low`, `medium`, and `high`, matching
-the EventEngine contract. Alert levels are separate generated alert states and
-may still use `info`, `warning`, and `critical`.
+the EventEngine contract. `POST /api/event-rules` and
+`PATCH /api/event-rules/{rule_id}` enforce this in the backend schema; sending
+`critical` as an Event Rule severity is rejected by request validation. Alert
+levels are separate generated alert states and may still use `info`, `warning`,
+and `critical`.
 
 ## Analysis Runs
 
@@ -247,6 +267,12 @@ the run-scoped, DB-first / artifact-fallback Analysis Runs endpoints:
 
 The standalone placeholders do not replace the run-scoped result APIs and are
 not production aggregate search endpoints.
+
+`tracks` rows in the current local prototype are run-level track records plus
+metadata / artifact-compatible rows imported from processing output. They are
+not a production normalized per-frame tracking table; detailed per-frame
+tracking evidence remains represented through Analysis Runs payloads and local
+artifacts where available.
 
 ## Reports
 

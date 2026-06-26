@@ -23,9 +23,11 @@ def read_video_metadata(video_path: str | Path) -> dict[str, Any]:
         width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         total_frames = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        fourcc = int(capture.get(cv2.CAP_PROP_FOURCC))
     finally:
         capture.release()
 
+    codec = _decode_fourcc(fourcc)
     return {
         "video_path": str(path),
         "filename": path.name,
@@ -34,6 +36,8 @@ def read_video_metadata(video_path: str | Path) -> dict[str, Any]:
         "height": height,
         "total_frames": total_frames,
         "duration_seconds": total_frames / fps if fps > 0 else 0.0,
+        "codec": codec,
+        "fourcc": fourcc,
         "backend": "opencv",
     }
 
@@ -76,3 +80,10 @@ def _import_cv2():
     except ImportError as exc:
         raise RuntimeError("OpenCV is required to read video metadata") from exc
     return cv2
+
+
+def _decode_fourcc(value: int) -> str:
+    if value <= 0:
+        return ""
+    chars = [chr((value >> (8 * index)) & 0xFF) for index in range(4)]
+    return "".join(chars).strip().lower()

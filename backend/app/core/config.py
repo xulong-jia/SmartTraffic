@@ -85,6 +85,15 @@ class Settings:
         ".mkv",
         ".webm",
     )
+    max_upload_mb: int = 200
+    max_video_duration_seconds: float = 600.0
+    allowed_video_codecs: tuple[str, ...] = (
+        "avc1",
+        "h264",
+        "mp4v",
+        "xvid",
+        "mjpg",
+    )
 
     def __post_init__(self) -> None:
         if self.cors_allow_origins is None:
@@ -157,6 +166,18 @@ def get_settings() -> Settings:
         video_frame_stride=_int_env("VIDEO_FRAME_STRIDE", 1, "FRAME_STRIDE"),
         detection_max_frames=(
             _int_env("DETECTION_MAX_FRAMES", 0) or None
+        ),
+        max_upload_mb=_int_env("SMARTTRAFFIC_MAX_UPLOAD_MB", 200),
+        max_video_duration_seconds=_float_env(
+            "SMARTTRAFFIC_MAX_VIDEO_DURATION_SECONDS",
+            600.0,
+        ),
+        allowed_video_codecs=tuple(
+            codec.lower()
+            for codec in _csv_env(
+                "SMARTTRAFFIC_ALLOWED_VIDEO_CODECS",
+                ("avc1", "h264", "mp4v", "xvid", "mjpg"),
+            )
         ),
         cors_allow_origins=cors_allow_origins,
     )

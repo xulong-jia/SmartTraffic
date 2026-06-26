@@ -43,6 +43,15 @@ historical。
 severity 收敛为 EventEngine 支持的 `low` / `medium` / `high`。Alert
 Center `level` 仍是独立概念，可继续使用 `info` / `warning` / `critical`。
 
+`v1.0.3-final-hardening` 是 v1.0.2 后的 scoped final hardening 小修：只补齐
+逐句级最终 hardening 发现的校验和文档边界，不移动、不重打
+`v1.0.2-spec-alignment`、`v1.0.1-audit-polish` 或
+`v1.0.0-full-final-version`。该小修使后端 Event Rule severity 在 create /
+patch schema 层强制为 `low` / `medium` / `high`，明确 `critical` 只属于
+Alert Center `level`；视频上传增加 extension / size / duration / codec
+allowlist 校验，并将 `frames` / `tracks` 字段粒度说明为本地 prototype 的
+metadata / artifact-compatible 边界。
+
 当前项目仍是本地开发和验证口径，不是生产部署版、production IAM、生产级实时监控或交通执法系统。
 
 ## 2. 已完成能力
@@ -84,6 +93,9 @@ Center `level` 仍是独立概念，可继续使用 `info` / `warning` / `critic
   `model_runs` business writes，以及 Stage 6 historical / archived 文档标记。
 - v1.0.2 Spec Alignment：修复 run-level alerts DB-first 缺口，并统一 event
   rule severity 为 `low` / `medium` / `high`；不移动 v1.0.1 或 v1.0.0 tag。
+- v1.0.3 Final Hardening：后端 Event Rule severity validation、视频上传
+  extension / size / duration / codec validation，以及 `frames` / `tracks`
+  字段粒度边界已补齐；不移动 v1.0.2、v1.0.1 或 v1.0.0 tag。
 - Stage 9AB final pre-delivery audit and documentation closeout。
 - Stage 9CD 小型 demo/sample config、toy expected annotations、seed script、Makefile 和环境命令收口。
 - Stage 9EF final acceptance and final tag preparation。

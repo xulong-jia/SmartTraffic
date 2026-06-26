@@ -45,9 +45,26 @@ async def upload_video(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="uploaded video is empty",
         )
+    max_upload_bytes = settings.max_upload_mb * 1024 * 1024
+    if max_upload_bytes > 0 and len(content) > max_upload_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail=f"uploaded video exceeds {settings.max_upload_mb} MB limit",
+        )
     target_path.write_bytes(content)
 
-    metadata = read_video_metadata(target_path)
+    try:
+        metadata = read_video_metadata(target_path)
+        _validate_uploaded_video_metadata(metadata, settings)
+    except HTTPException:
+        target_path.unlink(missing_ok=True)
+        raise
+    except (RuntimeError, ValueError, OSError) as exc:
+        target_path.unlink(missing_ok=True)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"unable to read video metadata: {exc.__class__.__name__}",
+        ) from exc
     record = VideoDbService(db).create_video(
         filename=file.filename,
         file_path=str(target_path),
@@ -207,3 +224,43 @@ def _get_video_or_404(video_id: str, db: Session) -> dict:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="video not found",
         ) from exc
+
+
+def _validate_uploaded_video_metadata(metadata: dict, settings) -> None:
+    duration = float(metadata.get("duration_seconds") or 0.0)
+    max_duration = float(settings.max_video_duration_seconds or 0.0)
+    if max_duration > 0 and duration > max_duration:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "uploaded video duration exceeds "
+                f"{settings.max_video_duration_seconds:g} seconds limit"
+            ),
+        )
+
+    allowed_codecs = {
+        _normalize_upload_codec(codec)
+        for codec in settings.allowed_video_codecs
+    }
+    raw_codec = str(metadata.get("codec") or "").strip().lower()
+    codec = _normalize_upload_codec(raw_codec)
+    if allowed_codecs:
+        if not codec:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="unable to determine video codec",
+            )
+        if codec not in allowed_codecs:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"unsupported video codec: {raw_codec}",
+            )
+
+
+def _normalize_upload_codec(codec: str) -> str:
+    aliases = {
+        # OpenCV/FFmpeg often reads videos written as mp4v back as fmp4.
+        "fmp4": "mp4v",
+    }
+    normalized = codec.strip().lower()
+    return aliases.get(normalized, normalized)

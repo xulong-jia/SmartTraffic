@@ -47,6 +47,13 @@ Current implementation notes:
   successful DB-backed detector/tracker processing writes one detector row and,
   for tracking modes, one tracker row with sanitized model path, dry-run/config
   parameters, summary metrics, and artifact references.
+- `v1.0.3-final-hardening` keeps `frames` as a frame metadata / query contract
+  and clarifies `tracks` as run-level track records plus metadata /
+  artifact-compatible rows. The current local prototype does not claim a
+  production normalized per-frame tracking table.
+- `v1.0.3-final-hardening` also enforces Event Rule severity in backend request
+  schemas as `low`, `medium`, or `high`; Alert Center `level` remains separate
+  and may still use `info`, `warning`, or `critical`.
 - The default local database URL is `sqlite:///./smarttraffic.db`.
 - Videos, processing tasks, processing-created run indexes, detections, tracks,
   trajectory points, flow counts, zone statistics, zones, event rules,
@@ -107,7 +114,11 @@ records in `bad_cases`, Evaluation dataset records in `evaluation_datasets`,
 Evaluation metric results in `evaluation_results.metrics`, and run summary /
 failed cases in `evaluation_results.summary`. `v1.0.1-audit-polish` persists
 detector/tracker business rows in `model_runs` during DB-backed processing
-instead of leaving that table as repository-only foundation. Full Stage 1EF can import structured
+instead of leaving that table as repository-only foundation.
+`v1.0.3-final-hardening` documents the current `frames` / `tracks` granularity:
+`frames` is metadata-oriented, and `tracks` is a run-level / artifact-compatible
+representation, not a production per-frame normalized tracking store. Full Stage
+1EF can import structured
 artifacts such as
 `metadata.json`, `detections.csv`, `tracks.csv`, `trajectory_points.csv`,
 `events.jsonl`, `alerts.jsonl`, `flow_counts.json`, `zone_statistics.json`,

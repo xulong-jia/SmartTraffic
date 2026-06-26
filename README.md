@@ -12,6 +12,8 @@ Full Stage 8AB 已完成 full final audit / docs consistency 准备，并新增 
 
 `v1.0.2-spec-alignment` 是 v1.0.1 后的 scoped spec-alignment 小修，不移动、不重打 `v1.0.1-audit-polish` 或 `v1.0.0-full-final-version`。本小修只处理逐句级执行手册审计发现的两个对齐问题：`GET /api/analysis-runs/{run_id}/alerts` 现在按 run_id 优先读取 DB `alerts`，无 DB alert 时保留 artifact fallback；ZoneEditor / event rule payload 已将 event rule severity 统一为 `low` / `medium` / `high`。Alert level 仍是独立概念，可继续使用 `info` / `warning` / `critical`。
 
+`v1.0.3-final-hardening` 是最终小范围 hardening：后端 Event Rule schema 现在强制 `severity=low|medium|high`，`critical` 会被 API validation 拒绝；Alert Center `level` 仍是独立字段，可继续使用 `info|warning|critical`。视频上传校验覆盖 extension / size / duration / codec allowlist，默认配置为 `SMARTTRAFFIC_MAX_UPLOAD_MB=200`、`SMARTTRAFFIC_MAX_VIDEO_DURATION_SECONDS=600`、`SMARTTRAFFIC_ALLOWED_VIDEO_CODECS=avc1,h264,mp4v,xvid,mjpg`。`frames` 与 `tracks` 采用 local prototype 字段粒度边界：`frames` 表/API 是 frame metadata/query contract，pipeline 默认不持久化每一帧图像；`tracks` 是 run-level track records + metadata/artifact rows 的 hybrid representation，不是 production per-frame normalized tracking table。
+
 当前 Alert Center 支持 `new`、`acknowledged`、`resolved` 和 `ignored` 基础状态流转；DB alert rows 优先持久化这些状态，旧 artifact-only runs 仍 fallback 写回本地 alert artifacts。
 
 当前可验证的本地 artifacts 生成和查询闭环是：
@@ -163,6 +165,9 @@ cp .env.example .env
 - `SMARTTRAFFIC_EVALS_DIR`
 - `SMARTTRAFFIC_DATABASE_URL`
 - `SMARTTRAFFIC_AUTH_MODE`
+- `SMARTTRAFFIC_MAX_UPLOAD_MB`
+- `SMARTTRAFFIC_MAX_VIDEO_DURATION_SECONDS`
+- `SMARTTRAFFIC_ALLOWED_VIDEO_CODECS`
 - `YOLO_MODEL_PATH`
 - `YOLO_DRY_RUN`
 - `YOLO_CONF_THRESHOLD`
@@ -171,6 +176,10 @@ cp .env.example .env
 - `DEEPSORT_DRY_RUN`
 
 默认 dry-run 可以不依赖真实模型权重。真实 YOLOv8 推理需要配置本地模型权重路径，例如 `local_models/best.pt`。`.env` 不进入 Git。
+
+上传 API 会先校验文件扩展名，再校验大小、OpenCV metadata duration 和
+codec allowlist。OpenCV 的 FOURCC/codec 检测可能受平台和容器影响；无法读取
+metadata 或 codec 时会返回清晰的 400 错误，不返回 traceback 或本地绝对路径。
 
 默认数据库 URL 是 `sqlite:///./smarttraffic.db`，用于本地 DB foundation、schema/repository、artifact compatibility、Full Stage 2 core flow 和 Full Stage 3 config / event / alert / review / bad case / evaluation API 验证。Full Stage 1CD migration 已创建核心业务表，并提供 repository CRUD foundation；Full Stage 1EF 提供旧 artifacts 的结构化导入和 DB 优先 / artifact fallback read-through helper。Full Stage 2AB 后，`POST /api/videos/upload`、`GET /api/videos`、`GET /api/videos/{video_id}`、`GET /api/videos/{video_id}/status`、`GET /api/videos/{video_id}/frames` 和 `POST /api/videos/{video_id}/process` 的 video / task / run-index 部分已 DB-backed。Full Stage 2CD 后，processing 生成 artifacts 后会把 detections、tracks、trajectory_points、flow_counts、zone_statistics 导入 DB；`/api/analysis-runs` 相关核心查询优先读 DB，DB 缺失时 fallback 到本地 artifacts。Full Stage 3AB 后，`/api/zones`、`/api/event-rules` 和 top-level `/api/events` 已提供 DB-first 行为，processing-created run 会记录当前 zone/rule config snapshot。Full Stage 3CD 后，`/api/analysis-runs/{run_id}/events` 可优先读取 DB events / evidence / rule executions，`/api/analysis-runs/{run_id}/alerts` 可优先读取 DB alerts 并在无 DB alert 时 fallback 到本地 alert artifacts，`/api/alerts` 状态流转优先写 DB，`/api/review` 对 DB events 写入 `review_comments` audit trail，并可创建 `rule_rerun` processing task request。Full Stage 3EF 后，`/api/bad-cases` 和 `/api/evaluation` 支持 DB-first / artifact fallback，failed cases 存储在 `evaluation_results.summary["failed_cases"]`，`scripts/run_evals.py --write-db` 可选写入 DB。
 
@@ -247,6 +256,7 @@ Full Stage 7AB 新增 DB-backed Cameras API 和轻量 realtime preview：
 - Full Stage 7AB Camera / Realtime Preview completed: Cameras DB API, stream_url masking, enable / disable, mock / file / RTSP no-connect preview, recent frames / events / alerts cache, processing_task linkage, Camera Center page, tests, and docs
 - Full Stage 7CD Security / Audit / Ops completed: minimal actor identity, permissive / strict permission guard, audit actor propagation, standardized API error shape, request id logging, DB readiness check, env/docs hardening, tests, and `v0.9.7-realtime-security-preview` preparation
 - Full Stage 8AB Full Final Audit / Docs Consistency completed: execution manual 26.1-26.14 audit, README/docs/API/database/evaluation/realtime/reporting/security consistency updates, and final acceptance checklist preparation
+- v1.0.3 Final Hardening completed: backend Event Rule severity validation, upload extension / size / duration / codec validation, and explicit frames / tracks field-granularity boundary
 - Zone / Event Rule configuration API MVP, Event Evidence / Rule Execution artifacts, and Alert Center status workflow implemented
 
 `v0.5.0-event-alert-minimal` is an earlier minimal Event / Alert milestone tag and should not be moved to newer commits.

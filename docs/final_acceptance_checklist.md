@@ -13,6 +13,9 @@
 - `v1.0.2-spec-alignment` is a scoped spec-alignment patch after v1.0.1. It
   must not move or rebuild `v1.0.1-audit-polish` or
   `v1.0.0-full-final-version`.
+- `v1.0.3-final-hardening` is a scoped final hardening patch after v1.0.2. It
+  must not move or rebuild `v1.0.2-spec-alignment`,
+  `v1.0.1-audit-polish`, or `v1.0.0-full-final-version`.
 - Existing milestone tags must not be moved, deleted, or rebuilt.
 
 ## 2. Functional Acceptance
@@ -28,6 +31,9 @@
 - `v1.0.1-audit-polish` removes the last frontend contract-only audit gaps:
   `AlertPanel` and `EventTable` are real reusable components connected to
   Alert Center and Analysis Detail respectively.
+- `v1.0.3-final-hardening` validates video upload extension, size, OpenCV
+  metadata duration, and OpenCV FOURCC / codec allowlist, with clear client
+  errors and no traceback or local path leakage.
 
 ## 3. Engineering Acceptance
 
@@ -46,6 +52,10 @@
   executions, alerts, review comments, bad cases, evaluation datasets, and
   evaluation results.
 - Current default database is local SQLite for prototype validation.
+- `frames` are accepted as a metadata / query contract, and `tracks` are
+  accepted as run-level track records plus metadata / artifact-compatible rows;
+  the current prototype does not claim a production normalized per-frame
+  tracking table.
 - Do not claim PostgreSQL production deployment or production migration
   operations are complete.
 
@@ -78,8 +88,9 @@
   DB-first with artifact fallback where applicable.
 - `GET /api/analysis-runs/{run_id}/alerts` is DB-first for DB `alerts` rows and
   preserves artifact fallback when no DB alert rows exist.
-- Event rule severity is `low` / `medium` / `high`; Alert Center `level` is a
-  separate alert concept and may be `info` / `warning` / `critical`.
+- Event rule severity is backend-validated as `low` / `medium` / `high`;
+  Alert Center `level` is a separate alert concept and may be `info` /
+  `warning` / `critical`.
 - `/api/processing/tasks` is DB-backed and supports local visibility filters
   for `video_id`, `run_id`, `status`, `mode`, and `task_type`.
 - Alert Center supports `new`, `acknowledged`, `resolved`, and `ignored`.
