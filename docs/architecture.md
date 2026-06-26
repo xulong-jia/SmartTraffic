@@ -7,7 +7,7 @@ React frontend
   -> FastAPI API layer
   -> services
   -> cv / trajectory / events / alerts / analysis packages
-  -> local storage and future database
+  -> local artifacts and DB-backed workflow foundation
 ```
 
 ## Current Runnable Path
@@ -44,8 +44,8 @@ Currently implemented architecture includes:
 
 - YOLOv8 / dry-run detection
 - DeepSORT adapter / mock tracking
-- TrajectoryEngine
-- EventEngine with six callback-based rules
+- TrajectoryEngine with Full Stage 4AB final features
+- EventEngine with six finalized callback-based rules
 - artifact-based EventService
 - artifact-based AlertService
 - process integration for event, traffic statistics, and alert artifact
@@ -72,9 +72,14 @@ Currently implemented architecture includes:
   `evaluation_summary.json`, MVP metrics, API, CLI, and React Evaluation Center
 - Stage 8HI failed case to Bad Case conversion, Bad Case regression summary
   MVP, frontend link action, and Stage 8 closeout audit
+- Full Stage 4AB trajectory final features: zone history, lane relation, line
+  crossings, dwell/speed/moving-angle/direction-consistency features, and
+  center / bottom-center point strategies
+- Full Stage 4AB event rule finalization for wrong-way, illegal parking, danger
+  zone intrusion, pedestrian in vehicle lane, congestion, and flow counting
 
 The current implementation is useful for local validation, but it is not the
-complete database-backed manual architecture yet.
+complete production benchmark or enforcement architecture yet.
 
 ## Stage 5 Event & Alert MVP
 
@@ -139,16 +144,16 @@ Implemented stage-five rule callbacks:
 - `flow_counting`
 - `congestion`
 
-The current `flow_counting` callback is a Stage 5 event rule. It uses
-EventEngine callback state to maintain `previous_points` and `counted_keys`
-while evaluating whether track segments cross `rule.parameters.line`.
+The current `flow_counting` callback is a finalized event rule. It consumes
+TrajectoryEngine `line_crossings` when available and keeps the older EventEngine
+callback-state fallback for artifact compatibility.
 
 The current `congestion` callback uses aggregate event rule support. EventEngine
 calls each aggregate rule once per frame, passes the full
 `frame_result["trajectory_points"]`, and emits a zone-level event with
 `track_id=None`. The callback uses EventEngine state to maintain consecutive
-congestion-frame counts; EventEngine aggregate cooldown and dedup handle
-repeated zone-level events.
+congestion-frame and time-window counts; EventEngine aggregate cooldown and
+dedup handle repeated zone-level events.
 
 ## Query Layer
 
@@ -211,7 +216,8 @@ Current limitations:
 
 - no database-backed Review Center workflow; Stage 7C/7D/7E provide artifact-backed Review API, frontend MVP, and navigation, and Stage 7F audits that as the local Review Center MVP only
 - no real rerun-based Bad Case regression pipeline
-- no industrial mAP / IDF1 / MOTA Evaluation metrics
+- no industrial mAP / Precision / Recall detection benchmark
+- no industrial IDF1 / MOTA / ID-switch tracking benchmark
 - no database-backed Zone / Rule / Alert persistence
 - no video overlay
 - no database-backed final Traffic Analysis Center
@@ -222,4 +228,4 @@ Current limitations:
 - no real-world speed / direction calibration
 - no formal traffic enforcement conclusion
 
-Future phases should keep YOLOv8, DeepSORT, Trajectory Engine, Event Engine, Alert Center, Review Center, Bad Case Center, and Evaluation Center separate. Review artifacts such as `review_comments.jsonl`, `event_review_state.json`, and `false_negative_events.jsonl` plus the Stage 7C `/api/review` endpoints, Stage 7D/7E frontend, and Stage 7F audit are a local artifact-backed Review MVP; they are not database-backed review state or Evaluation reports. Stage 8CD/HI Bad Case behavior remains artifact-backed through `bad_cases.jsonl`, `bad_case_updates.jsonl`, `/api/bad-cases`, and the React Bad Case Center MVP. Stage 8EFG/HI Evaluation behavior remains artifact-backed through `evals/datasets/evaluation_datasets.json`, `evals/results/*.jsonl`, `evaluation_summary.json`, `/api/evaluation`, `scripts/run_evals.py`, and the React Evaluation Center MVP. It includes explicit failed case conversion and Bad Case regression summary MVP, but does not imply database final state, real rerun-based regression, or industrial mAP / IDF1 / MOTA completion.
+Future phases should keep YOLOv8, DeepSORT, Trajectory Engine, Event Engine, Alert Center, Review Center, Bad Case Center, and Evaluation Center separate. Full Stage 3 has added DB-backed workflow foundations for Review, Bad Case, and Evaluation while preserving artifact fallback. Full Stage 4AB has finalized trajectory features and event-rule behavior, but it does not imply real detection/tracking benchmarks, real rerun-based regression, real-world calibration, production enforcement readiness, or industrial mAP / IDF1 / MOTA completion.

@@ -79,6 +79,34 @@ def compute_moving_angle(
         return None
 
 
+def compute_direction_consistency(
+    points: list[PointLike],
+    window_size: int = 4,
+) -> float | None:
+    """Return 0..1 consistency of recent movement segment directions."""
+
+    if len(points) < 3:
+        return None
+    recent_points = points[-max(3, window_size) :]
+    vectors: list[tuple[float, float]] = []
+    for previous, current in zip(recent_points, recent_points[1:], strict=False):
+        prev_x, prev_y = _extract_xy(previous)
+        curr_x, curr_y = _extract_xy(current)
+        dx = curr_x - prev_x
+        dy = curr_y - prev_y
+        length = math.hypot(dx, dy)
+        if length <= geometry.EPSILON:
+            continue
+        vectors.append((dx / length, dy / length))
+    if len(vectors) < 2:
+        return None
+
+    mean_x = sum(vector[0] for vector in vectors) / len(vectors)
+    mean_y = sum(vector[1] for vector in vectors) / len(vectors)
+    consistency = math.hypot(mean_x, mean_y)
+    return round(max(0.0, min(1.0, consistency)), 6)
+
+
 def compute_dwell_time(
     points: list[PointLike],
     speed_threshold: float,

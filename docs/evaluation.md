@@ -29,10 +29,20 @@ Full Stage 3EF 已实现：
 - failed cases 可通过 `POST /api/bad-cases/from-failed-case` 转为 DB Bad Case，
   同一 `run_id + failed_case_id` 幂等。
 
+Full Stage 4AB 已实现：
+
+- Trajectory final features：`zone_history`、`lane_relation`、`line_crossings`、
+  `dwell_time_ms`、像素速度、`moving_angle` 和 `direction_consistency`。
+- 六类 Event Rule final behavior：wrong-way、illegal parking、danger zone、
+  pedestrian lane、congestion 和 flow counting 使用稳定 trajectory features。
+- 这些 features 可被后续 evaluation 使用，但当前 Detection / Tracking
+  benchmark 尚未完成。
+
 当前仍未实现：
 
 - 真实 rerun-based Bad Case regression pipeline。
-- 工业级 mAP、IDF1、MOTA。
+- 工业级 mAP / Precision / Recall detection benchmark，留给 Full Stage 4CD。
+- 工业级 IDF1 / MOTA / ID Switch tracking benchmark，留给 Full Stage 4CD。
 - 权限、多用户、实时流或生产部署。
 
 ## Artifacts

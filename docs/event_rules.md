@@ -3,20 +3,40 @@
 This document reflects the current implementation status after aligning with
 `docs/SmartTraffic_最终版项目开发执行手册.md`.
 
-Stage 5 is implemented as an artifact-based / in-memory MVP. The current event
-rules are callback implementations over trajectory artifacts, and the video
-process pipeline can generate Event / Alert artifacts after trajectory
-processing. The current implementation is still not backed by database-managed
-rule configuration.
+Stage 5 is implemented as an artifact-based / in-memory MVP. Full Stage 4AB
+finalizes the trajectory feature contract and the six callback rules over those
+features. The video process pipeline can generate Event / Alert artifacts after
+trajectory processing, and the Full Stage 3 DB lifecycle for events, evidence,
+and rule executions remains available.
 
-The Stage 5 event rule layer currently covers the six event rules defined by the
-execution manual. Zone / Event Rule configuration APIs exist as an MVP, Event
-Evidence and Rule Execution artifacts include rule inputs and trigger context,
-and the Alert Center supports artifact-backed query plus acknowledge / resolve /
-ignore status transitions.
+The event rule layer covers the six event rules defined by the execution
+manual. Zone / Event Rule configuration APIs exist as an MVP, Event Evidence and
+Rule Execution artifacts include rule inputs and trigger context, and the Alert
+Center supports artifact-backed query plus acknowledge / resolve / ignore status
+transitions.
 
 SmartTraffic event outputs are video-analysis signals only. They are not
 law-enforcement-grade traffic violation judgments.
+
+## Full Stage 4AB Trajectory Features
+
+TrajectoryEngine now emits reusable final features for downstream EventEngine,
+DB persistence, and artifacts:
+
+- `zone_history`: per-zone `first_seen_frame`, `last_seen_frame`,
+  `inside_frames`, `inside_duration_ms`, and current inside status.
+- `lane_relation`: current vehicle lanes, no-parking zones, danger zones,
+  `person_in_vehicle_lane`, `vehicle_in_no_parking_zone`, and zone membership
+  detail.
+- `line_crossings`: counting/direction line crossings with direction,
+  previous/current selected points, line id, frame, and timestamp.
+- Stable pixel-level `dwell_time_ms`, `speed_px_per_frame`,
+  `speed_px_per_second`, `moving_angle`, `direction_vector`, and
+  `direction_consistency`.
+- Zone membership supports `center` and `bottom_center` point strategies.
+
+Pixel speed remains an image-space estimate. It is not real-world speed unless
+future calibration is added.
 
 ## Implemented Rules
 
@@ -33,11 +53,14 @@ Key parameters:
 - `target_classes`
 - `cooldown_seconds`
 - `min_track_length`
+- `min_inside_frames`
+- `min_inside_seconds`
 
 Evidence:
 
 - `evidence_type=zone`
-- Stores zone id/type, selected point, polygon, class, track, and frame context.
+- Stores zone id/type, selected point, polygon, class, track, inside frames,
+  inside duration, and frame context.
 
 Limitations:
 
@@ -58,11 +81,14 @@ Key parameters:
 - `target_classes`, normally `person`
 - `cooldown_seconds`
 - `min_track_length`
+- `min_inside_frames`
+- `min_inside_seconds`
 
 Evidence:
 
 - `evidence_type=zone`
-- Stores vehicle-lane zone, selected point, class, track, and frame context.
+- Stores vehicle-lane zone, selected point, class, track, inside frames, inside
+  duration, and frame context.
 
 Limitations:
 
@@ -85,14 +111,16 @@ Key parameters:
 - `target_classes`
 - `max_speed_px_per_frame`
 - `min_dwell_time_ms`
+- `min_dwell_seconds`
+- `max_center_shift`
 - `min_track_length`
 - `cooldown_seconds`
 
 Evidence:
 
 - `evidence_type=dwell`
-- Stores zone, selected point, speed, dwell time, track length, and threshold
-  values.
+- Stores zone, selected point, speed, dwell time, center shift, track length,
+  and threshold values.
 
 Limitations:
 
@@ -115,7 +143,9 @@ Key parameters:
 - `allowed_angle`
 - `angle_tolerance`
 - `min_speed_px_per_frame`
-- `min_wrong_way_frames`
+- `min_speed`
+- `confirm_frames`
+- `reverse_angle_threshold`
 - `target_classes`
 - `min_track_length`
 
@@ -126,6 +156,9 @@ angle_diff = angle_difference(moving_angle, allowed_angle)
 wrong_way = angle_diff >= 180 - angle_tolerance
 ```
 
+Full Stage 4AB also supports explicit `reverse_angle_threshold` and
+multi-frame confirmation through `confirm_frames`.
+
 Evidence:
 
 - `evidence_type=direction`
@@ -135,8 +168,6 @@ Evidence:
 Limitations:
 
 - No real-world direction calibration.
-- No multi-frame wrong-way counter yet.
-- `min_wrong_way_frames > 1` is currently unsupported.
 - Lateral motion is intentionally not treated as wrong-way driving.
 - Not a law-enforcement-grade direction judgment.
 
@@ -159,6 +190,7 @@ Key parameters:
 - `direction`: `any`, `positive`, or `negative`
 - `point_type`: `bottom_center` or `center`
 - `count_once_per_track`
+- `same_track_cooldown_frames`
 - `target_classes`
 - `min_track_length`
 - `cooldown_seconds`
@@ -179,8 +211,9 @@ Evidence:
 
 Runtime state:
 
-- The callback uses EventEngine callback state to keep `previous_points` and
-  `counted_keys`.
+- The callback first consumes TrajectoryEngine `line_crossings` final features.
+  Legacy inputs without those features still use EventEngine callback state to
+  keep `previous_points` and `counted_keys`.
 - `EventEngine.reset()` clears this state.
 
 Limitations:
@@ -189,8 +222,6 @@ Limitations:
   evidence to write artifact-backed `flow_counts.json`.
 - `GET /api/analysis-runs/{run_id}/flow-counts` returns that local artifact.
 - No frontend flow chart yet.
-- No persistent counting line config yet.
-- No database-backed flow count persistence yet.
 - No real-world flow calibration.
 
 ### congestion
@@ -214,6 +245,7 @@ Inputs:
 - `vehicle_count_threshold`
 - `avg_speed_threshold`
 - `min_congestion_frames`
+- `time_window_seconds`
 - target vehicle classes
 - frame-level `trajectory_points`
 
@@ -222,7 +254,8 @@ Runtime behavior:
 - Runs as an aggregate rule with `rule_mode=aggregate`.
 - The callback reads the full frame's `trajectory_points`.
 - It emits a zone-level event with `track_id=None`.
-- EventEngine callback state tracks consecutive congestion frames.
+- EventEngine callback state tracks consecutive congestion frames and
+  `time_window_seconds` behavior.
 - EventEngine aggregate cooldown and dedup prevent repeated events inside the
   cooldown window.
 

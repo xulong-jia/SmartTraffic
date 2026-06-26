@@ -1,6 +1,7 @@
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from app.events.rule_callbacks.final_features import line_cooldown_active, line_crossing
 from app.trajectory import geometry
 
 
@@ -23,8 +24,90 @@ def flow_counting_callback(
         rule.parameters.get("count_once_per_track"),
         default=True,
     )
+    same_track_cooldown_frames = int(rule.parameters.get("same_track_cooldown_frames") or 0)
     track_id = trajectory_point.get("track_id")
     class_name = str(trajectory_point.get("class_name", ""))
+
+    crossing_from_features = line_crossing(trajectory_point, line_id, direction)
+    if crossing_from_features is not None:
+        if line_cooldown_active(
+            engine_state,
+            rule_id=rule.rule_id,
+            line_id=line_id,
+            track_id=track_id,
+            frame_index=frame_result.get("frame_index"),
+            cooldown_frames=same_track_cooldown_frames,
+        ):
+            return _not_matched(
+                reason="same_track_line_cooldown",
+                rule=rule,
+                trajectory_point=trajectory_point,
+                frame_result=frame_result,
+                line_id=line_id,
+                line=line,
+                point_type=point_type,
+                current_point=crossing_from_features.get("current_point"),
+                previous_point=crossing_from_features.get("previous_point"),
+                crossing_direction=str(crossing_from_features.get("direction")),
+                configured_direction=direction,
+                count_once_per_track=count_once_per_track,
+                already_counted=True,
+                crossed=True,
+            )
+        crossing_direction = str(crossing_from_features.get("direction"))
+        evidence_json = {
+            "line_id": line_id,
+            "counting_line_id": line_id,
+            "direction": crossing_direction,
+            "crossing_direction": crossing_direction,
+            "configured_direction": direction,
+            "track_id": track_id,
+            "class_name": class_name,
+            "frame_index": frame_result.get("frame_index"),
+            "timestamp_ms": frame_result.get("timestamp_ms"),
+            "line_crossing": crossing_from_features,
+        }
+        return {
+            "matched": True,
+            "event": {
+                "event_type": "flow_counting",
+                "severity": rule.severity,
+                "track_id": track_id,
+                "class_name": class_name,
+                "zone_id": rule.zone_id,
+                "rule_id": rule.rule_id,
+                "start_frame": frame_result.get("frame_index"),
+                "end_frame": frame_result.get("frame_index"),
+                "start_time_ms": frame_result.get("timestamp_ms"),
+                "end_time_ms": frame_result.get("timestamp_ms"),
+                "confidence": 1.0,
+                "status": "pending",
+                "evidence": evidence_json,
+            },
+            "evidence": [
+                {
+                    "evidence_type": "line_crossing",
+                    "evidence_json": evidence_json,
+                }
+            ],
+            "reason": "line_crossed",
+            "input_features": {
+                "track_id": track_id,
+                "class_name": class_name,
+                "line_id": line_id,
+                "line_crossings": trajectory_point.get("line_crossings", []),
+            },
+            "output_result": {
+                "matched": True,
+                "reason": "line_crossed",
+                "line_id": line_id,
+                "crossed": True,
+                "crossing_direction": crossing_direction,
+                "configured_direction": direction,
+                "already_counted": False,
+                "count_once_per_track": count_once_per_track,
+            },
+        }
 
     if line is None:
         return _not_matched(
@@ -427,6 +510,8 @@ def _evidence_json(
 ) -> dict[str, Any]:
     return {
         "line_id": line_id,
+        "counting_line_id": line_id,
+        "direction": crossing_direction,
         "line": line,
         "previous_point": previous_point,
         "current_point": current_point,

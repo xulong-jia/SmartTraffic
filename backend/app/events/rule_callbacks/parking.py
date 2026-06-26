@@ -26,6 +26,12 @@ def illegal_parking_callback(
         rule.parameters.get("min_dwell_time_ms"),
         default=3000,
     )
+    if rule.parameters.get("min_dwell_seconds") is not None:
+        min_dwell_time_ms = int(
+            round(_float_value(rule.parameters.get("min_dwell_seconds"), default=0.0) * 1000)
+        )
+    max_center_shift = _float_or_none(rule.parameters.get("max_center_shift"))
+    center_shift_px = _float_or_none(trajectory_point.get("center_shift_px"))
     speed_px_per_frame = _float_or_none(trajectory_point.get("speed_px_per_frame"))
     speed_px_per_second = _float_or_none(trajectory_point.get("speed_px_per_second"))
     dwell_time_ms = _int_value(trajectory_point.get("dwell_time_ms"), default=0)
@@ -50,7 +56,7 @@ def illegal_parking_callback(
             track_length=track_length,
         )
 
-    if rule.parameters.get("max_center_shift") is not None:
+    if max_center_shift is not None and center_shift_px is None:
         return _not_matched(
             reason="max_center_shift_not_supported",
             rule=rule,
@@ -247,6 +253,30 @@ def illegal_parking_callback(
             polygon=polygon,
         )
 
+    if (
+        max_center_shift is not None
+        and center_shift_px is not None
+        and center_shift_px > max_center_shift
+    ):
+        return _not_matched(
+            reason="center_shift_above_threshold",
+            rule=rule,
+            trajectory_point=trajectory_point,
+            frame_result=frame_result,
+            point=point,
+            point_type=point_type,
+            zone=zone,
+            inside=True,
+            class_name=class_name,
+            speed_px_per_frame=speed_px_per_frame,
+            speed_px_per_second=speed_px_per_second,
+            stop_speed_threshold=stop_speed_threshold,
+            dwell_time_ms=dwell_time_ms,
+            min_dwell_time_ms=min_dwell_time_ms,
+            track_length=track_length,
+            polygon=polygon,
+        )
+
     input_features = _input_features(
         rule=rule,
         trajectory_point=trajectory_point,
@@ -273,6 +303,8 @@ def illegal_parking_callback(
         track_length=track_length,
         polygon=polygon,
     )
+    evidence_json["center_shift"] = center_shift_px
+    evidence_json["max_center_shift"] = max_center_shift
     return {
         "matched": True,
         "event": {
@@ -309,6 +341,8 @@ def illegal_parking_callback(
             "stop_speed_threshold": stop_speed_threshold,
             "dwell_time_ms": dwell_time_ms,
             "min_dwell_time_ms": min_dwell_time_ms,
+            "center_shift": center_shift_px,
+            "max_center_shift": max_center_shift,
         },
     }
 

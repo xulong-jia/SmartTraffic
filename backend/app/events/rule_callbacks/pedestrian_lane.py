@@ -1,6 +1,11 @@
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from app.events.rule_callbacks.final_features import (
+    zone_history_entry,
+    zone_inside_duration_ms,
+    zone_inside_frames,
+)
 from app.trajectory import geometry
 
 
@@ -31,18 +36,8 @@ def pedestrian_in_vehicle_lane_callback(
         )
 
     min_inside_frames = int(rule.parameters.get("min_inside_frames", 1))
-    if min_inside_frames > 1:
-        return _not_matched(
-            reason="min_inside_frames_not_supported",
-            rule=rule,
-            trajectory_point=trajectory_point,
-            frame_result=frame_result,
-            point=None,
-            point_type=point_type,
-            zone=None,
-            inside=False,
-            class_name=class_name,
-        )
+    min_inside_seconds = float(rule.parameters.get("min_inside_seconds", 0.0) or 0.0)
+    min_inside_duration_ms = int(round(min_inside_seconds * 1000))
 
     if point_type not in SUPPORTED_POINT_TYPES:
         return _not_matched(
@@ -85,6 +80,47 @@ def pedestrian_in_vehicle_lane_callback(
     if zone.get("zone_type") != "vehicle_lane":
         return _not_matched(
             reason="zone_type_not_supported",
+            rule=rule,
+            trajectory_point=trajectory_point,
+            frame_result=frame_result,
+            point=None,
+            point_type=point_type,
+            zone=zone,
+            inside=False,
+            class_name=class_name,
+        )
+
+    has_zone_features = bool(trajectory_point.get("zone_history"))
+    history = zone_history_entry(trajectory_point, rule.zone_id)
+    feature_inside_frames = zone_inside_frames(trajectory_point, rule.zone_id)
+    feature_inside_duration_ms = zone_inside_duration_ms(trajectory_point, rule.zone_id)
+    if not has_zone_features and min_inside_frames > 1:
+        return _not_matched(
+            reason="min_inside_frames_not_supported",
+            rule=rule,
+            trajectory_point=trajectory_point,
+            frame_result=frame_result,
+            point=None,
+            point_type=point_type,
+            zone=zone,
+            inside=False,
+            class_name=class_name,
+        )
+    if has_zone_features and history is None:
+        return _not_matched(
+            reason="outside_vehicle_lane",
+            rule=rule,
+            trajectory_point=trajectory_point,
+            frame_result=frame_result,
+            point=None,
+            point_type=point_type,
+            zone=zone,
+            inside=False,
+            class_name=class_name,
+        )
+    if history is not None and history.get("currently_inside") is False:
+        return _not_matched(
+            reason="outside_vehicle_lane",
             rule=rule,
             trajectory_point=trajectory_point,
             frame_result=frame_result,
@@ -138,6 +174,33 @@ def pedestrian_in_vehicle_lane_callback(
             polygon=polygon,
         )
 
+    if feature_inside_frames and feature_inside_frames < min_inside_frames:
+        return _not_matched(
+            reason="inside_duration_not_enough",
+            rule=rule,
+            trajectory_point=trajectory_point,
+            frame_result=frame_result,
+            point=point,
+            point_type=point_type,
+            zone=zone,
+            inside=True,
+            class_name=class_name,
+            polygon=polygon,
+        )
+    if feature_inside_duration_ms < min_inside_duration_ms:
+        return _not_matched(
+            reason="inside_duration_not_enough",
+            rule=rule,
+            trajectory_point=trajectory_point,
+            frame_result=frame_result,
+            point=point,
+            point_type=point_type,
+            zone=zone,
+            inside=True,
+            class_name=class_name,
+            polygon=polygon,
+        )
+
     input_features = _input_features(
         rule=rule,
         trajectory_point=trajectory_point,
@@ -154,6 +217,10 @@ def pedestrian_in_vehicle_lane_callback(
         class_name=class_name,
         polygon=polygon,
     )
+    evidence_json["inside_frames"] = feature_inside_frames or 1
+    evidence_json["inside_duration_ms"] = feature_inside_duration_ms
+    evidence_json["min_inside_frames"] = min_inside_frames
+    evidence_json["min_inside_duration_ms"] = min_inside_duration_ms
     return {
         "matched": True,
         "event": {

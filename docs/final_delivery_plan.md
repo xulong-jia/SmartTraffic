@@ -4,7 +4,7 @@
 
 ## 1. 当前版本状态
 
-当前已完成 Stage 9EF 最终验收准备。最新工程交付 commit 是 Stage 9CD 后的 `5538a3a`，当前建议 final engineering delivery tag 为 `v0.9.0-final-engineering-delivery`。该 tag 不是 `v1.0.0`，不代表 DB-backed final version、production deployment 或执法级系统。Full Stage 1AB 已在最终交付后补充 DB Foundation：SQLAlchemy Declarative Base、engine/session dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 已接入。Full Stage 1CD 已新增 core models、业务表 migration、repositories 和 CRUD tests。Full Stage 1EF 已新增 artifact compatibility / import / read-through helper 和 dry-run CLI。Full Stage 2AB 已完成 Video API、Processing Task 生命周期和 `traffic_analysis_runs` run index 的 DB-backed 迁移；Full Stage 2CD 已完成 detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic Analysis Center DB-first index；Full Stage 3AB 已完成 Zone / Event Rule DB CRUD、run-level config snapshot 和 top-level Event APIs；Full Stage 3CD 已完成 Event / EventEvidence / RuleExecution DB lifecycle、Alert Center DB 状态流转、Review DB workflow / `review_comments` audit trail，以及 rule rerun request 的 `processing_tasks.mode=rule_rerun` 记录；Full Stage 3EF 已完成 Bad Case DB workflow、Evaluation Dataset / Result DB workflow、failed cases DB persistence 方案和 failed-case -> Bad Case DB 转换。Stage 1-9 已完成 artifact-backed MVP 与最终工程交付准备主链路：
+当前已完成 Stage 9EF 最终验收准备。最新工程交付 commit 是 Stage 9CD 后的 `5538a3a`，当前建议 final engineering delivery tag 为 `v0.9.0-final-engineering-delivery`。该 tag 不是 `v1.0.0`，不代表 DB-backed final version、production deployment 或执法级系统。Full Stage 1AB 已在最终交付后补充 DB Foundation：SQLAlchemy Declarative Base、engine/session dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 已接入。Full Stage 1CD 已新增 core models、业务表 migration、repositories 和 CRUD tests。Full Stage 1EF 已新增 artifact compatibility / import / read-through helper 和 dry-run CLI。Full Stage 2AB 已完成 Video API、Processing Task 生命周期和 `traffic_analysis_runs` run index 的 DB-backed 迁移；Full Stage 2CD 已完成 detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic Analysis Center DB-first index；Full Stage 3AB 已完成 Zone / Event Rule DB CRUD、run-level config snapshot 和 top-level Event APIs；Full Stage 3CD 已完成 Event / EventEvidence / RuleExecution DB lifecycle、Alert Center DB 状态流转、Review DB workflow / `review_comments` audit trail，以及 rule rerun request 的 `processing_tasks.mode=rule_rerun` 记录；Full Stage 3EF 已完成 Bad Case DB workflow、Evaluation Dataset / Result DB workflow、failed cases DB persistence 方案和 failed-case -> Bad Case DB 转换；Full Stage 4AB 已完成 Trajectory final features 和六类 Event Rule final behavior。Stage 1-9 已完成 artifact-backed MVP 与最终工程交付准备主链路：
 
 ```text
 video upload
@@ -42,6 +42,7 @@ video upload
 - Full Stage 3AB Config / Event API DB flow：Zone / Event Rule CRUD、version 字段、run-level config snapshot、top-level Event APIs、Event status update 和 Event -> Bad Case 最小 DB linkage 已完成；前端 ZoneEditor 未在本阶段改造。
 - Full Stage 3CD Event / Alert / Review DB lifecycle：EventEvidence、RuleExecution、Alert status transitions、Review action audit trail、false-negative DB records 和 rule rerun request task 已接入 DB-first / artifact fallback；未执行真实规则重跑。
 - Full Stage 3EF Bad Case / Evaluation DB workflow：Bad Case list/detail/create/update/filter/summary、from-review、from-failed-case、Evaluation dataset/result、failed cases persistence 和 `run_evals.py --write-db` 已接入 DB-first / artifact fallback；未实现真实 mAP / IDF1 / MOTA 或真实 rerun regression。
+- Full Stage 4AB Trajectory / Event Rules：TrajectoryEngine 已输出 `zone_history`、`lane_relation`、`line_crossings`、dwell/speed/moving_angle/direction consistency 和 center / bottom-center 策略；wrong_way、illegal_parking、danger_zone、pedestrian_lane、congestion、flow_counting 六类规则已补齐 final behavior；速度仍是像素级估计。
 - Stage 9AB final pre-delivery audit and documentation closeout。
 - Stage 9CD 小型 demo/sample config、toy expected annotations、seed script、Makefile 和环境命令收口。
 - Stage 9EF final acceptance and final tag preparation。
@@ -51,7 +52,8 @@ video upload
 
 - DB-backed final version。
 - DB-backed full business API/service migration 和生产级持久化查询层。
-- Industrial-grade mAP / IDF1 / MOTA。
+- Industrial-grade mAP / Precision / Recall detection benchmark。
+- Industrial-grade IDF1 / MOTA / ID Switch tracking benchmark。
 - Real dataset benchmark。
 - Real rerun-based Bad Case regression pipeline。
 - Production-grade evaluation platform。

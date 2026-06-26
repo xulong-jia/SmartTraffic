@@ -1,6 +1,7 @@
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from app.events.rule_callbacks.final_features import confirm_state
 from app.trajectory import geometry
 
 
@@ -18,8 +19,9 @@ def wrong_way_driving_callback(
 ) -> dict[str, Any]:
     class_name = _normalize_class_name(trajectory_point.get("class_name"))
     point_type = str(rule.parameters.get("point_type", "bottom_center"))
-    min_wrong_way_frames = _int_value(
-        rule.parameters.get("min_wrong_way_frames"),
+    raw_min_wrong_way_frames = rule.parameters.get("min_wrong_way_frames")
+    confirm_frames = _int_value(
+        rule.parameters.get("confirm_frames", raw_min_wrong_way_frames),
         default=1,
     )
     allowed_angle = _float_value(rule.parameters.get("allowed_angle"), default=0.0)
@@ -27,8 +29,12 @@ def wrong_way_driving_callback(
         rule.parameters.get("angle_tolerance"),
         default=45.0,
     )
+    reverse_angle_threshold = _float_value(
+        rule.parameters.get("reverse_angle_threshold"),
+        default=180.0 - angle_tolerance,
+    )
     min_speed_px_per_frame = _float_value(
-        rule.parameters.get("min_speed_px_per_frame"),
+        rule.parameters.get("min_speed", rule.parameters.get("min_speed_px_per_frame")),
         default=1.0,
     )
     speed_px_per_frame = _float_value(
@@ -64,7 +70,12 @@ def wrong_way_driving_callback(
             track_length=track_length,
         )
 
-    if min_wrong_way_frames > 1:
+    if (
+        rule.parameters.get("confirm_frames") is None
+        and raw_min_wrong_way_frames is not None
+        and confirm_frames > 1
+        and not trajectory_point.get("zone_history")
+    ):
         return _not_matched(
             reason="min_wrong_way_frames_not_supported",
             rule=rule,
@@ -292,10 +303,47 @@ def wrong_way_driving_callback(
         )
 
     angle_diff = geometry.angle_difference(moving_angle, allowed_angle)
-    strict_wrong_way_threshold = 180.0 - angle_tolerance
+    strict_wrong_way_threshold = reverse_angle_threshold
     if angle_diff < strict_wrong_way_threshold:
+        confirm_state(
+            engine_state,
+            namespace="wrong_way_confirm",
+            key=(rule.rule_id, rule.zone_id, trajectory_point.get("track_id")),
+            matched=False,
+            required_frames=confirm_frames,
+        )
         return _not_matched(
             reason="direction_allowed",
+            rule=rule,
+            trajectory_point=trajectory_point,
+            frame_result=frame_result,
+            point=point,
+            point_type=point_type,
+            zone=zone,
+            inside=True,
+            class_name=class_name,
+            moving_angle=moving_angle,
+            allowed_angle=allowed_angle,
+            angle_tolerance=angle_tolerance,
+            angle_difference=angle_diff,
+            speed_px_per_frame=speed_px_per_frame,
+            speed_px_per_second=speed_px_per_second,
+            min_speed_px_per_frame=min_speed_px_per_frame,
+            direction_vector=direction_vector,
+            track_length=track_length,
+            polygon=polygon,
+        )
+
+    confirmed_count = confirm_state(
+        engine_state,
+        namespace="wrong_way_confirm",
+        key=(rule.rule_id, rule.zone_id, trajectory_point.get("track_id")),
+        matched=True,
+        required_frames=confirm_frames,
+    )
+    if confirmed_count < confirm_frames:
+        return _not_matched(
+            reason="confirm_frames_not_met",
             rule=rule,
             trajectory_point=trajectory_point,
             frame_result=frame_result,
@@ -345,6 +393,10 @@ def wrong_way_driving_callback(
         track_length=track_length,
         polygon=polygon,
     )
+    evidence_json["confirm_frames"] = confirm_frames
+    evidence_json["confirmed_count"] = confirmed_count
+    evidence_json["reverse_angle_threshold"] = reverse_angle_threshold
+    evidence_json["angle_diff"] = angle_diff
     return {
         "matched": True,
         "event": {

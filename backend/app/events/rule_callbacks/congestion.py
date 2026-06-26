@@ -29,6 +29,12 @@ def congestion_callback(
         rule.parameters.get("min_congestion_frames"),
         default=1,
     )
+    time_window_seconds = _float_value(
+        rule.parameters.get("time_window_seconds"),
+        default=0.0,
+    )
+    if time_window_seconds > 0 and rule.parameters.get("min_congestion_frames") is None:
+        min_congestion_frames = 2
     if min_congestion_frames < 1:
         min_congestion_frames = 1
 
@@ -341,6 +347,7 @@ def congestion_callback(
         min_congestion_frames=min_congestion_frames,
         congestion_frame_count=congestion_frame_count,
     )
+    evidence_json["window_seconds"] = time_window_seconds
     input_features = _input_features(
         rule=rule,
         frame_result=frame_result,
