@@ -2,9 +2,9 @@
 
 ## 项目简介
 
-SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engine、Event Engine、artifact-based Alert Center MVP、artifact-backed Review Center MVP、Stage 8CD Bad Case API/UI MVP、Stage 8HI Bad Case / Evaluation 联动与回归 MVP、FastAPI、SQLAlchemy / Alembic DB foundation、React 和本地结果产物管理的智慧交通视频分析项目。
+SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engine、Event Engine、artifact-based Alert Center MVP、artifact-backed Review Center MVP、Stage 8CD Bad Case API/UI MVP、Stage 8HI Bad Case / Evaluation 联动与回归 MVP、FastAPI、SQLAlchemy / Alembic DB schema and repository foundation、React 和本地结果产物管理的智慧交通视频分析项目。
 
-当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 已完成 artifact-based / in-memory MVP，Stage 6 Traffic Analysis Center 已达到 artifact-based MVP 口径。Stage 6 已包含 run manifest、artifact index、metadata、traffic statistics artifacts、Analysis Runs list / summary API、前端真实 run 数据接入和 visual artifacts pipeline。Stage 7B 已补充 Review artifact 与状态模型底座，Stage 7C 已实现 artifact-backed Review API MVP，Stage 7D 已实现 Review Center 前端 MVP，Stage 7E 已实现 Analysis / Alert 到 Review Center 的最小定位联动，Stage 7F 已完成 Review Center artifact-backed MVP 收尾审计口径。Stage 8B 已补充 Bad Case artifact/schema/service 后端底座，Stage 8CD 已实现 Bad Case API 与 Bad Case Center 前端 MVP，Stage 8EFG 已实现 Evaluation artifacts、MVP metrics、API、CLI 与 Evaluation Center 前端 MVP，Stage 8HI 已实现 failed case -> Bad Case 联动、Bad Case regression summary MVP 和 Stage 8 收尾审计。Full Stage 1AB 已完成 DB Foundation，接入 SQLAlchemy Declarative Base、engine/session dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 配置；业务表、repositories 和 DB-backed CRUD 仍属于后续 Full Stage 1CD。当前实现仍不是数据库最终版，也不代表真实 rerun-based regression 或工业级 mAP / IDF1 / MOTA 已完成。
+当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 已完成 artifact-based / in-memory MVP，Stage 6 Traffic Analysis Center 已达到 artifact-based MVP 口径。Stage 6 已包含 run manifest、artifact index、metadata、traffic statistics artifacts、Analysis Runs list / summary API、前端真实 run 数据接入和 visual artifacts pipeline。Stage 7B 已补充 Review artifact 与状态模型底座，Stage 7C 已实现 artifact-backed Review API MVP，Stage 7D 已实现 Review Center 前端 MVP，Stage 7E 已实现 Analysis / Alert 到 Review Center 的最小定位联动，Stage 7F 已完成 Review Center artifact-backed MVP 收尾审计口径。Stage 8B 已补充 Bad Case artifact/schema/service 后端底座，Stage 8CD 已实现 Bad Case API 与 Bad Case Center 前端 MVP，Stage 8EFG 已实现 Evaluation artifacts、MVP metrics、API、CLI 与 Evaluation Center 前端 MVP，Stage 8HI 已实现 failed case -> Bad Case 联动、Bad Case regression summary MVP 和 Stage 8 收尾审计。Full Stage 1AB 已完成 DB Foundation，Full Stage 1CD 已新增 core SQLAlchemy models、业务表 migration、repository 层和 CRUD tests；现有业务 API 尚未迁移到 DB-backed，artifact-backed 主链路仍保留。Full Stage 1EF 将处理 artifact compatibility / import / read-through，Full Stage 2 才开始 Video / Processing / Result Persistence 业务迁移。当前实现仍不是数据库最终版，也不代表真实 rerun-based regression 或工业级 mAP / IDF1 / MOTA 已完成。
 
 当前 Alert Center MVP 支持 `new`、`acknowledged`、`resolved` 和 `ignored` 基础状态流转；这些状态写回本地 alert artifacts，不是数据库持久化生命周期管理。
 
@@ -45,7 +45,7 @@ video upload
 - Alerts: artifact-based Alert Center MVP, alert generation, query and status transitions
 - Frontend: React, TypeScript, Vite
 - Test: pytest, Vite build
-- Storage: local videos and artifact-based run results, Git-ignored; DB foundation defaults to local SQLite
+- Storage: local videos and artifact-based run results, Git-ignored; DB schema/repository foundation defaults to local SQLite
 - Deployment skeleton: Docker Compose / local development
 
 ## 目录结构
@@ -165,7 +165,7 @@ cp .env.example .env
 
 默认 dry-run 可以不依赖真实模型权重。真实 YOLOv8 推理需要配置本地模型权重路径，例如 `local_models/best.pt`。`.env` 不进入 Git。
 
-默认数据库 URL 是 `sqlite:///./smarttraffic.db`，用于本地 DB foundation 验证。当前 Alembic baseline 不创建业务表；现有视频、事件、告警、复核、坏例和评测 API 仍读取本地 artifacts / in-memory registry。
+默认数据库 URL 是 `sqlite:///./smarttraffic.db`，用于本地 DB foundation 和 schema/repository 验证。Full Stage 1CD migration 已创建核心业务表，并提供 repository CRUD foundation；现有视频、事件、告警、复核、坏例和评测 API 仍读取本地 artifacts / in-memory registry，尚未切换到 DB-backed service。
 
 ## 当前阶段完成内容
 
@@ -196,6 +196,7 @@ cp .env.example .env
 - Stage 9CD demo / sample / Docker / environment polish completed
 - Stage 9EF final acceptance and final tag preparation completed
 - Full Stage 1AB DB Foundation completed: SQLAlchemy / Alembic / Session / Config connected
+- Full Stage 1CD Core Models / Migrations / Repositories completed: schema and repository foundation only
 - Zone / Event Rule configuration API MVP, Event Evidence / Rule Execution artifacts, and Alert Center status workflow implemented
 
 `v0.5.0-event-alert-minimal` is an earlier minimal Event / Alert milestone tag and should not be moved to newer commits.

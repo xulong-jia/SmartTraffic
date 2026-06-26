@@ -2,31 +2,37 @@
 
 This document describes the target database schema from
 `docs/SmartTraffic_最终版项目开发执行手册.md`. The current project implementation
-has a DB foundation, but remains primarily local-artifact based and does not
-yet implement the full business database / repository layer.
+has a DB foundation plus core SQLAlchemy models, migrations, and repositories,
+but remains primarily local-artifact based at the business API/service layer.
 
-本文是目标数据库设计，不代表当前仓库已经实现完整业务数据库层。
+本文描述当前 schema/repository foundation 和目标数据库边界，不代表当前仓库已经完成 DB-backed 业务迁移。
 
 Current implementation notes:
 
 - Full Stage 1AB has connected SQLAlchemy Declarative Base, engine/session
   dependency, Alembic baseline migration, and `SMARTTRAFFIC_DATABASE_URL`.
+- Full Stage 1CD has added core SQLAlchemy models, a business-table Alembic
+  migration, repository classes, and CRUD tests.
 - The default local database URL is `sqlite:///./smarttraffic.db`.
 - Videos and analysis runs may have local metadata or in-memory registry
   representation.
-- Business SQLAlchemy models, repositories, migrations that create domain
-  tables, and database-backed query services are not complete.
+- Business API/services have not been migrated to database-backed persistence.
 - `event_rules` and `zones` currently have artifact-based / in-memory MVP
   configuration APIs, not database-backed persistence.
 - `review_comments`, `bad_cases`, `evaluation_datasets`, and
-  `evaluation_results` now have artifact-backed MVP implementations. Their
-  database tables remain target design, not completed DB-backed implementation.
+  `evaluation_results` now have artifact-backed MVP implementations and schema
+  foundation tables. Their business services are not yet DB-backed.
 - Event / alert results currently come from local artifacts under
   `results/traffic_analysis/<run_id>/`.
+- Full Stage 1EF is expected to handle artifact compatibility, import, and
+  read-through behavior.
+- Full Stage 2 is expected to start Video / Processing / Result Persistence
+  business migration.
 
 The schema target from the execution manual remains:
 
 - `videos`
+- `cameras`
 - `frames`
 - `detections`
 - `tracks`
@@ -47,6 +53,6 @@ The schema target from the execution manual remains:
 - `evaluation_results`
 - `model_runs`
 
-The current Alembic baseline is intentionally empty. Business table migrations
-should be introduced when Full Stage 1CD moves the skeleton APIs toward
-persisted state.
+Full Stage 1CD creates these tables through Alembic and provides repository
+CRUD helpers. Current API endpoints still use the artifact-backed MVP path;
+this is not the DB-backed full final version.
