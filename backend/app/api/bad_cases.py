@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.analysis.bad_case_artifacts import BadCaseArtifactError
+from app.core.audit import audit_log, append_actor_tag
+from app.core.identity import Actor, get_actor, require_permission
 from app.db.session import get_db
 from app.schemas.bad_case import (
     BadCaseCreateApiRequest,
@@ -74,7 +76,9 @@ def summarize_bad_cases(
 def create_bad_case_from_review(
     payload: BadCaseFromReviewRequest,
     db: Session = Depends(get_db),
+    actor: Actor = Depends(get_actor),
 ) -> BadCaseDetailResponse:
+    require_permission(actor, "manage_bad_case")
     service = BadCaseService(session=db)
     try:
         record = service.create_bad_case_from_review(
@@ -86,7 +90,7 @@ def create_bad_case_from_review(
             description=payload.description,
             expected_result=payload.expected_result,
             actual_result=payload.actual_result,
-            tags=payload.tags,
+            tags=append_actor_tag(payload.tags, actor),
         )
         if payload.root_cause:
             record = service.update_bad_case(
@@ -95,6 +99,12 @@ def create_bad_case_from_review(
                 updates={"root_cause": payload.root_cause},
             )
         db.commit()
+        audit_log(
+            "bad_case.create_from_review",
+            actor=actor,
+            resource_type="bad_case",
+            resource_id=record["case_id"],
+        )
         return BadCaseDetailResponse(**record)
     except KeyError as exc:
         detail = (
@@ -113,7 +123,9 @@ def create_bad_case_from_review(
 def create_bad_case_from_failed_case(
     payload: BadCaseFromFailedCaseRequest,
     db: Session = Depends(get_db),
+    actor: Actor = Depends(get_actor),
 ) -> BadCaseDetailResponse:
+    require_permission(actor, "manage_bad_case")
     service = BadCaseService(session=db)
     try:
         record = service.create_bad_case_from_failed_case(
@@ -125,9 +137,15 @@ def create_bad_case_from_failed_case(
             expected_result=payload.expected_result,
             actual_result=payload.actual_result,
             root_cause=payload.root_cause,
-            tags=payload.tags,
+            tags=append_actor_tag(payload.tags, actor),
         )
         db.commit()
+        audit_log(
+            "bad_case.create_from_failed_case",
+            actor=actor,
+            resource_type="bad_case",
+            resource_id=record["case_id"],
+        )
         return BadCaseDetailResponse(**record)
     except FailedCaseNotFound as exc:
         raise _not_found("failed case not found") from exc
@@ -164,13 +182,23 @@ def get_bad_case(
 def create_bad_case(
     payload: BadCaseCreateApiRequest,
     db: Session = Depends(get_db),
+    actor: Actor = Depends(get_actor),
 ) -> BadCaseDetailResponse:
+    require_permission(actor, "manage_bad_case")
     try:
+        record_payload = payload.model_dump(exclude={"run_id"})
+        record_payload["tags"] = append_actor_tag(record_payload.get("tags"), actor)
         record = BadCaseService(session=db).create_bad_case(
             run_id=payload.run_id,
-            record=payload.model_dump(exclude={"run_id"}),
+            record=record_payload,
         )
         db.commit()
+        audit_log(
+            "bad_case.create",
+            actor=actor,
+            resource_type="bad_case",
+            resource_id=record["case_id"],
+        )
         return BadCaseDetailResponse(**record)
     except KeyError as exc:
         raise _not_found("analysis run not found") from exc
@@ -185,19 +213,33 @@ def update_bad_case(
     case_id: str,
     payload: BadCaseUpdateApiRequest,
     db: Session = Depends(get_db),
+    actor: Actor = Depends(get_actor),
 ) -> BadCaseDetailResponse:
+    require_permission(actor, "manage_bad_case")
     service = BadCaseService(session=db)
     try:
         run_id = payload.run_id
         if run_id is None:
             run_id = service.find_bad_case(case_id=case_id)["run_id"]
         updates = payload.model_dump(exclude={"run_id"}, exclude_none=True)
+        current = service.get_bad_case(run_id=run_id, case_id=case_id)
+        updates["tags"] = append_actor_tag(
+            updates.get("tags") or current.get("tags"),
+            actor,
+        )
         record = service.update_bad_case(
             run_id=run_id,
             case_id=case_id,
             updates=updates,
         )
         db.commit()
+        audit_log(
+            "bad_case.update",
+            actor=actor,
+            resource_type="bad_case",
+            resource_id=case_id,
+            details={"updated_fields": sorted(updates.keys())},
+        )
         return BadCaseDetailResponse(**record)
     except KeyError as exc:
         detail = (

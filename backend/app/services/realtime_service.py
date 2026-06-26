@@ -5,6 +5,7 @@ from uuid import uuid4
 from sqlalchemy.orm import Session
 
 from app.models import Camera
+from app.core.identity import Actor, actor_context
 from app.realtime.cache import realtime_preview_cache
 from app.realtime.worker import RealtimePreviewWorker
 from app.repositories import ProcessingTaskRepository, VideoRepository
@@ -19,7 +20,7 @@ class RealtimePreviewService:
         self._states: dict[str, dict[str, Any]] = {}
         self._worker = RealtimePreviewWorker()
 
-    def start(self, camera_id: str, db: Session) -> dict[str, Any]:
+    def start(self, camera_id: str, db: Session, *, actor: Actor | None = None) -> dict[str, Any]:
         camera = CameraService(db).get_camera_model(camera_id)
         if not camera.enabled:
             raise ValueError("disabled camera cannot start realtime preview")
@@ -52,6 +53,7 @@ class RealtimePreviewService:
                 "camera_id": camera.id,
                 "source_type": camera.source_type,
                 "preview": True,
+                **(actor_context(actor) if actor else {}),
             },
             progress=0.1,
             started_at=now,
@@ -78,11 +80,12 @@ class RealtimePreviewService:
             "event_count": len(batch.events),
             "alert_count": len(batch.alerts),
             "camera": camera_to_record(camera),
+            **(actor_context(actor) if actor else {}),
         }
         self._states[camera.id] = state
         return dict(state)
 
-    def stop(self, camera_id: str, db: Session) -> dict[str, Any]:
+    def stop(self, camera_id: str, db: Session, *, actor: Actor | None = None) -> dict[str, Any]:
         camera = CameraService(db).get_camera_model(camera_id)
         previous = self._states.get(camera.id)
         stopped_at = _utc_now()
@@ -100,6 +103,7 @@ class RealtimePreviewService:
                         "frame_count": previous.get("frame_count", 0),
                         "event_count": previous.get("event_count", 0),
                         "alert_count": previous.get("alert_count", 0),
+                        **(actor_context(actor) if actor else {}),
                     },
                     finished_at=stopped_at,
                 )

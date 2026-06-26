@@ -1,7 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, status
+from fastapi.responses import JSONResponse
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.schemas.health import ConfigResponse, HealthResponse
+from app.db.session import get_db
+from app.schemas.health import ConfigResponse, HealthResponse, ReadinessResponse
 
 
 router = APIRouter(tags=["health"])
@@ -10,6 +14,29 @@ router = APIRouter(tags=["health"])
 @router.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     return HealthResponse(status="ok", service="smarttraffic-api")
+
+
+@router.get("/health/ready", response_model=ReadinessResponse)
+def readiness(db: Session = Depends(get_db)) -> ReadinessResponse | JSONResponse:
+    checks: dict[str, str] = {"app": "ok"}
+    try:
+        db.execute(text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception:
+        checks["database"] = "error"
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "status": "error",
+                "service": "smarttraffic-api",
+                "checks": checks,
+            },
+        )
+    return ReadinessResponse(
+        status="ok",
+        service="smarttraffic-api",
+        checks=checks,
+    )
 
 
 @router.get("/api/config", response_model=ConfigResponse)

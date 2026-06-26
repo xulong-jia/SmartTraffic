@@ -53,6 +53,7 @@ class Settings:
     local_videos_dir: Path = LOCAL_VIDEOS_DIR
     local_models_dir: Path = LOCAL_MODELS_DIR
     database_url: str = "sqlite:///./smarttraffic.db"
+    auth_mode: str = "permissive"
     yolo_model_path: str = "local_models/best.pt"
     yolo_conf_threshold: float = 0.25
     yolo_iou_threshold: float = 0.45
@@ -135,6 +136,7 @@ def get_settings() -> Settings:
         local_videos_dir=_path_env("SMARTTRAFFIC_LOCAL_VIDEOS_DIR", LOCAL_VIDEOS_DIR, "LOCAL_VIDEOS_DIR"),
         local_models_dir=_path_env("SMARTTRAFFIC_LOCAL_MODELS_DIR", LOCAL_MODELS_DIR, "LOCAL_MODELS_DIR"),
         database_url=_env("SMARTTRAFFIC_DATABASE_URL", "sqlite:///./smarttraffic.db"),
+        auth_mode=_env("SMARTTRAFFIC_AUTH_MODE", "permissive").strip().lower(),
         yolo_model_path=os.environ.get("YOLO_MODEL_PATH", "local_models/best.pt"),
         yolo_conf_threshold=_float_env("YOLO_CONF_THRESHOLD", 0.25, "YOLO_CONFIDENCE_THRESHOLD"),
         yolo_iou_threshold=_float_env("YOLO_IOU_THRESHOLD", 0.45),

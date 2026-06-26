@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.audit import audit_log
+from app.core.identity import Actor, get_actor, require_permission
 from app.db.session import get_db
 from app.schemas.event_rule import EventRuleCreate, EventRuleResponse, EventRuleUpdate
 from app.services.event_rule_service import EventRuleDbService
@@ -13,10 +15,18 @@ router = APIRouter(prefix="/api/event-rules", tags=["event-rules"])
 def create_event_rule(
     payload: EventRuleCreate,
     db: Session = Depends(get_db),
+    actor: Actor = Depends(get_actor),
 ) -> EventRuleResponse:
+    require_permission(actor, "manage_config")
     try:
         rule = EventRuleDbService(db).create_rule(payload)
         db.commit()
+        audit_log(
+            "event_rule.create",
+            actor=actor,
+            resource_type="event_rule",
+            resource_id=rule["id"],
+        )
         return EventRuleResponse(**rule)
     except ValueError as exc:
         raise HTTPException(
@@ -61,10 +71,18 @@ def update_event_rule(
     rule_id: str,
     payload: EventRuleUpdate,
     db: Session = Depends(get_db),
+    actor: Actor = Depends(get_actor),
 ) -> EventRuleResponse:
+    require_permission(actor, "manage_config")
     try:
         rule = EventRuleDbService(db).update_rule(rule_id, payload)
         db.commit()
+        audit_log(
+            "event_rule.update",
+            actor=actor,
+            resource_type="event_rule",
+            resource_id=rule_id,
+        )
         return EventRuleResponse(**rule)
     except KeyError as exc:
         raise HTTPException(
@@ -82,10 +100,18 @@ def update_event_rule(
 def delete_event_rule(
     rule_id: str,
     db: Session = Depends(get_db),
+    actor: Actor = Depends(get_actor),
 ) -> dict[str, str | bool]:
+    require_permission(actor, "manage_config")
     try:
         EventRuleDbService(db).delete_rule(rule_id)
         db.commit()
+        audit_log(
+            "event_rule.delete",
+            actor=actor,
+            resource_type="event_rule",
+            resource_id=rule_id,
+        )
     except KeyError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

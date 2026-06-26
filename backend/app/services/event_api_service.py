@@ -84,15 +84,37 @@ class EventApiService:
         artifact["event_evidence"] = []
         return artifact
 
-    def update_status(self, event_id: str, status: str) -> dict[str, Any]:
+    def update_status(
+        self,
+        event_id: str,
+        status: str,
+        *,
+        actor: str | None = None,
+    ) -> dict[str, Any]:
         if status not in VALID_EVENT_STATUSES:
             raise ValueError(f"unsupported event status: {status}")
-        row = self.events.update_status(event_id, status)
+        existing = self.events.get(event_id)
+        if existing is None:
+            raise KeyError(event_id)
+        payload = dict(existing.payload or {})
+        if actor:
+            payload["audit"] = {
+                **dict(payload.get("audit") or {}),
+                "last_actor": actor,
+                "last_action": "event.status_update",
+            }
+        row = self.events.update(event_id, status=status, payload=payload)
         if row is None:
             raise KeyError(event_id)
         return _event_from_model(row)
 
-    def create_bad_case(self, event_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    def create_bad_case(
+        self,
+        event_id: str,
+        payload: dict[str, Any],
+        *,
+        actor: str | None = None,
+    ) -> dict[str, Any]:
         event = self.events.get(event_id)
         if event is None:
             raise KeyError(event_id)
@@ -105,7 +127,7 @@ class EventApiService:
             status=str(payload.get("status") or "open"),
             severity=event.severity,
             description=payload.get("description"),
-            tags=list(payload.get("tags") or []),
+            tags=_with_actor_tag(list(payload.get("tags") or []), actor),
             payload={
                 "video_id": event.video_id,
                 "track_id": event.track_id,
@@ -113,6 +135,7 @@ class EventApiService:
                 "expected_result": payload.get("expected_result") or "",
                 "actual_result": payload.get("actual_result") or "",
                 "source": "event_api",
+                "audit_actor": actor,
             },
         )
         return _bad_case_from_model(bad_case)
@@ -257,3 +280,12 @@ def _bad_case_from_model(row: Any) -> dict[str, Any]:
         "status": row.status,
         "source": payload.get("source"),
     }
+
+
+def _with_actor_tag(tags: list[str], actor: str | None) -> list[str]:
+    if not actor:
+        return tags
+    tag = f"actor:{actor}"
+    if tag not in tags:
+        tags.append(tag)
+    return tags

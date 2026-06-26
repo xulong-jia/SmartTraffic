@@ -4,7 +4,7 @@
 
 SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engine final features、Event Engine final rule behavior、artifact-compatible Alert Center、Review Center、Bad Case Center、Evaluation Center、Report Center CSV / JSON / PDF export、report bundle metadata、DB-backed ZoneEditor UI、Video Overlay UI、EventTimeline、ReviewDrawer UX、Evaluation result display、FastAPI、SQLAlchemy / Alembic DB foundation、DB-backed Video / Processing / Core Result / Config / Event / Alert / Review / Bad Case / Evaluation foundation、React 和本地结果产物管理的智慧交通视频分析项目。
 
-当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 已完成 artifact-based / in-memory MVP，Stage 6 Traffic Analysis Center 已达到 artifact-based MVP 口径。Stage 6 已包含 run manifest、artifact index、metadata、traffic statistics artifacts、Analysis Runs list / summary API、前端真实 run 数据接入和 visual artifacts pipeline。Stage 7B 已补充 Review artifact 与状态模型底座，Stage 7C 已实现 artifact-backed Review API MVP，Stage 7D 已实现 Review Center 前端 MVP，Stage 7E 已实现 Analysis / Alert 到 Review Center 的最小定位联动，Stage 7F 已完成 Review Center artifact-backed MVP 收尾审计口径。Stage 8B 已补充 Bad Case artifact/schema/service 后端底座，Stage 8CD 已实现 Bad Case API 与 Bad Case Center 前端 MVP，Stage 8EFG 已实现 Evaluation artifacts、MVP metrics、API、CLI 与 Evaluation Center 前端 MVP，Stage 8HI 已实现 failed case -> Bad Case 联动、Bad Case regression summary MVP 和 Stage 8 收尾审计。Full Stage 1AB 已完成 DB Foundation，Full Stage 1CD 已新增 core SQLAlchemy models、业务表 migration、repository 层和 CRUD tests，Full Stage 1EF 已新增 artifact discovery、artifact -> DB import helper、DB 优先 read-through helper 和轻量 CLI。Full Stage 2AB 已将 Video API、Processing Task 生命周期和 `traffic_analysis_runs` 处理索引接入 DB；Full Stage 2CD 已将 detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic Analysis Center result index 接入 DB-first / artifact fallback。Full Stage 3AB 已将 Zone / Event Rule CRUD 接入 DB，补齐 top-level Event APIs，并提供 run-level config snapshot 基础能力。Full Stage 3CD 已补充 Event / EventEvidence / RuleExecution DB lifecycle、Alert Center DB 状态流转、Review DB workflow / `review_comments` audit trail，以及规则重跑请求的 `processing_tasks.mode=rule_rerun` 记录。Full Stage 3EF 已补齐 Bad Case DB workflow、Evaluation Dataset / Result DB workflow、failed cases 持久化方案和 failed-case -> Bad Case DB 转换。Full Stage 4AB 已补齐 Trajectory final features 与六类 Event Rule final behavior。Full Stage 4CD 已补齐 Detection / Tracking benchmark algorithm foundation：VOC-style single-IoU detection AP/mAP、precision/recall/per-class AP，以及 lightweight deterministic tracking IDF1/MOTA/ID switch/track lost，并可写入 DB-backed `evaluation_results`。Full Stage 4E 已补齐 Bad Case deterministic replay / rule replay regression evaluation、per-case results、pass/fail/fixed/reopened counts 和 `apply_updates=false` 默认策略。Full Stage 5AB 已将 ZoneEditor 接入 DB-backed zones / event_rules API，支持 polygon、direction line、counting line 绘制、保存和回显。Full Stage 5CD 已将 Analysis Detail 接入 Video Overlay UI 与 EventTimeline，支持 detection / track / zone / event 叠加展示和点击事件跳转。Full Stage 5E 已补齐 ReviewDrawer / Review workflow UX、Review -> Bad Case、rule rerun request、Evaluation selector / result cards / detail JSON / failed cases / regression summary UI 和边界标签。Full Stage 7AB 已新增 Cameras DB API、stream_url masking、mock / local file / RTSP no-connect realtime preview、recent frames / events / alerts cache、`processing_tasks.mode=realtime_process` 记录和 Camera Center 最小前端接入。当前实现仍不代表完整视频级 pipeline rerun、COCO official mAP、TrackEval official metrics、生产级实时监控或工业级完整评测平台已完成。
+当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 已完成 artifact-based / in-memory MVP，Stage 6 Traffic Analysis Center 已达到 artifact-based MVP 口径。Stage 6 已包含 run manifest、artifact index、metadata、traffic statistics artifacts、Analysis Runs list / summary API、前端真实 run 数据接入和 visual artifacts pipeline。Stage 7B 已补充 Review artifact 与状态模型底座，Stage 7C 已实现 artifact-backed Review API MVP，Stage 7D 已实现 Review Center 前端 MVP，Stage 7E 已实现 Analysis / Alert 到 Review Center 的最小定位联动，Stage 7F 已完成 Review Center artifact-backed MVP 收尾审计口径。Stage 8B 已补充 Bad Case artifact/schema/service 后端底座，Stage 8CD 已实现 Bad Case API 与 Bad Case Center 前端 MVP，Stage 8EFG 已实现 Evaluation artifacts、MVP metrics、API、CLI 与 Evaluation Center 前端 MVP，Stage 8HI 已实现 failed case -> Bad Case 联动、Bad Case regression summary MVP 和 Stage 8 收尾审计。Full Stage 1AB 已完成 DB Foundation，Full Stage 1CD 已新增 core SQLAlchemy models、业务表 migration、repository 层和 CRUD tests，Full Stage 1EF 已新增 artifact discovery、artifact -> DB import helper、DB 优先 read-through helper 和轻量 CLI。Full Stage 2AB 已将 Video API、Processing Task 生命周期和 `traffic_analysis_runs` 处理索引接入 DB；Full Stage 2CD 已将 detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic Analysis Center result index 接入 DB-first / artifact fallback。Full Stage 3AB 已将 Zone / Event Rule CRUD 接入 DB，补齐 top-level Event APIs，并提供 run-level config snapshot 基础能力。Full Stage 3CD 已补充 Event / EventEvidence / RuleExecution DB lifecycle、Alert Center DB 状态流转、Review DB workflow / `review_comments` audit trail，以及规则重跑请求的 `processing_tasks.mode=rule_rerun` 记录。Full Stage 3EF 已补齐 Bad Case DB workflow、Evaluation Dataset / Result DB workflow、failed cases 持久化方案和 failed-case -> Bad Case DB 转换。Full Stage 4AB 已补齐 Trajectory final features 与六类 Event Rule final behavior。Full Stage 4CD 已补齐 Detection / Tracking benchmark algorithm foundation：VOC-style single-IoU detection AP/mAP、precision/recall/per-class AP，以及 lightweight deterministic tracking IDF1/MOTA/ID switch/track lost，并可写入 DB-backed `evaluation_results`。Full Stage 4E 已补齐 Bad Case deterministic replay / rule replay regression evaluation、per-case results、pass/fail/fixed/reopened counts 和 `apply_updates=false` 默认策略。Full Stage 5AB 已将 ZoneEditor 接入 DB-backed zones / event_rules API，支持 polygon、direction line、counting line 绘制、保存和回显。Full Stage 5CD 已将 Analysis Detail 接入 Video Overlay UI 与 EventTimeline，支持 detection / track / zone / event 叠加展示和点击事件跳转。Full Stage 5E 已补齐 ReviewDrawer / Review workflow UX、Review -> Bad Case、rule rerun request、Evaluation selector / result cards / detail JSON / failed cases / regression summary UI 和边界标签。Full Stage 7AB 已新增 Cameras DB API、stream_url masking、mock / local file / RTSP no-connect realtime preview、recent frames / events / alerts cache、`processing_tasks.mode=realtime_process` 记录和 Camera Center 最小前端接入。Full Stage 7CD 已新增 minimal actor identity、permissive / strict permission guard、audit actor propagation、标准化 API error response、request id logging、DB readiness check 和 security / ops 文档。当前实现仍不代表完整视频级 pipeline rerun、COCO official mAP、TrackEval official metrics、production IAM、生产级实时监控或工业级完整评测平台已完成。
 
 当前 Alert Center 支持 `new`、`acknowledged`、`resolved` 和 `ignored` 基础状态流转；DB alert rows 优先持久化这些状态，旧 artifact-only runs 仍 fallback 写回本地 alert artifacts。
 
@@ -156,6 +156,7 @@ cp .env.example .env
 - `SMARTTRAFFIC_LOCAL_MODELS_DIR`
 - `SMARTTRAFFIC_EVALS_DIR`
 - `SMARTTRAFFIC_DATABASE_URL`
+- `SMARTTRAFFIC_AUTH_MODE`
 - `YOLO_MODEL_PATH`
 - `YOLO_DRY_RUN`
 - `YOLO_CONF_THRESHOLD`
@@ -191,7 +192,7 @@ Full Stage 7AB 新增 DB-backed Cameras API 和轻量 realtime preview：
 
 支持 `upload`、`rtsp`、`file` 和 `mock` 四类 camera source。普通 API response 不返回完整 `stream_url`，只返回 `masked_stream_url`。Realtime preview 支持 mock stream 和 local file smoke-level preview；RTSP 只验证配置和 recent metadata，不连接真实 RTSP。Start 会创建 `processing_tasks.mode=realtime_process` 记录，recent frames / events / alerts 保存在小型内存 cache 中，不生成视频、图片或 result artifacts。
 
-该能力不是 production realtime monitoring，不包含认证、权限、多用户 audit、复杂队列、Celery、生产部署或安全加固。真实 RTSP 地址、视频文件、运行输出、数据库文件和 secret 不应提交到 Git。Security / permissions / production hardening 留给 Full Stage 7CD。
+该能力不是 production realtime monitoring，不包含复杂队列、Celery 或生产部署。Full Stage 7CD 提供 minimal actor headers、permissive / strict auth mode、关键写操作 actor audit、标准错误响应和 DB readiness check；这仍不是 production IAM。真实 RTSP 地址、视频文件、运行输出、数据库文件和 secret 不应提交到 Git。Full final release hardening 留给 Full Stage 8。
 
 ## 当前阶段完成内容
 
@@ -238,6 +239,7 @@ Full Stage 7AB 新增 DB-backed Cameras API 和轻量 realtime preview：
 - Full Stage 6AB Report Center completed: `/api/reports` run list / summary / CSV export / JSON export, frontend Report Center page, CSV download, JSON preview/download, and non-enforcement boundary notice
 - Full Stage 6CD Report Export completed: PDF export, report bundle metadata, keyframe summary, annotated video artifact reference, frontend PDF download, and bundle / visual artifact summary display
 - Full Stage 7AB Camera / Realtime Preview completed: Cameras DB API, stream_url masking, enable / disable, mock / file / RTSP no-connect preview, recent frames / events / alerts cache, processing_task linkage, Camera Center page, tests, and docs
+- Full Stage 7CD Security / Audit / Ops completed: minimal actor identity, permissive / strict permission guard, audit actor propagation, standardized API error shape, request id logging, DB readiness check, env/docs hardening, tests, and `v0.9.7-realtime-security-preview` preparation
 - Zone / Event Rule configuration API MVP, Event Evidence / Rule Execution artifacts, and Alert Center status workflow implemented
 
 `v0.5.0-event-alert-minimal` is an earlier minimal Event / Alert milestone tag and should not be moved to newer commits.
@@ -563,7 +565,7 @@ The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert mile
 
 - frontend flow statistics chart
 - frontend congestion chart
-- production realtime monitoring, realtime reporting, and permission-protected workflows; planned for Full Stage 7CD / Full Stage 8
+- production realtime monitoring, realtime reporting, and production IAM workflows; planned for Full Stage 8
 - complete Dashboard visualization workbench
 - Evaluation Center 工业级完整评测；当前 detection mAP 是 VOC-style single-IoU，不是 COCO official mAP，tracking IDF1 / MOTA 是 lightweight deterministic implementation，不是 TrackEval official implementation
 - 完整视频级 Bad Case rerun pipeline；当前 regression 是 deterministic replay / rule replay
@@ -572,7 +574,7 @@ The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert mile
 - 正式实时流处理；当前仅有 Full Stage 7AB realtime preview metadata，生产实时流留给后续阶段
 - 真实世界速度标定；当前 `speed_px_per_second` 不是 m/s 或 km/h
 - law-enforcement-grade violation judgement
-- 生产级权限、安全和监控；Security / Audit / Ops 留给 Full Stage 7CD
+- 生产级权限、安全、集中审计和监控；留给 Full Stage 8
 - Full final release hardening 和 `v1.0.0`；留给 Full Stage 8
 
 项目输出不作为正式交通执法依据。
@@ -607,6 +609,7 @@ The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert mile
 - `docs/architecture.md`
 - `docs/database_schema.md`
 - `docs/realtime.md`
+- `docs/security_ops.md`
 - `docs/event_rules.md`
 - `docs/zone_config.md`
 

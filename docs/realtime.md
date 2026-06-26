@@ -1,7 +1,9 @@
 # Realtime Preview
 
 Full Stage 7AB provides a lightweight realtime preview layer for local
-validation. It is not production realtime monitoring.
+validation. Full Stage 7CD adds minimal actor / permission / audit / ops
+hardening around that preview. This is not production realtime monitoring or
+production IAM.
 
 ## Scope
 
@@ -24,7 +26,8 @@ Not implemented in Stage 7AB:
 - Production realtime streaming.
 - Real RTSP decoding or reconnect handling.
 - Celery, distributed queues, or long-running worker orchestration.
-- Authentication, permissions, multi-user audit, or ops hardening.
+- Production authentication, enterprise permissions, multi-user audit storage,
+  or deployment hardening.
 - Persistent frame image outputs or realtime video artifacts.
 
 ## APIs
@@ -56,6 +59,8 @@ URLs and local placeholder files. Do not commit real RTSP URLs, credentials,
 local video paths, `.db` / `.sqlite` files, generated realtime outputs, model
 weights, or cache/build directories.
 
-Security, permissions, audit trails, production error handling, observability,
-deployment hardening, and the `v0.9.7-realtime-security-preview` tag
-preparation are left for Full Stage 7CD.
+Full Stage 7CD adds `X-SmartTraffic-Actor` / `X-SmartTraffic-Role`, permissive
+and strict auth modes, critical action audit propagation, standard error
+responses, request id logging, and `GET /health/ready`. Production IAM,
+central audit storage, HTTPS, secret management, monitoring, and deployment
+hardening remain outside this preview milestone.

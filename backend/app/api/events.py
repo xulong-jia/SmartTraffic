@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.core.audit import audit_log, append_actor_tag
+from app.core.identity import Actor, get_actor, require_permission
 from app.db.session import get_db
 from app.services.event_api_service import EventApiService
 
@@ -64,10 +66,23 @@ def update_event_status(
     event_id: str,
     payload: EventStatusUpdate,
     db: Session = Depends(get_db),
+    actor: Actor = Depends(get_actor),
 ) -> dict[str, Any]:
+    require_permission(actor, "review")
     try:
-        event = EventApiService(db).update_status(event_id, payload.status)
+        event = EventApiService(db).update_status(
+            event_id,
+            payload.status,
+            actor=actor.name,
+        )
         db.commit()
+        audit_log(
+            "event.status_update",
+            actor=actor,
+            resource_type="event",
+            resource_id=event_id,
+            details={"status": payload.status},
+        )
         return event
     except KeyError as exc:
         raise HTTPException(
@@ -86,13 +101,24 @@ def create_event_bad_case(
     event_id: str,
     payload: EventBadCaseCreate,
     db: Session = Depends(get_db),
+    actor: Actor = Depends(get_actor),
 ) -> dict[str, Any]:
+    require_permission(actor, "manage_bad_case")
     try:
+        values = payload.model_dump(exclude_none=True)
+        values["tags"] = append_actor_tag(values.get("tags"), actor)
         bad_case = EventApiService(db).create_bad_case(
             event_id,
-            payload.model_dump(exclude_none=True),
+            values,
+            actor=actor.name,
         )
         db.commit()
+        audit_log(
+            "event.bad_case_create",
+            actor=actor,
+            resource_type="event",
+            resource_id=event_id,
+        )
         return bad_case
     except KeyError as exc:
         raise HTTPException(

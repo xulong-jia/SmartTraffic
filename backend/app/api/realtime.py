@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.core.audit import audit_log
+from app.core.identity import Actor, get_actor, require_permission
 from app.services.realtime_service import realtime_preview_service
 
 
@@ -14,10 +16,18 @@ router = APIRouter(prefix="/api/realtime", tags=["realtime"])
 def start_realtime_preview(
     camera_id: str,
     db: Session = Depends(get_db),
+    actor: Actor = Depends(get_actor),
 ) -> dict[str, Any]:
+    require_permission(actor, "operate")
     try:
-        response = realtime_preview_service.start(camera_id, db)
+        response = realtime_preview_service.start(camera_id, db, actor=actor)
         db.commit()
+        audit_log(
+            "realtime.start",
+            actor=actor,
+            resource_type="camera",
+            resource_id=camera_id,
+        )
         return response
     except KeyError as exc:
         raise HTTPException(
@@ -35,10 +45,18 @@ def start_realtime_preview(
 def stop_realtime_preview(
     camera_id: str,
     db: Session = Depends(get_db),
+    actor: Actor = Depends(get_actor),
 ) -> dict[str, Any]:
+    require_permission(actor, "operate")
     try:
-        response = realtime_preview_service.stop(camera_id, db)
+        response = realtime_preview_service.stop(camera_id, db, actor=actor)
         db.commit()
+        audit_log(
+            "realtime.stop",
+            actor=actor,
+            resource_type="camera",
+            resource_id=camera_id,
+        )
         return response
     except KeyError as exc:
         raise HTTPException(

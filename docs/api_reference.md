@@ -3,7 +3,35 @@
 ## Health
 
 - `GET /health`
+- `GET /health/ready`
 - `GET /api/config`
+
+`GET /health` is a lightweight liveness check. `GET /health/ready` also checks
+database connectivity and returns `checks.database=ok` or HTTP `503` with
+`checks.database=error`.
+
+## Security / Actor Preview
+
+Full Stage 7CD adds minimal local identity and permission behavior. This is not
+production IAM.
+
+Headers:
+
+- `X-SmartTraffic-Actor`
+- `X-SmartTraffic-Role`
+
+Roles are `viewer`, `operator`, `reviewer`, and `admin`. Missing headers default
+to `actor=system` and `role=operator` for local compatibility.
+`SMARTTRAFFIC_AUTH_MODE=permissive` records actor context without blocking
+requests. `SMARTTRAFFIC_AUTH_MODE=strict` enforces the preview permission guard:
+
+- `viewer`: read-only.
+- `operator`: realtime start / stop, alert actions, and local config writes.
+- `reviewer`: review actions and Bad Case actions.
+- `admin`: all preview permissions.
+
+Error responses include `error_code`, `message`, `detail`, and `request_id`.
+Obvious secret / RTSP / password content is redacted from error messages.
 
 ## Videos
 
@@ -994,8 +1022,9 @@ Preview behavior:
 
 Recent frames / events / alerts are kept in a bounded in-memory cache
 (`max_items=20` per camera). Disabled cameras return `400` on start. Missing
-cameras return `404`. Security, permissions, audit trails, operational
-hardening, and production realtime streaming remain for Full Stage 7CD and
+cameras return `404`. Full Stage 7CD adds minimal actor / permission / audit /
+readiness hardening around these endpoints. Production IAM, central audit
+storage, operations monitoring, and production realtime streaming remain for
 Full Stage 8.
 
 ## Not Implemented From The Manual Yet
@@ -1007,7 +1036,7 @@ implemented as working behavior yet:
 - database-backed aggregate statistics APIs
 - complete video-level Bad Case rerun pipeline
 - COCO official mAP / TrackEval official evaluation
-- Production Realtime / Security remain for Full Stage 7CD and Full Stage 8
+- Production Realtime / Security remain for Full Stage 8
 - Full final release hardening and `v1.0.0` remain for Full Stage 8
 
 ## Placeholders For Later Phases

@@ -6,6 +6,12 @@ class HealthResponse(BaseModel):
     service: str
 
 
+class ReadinessResponse(BaseModel):
+    status: str
+    service: str
+    checks: dict[str, str]
+
+
 class ConfigResponse(BaseModel):
     project_name: str
     yolo_model_path: str

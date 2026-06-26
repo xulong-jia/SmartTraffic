@@ -21,11 +21,16 @@ from app.api import (
     zones,
 )
 from app.core.config import get_settings
+from app.core.errors import register_exception_handlers
+from app.core.logging import configure_logging, install_request_logging
 
 
 def create_app() -> FastAPI:
+    configure_logging()
     settings = get_settings()
     app = FastAPI(title=settings.project_name)
+    install_request_logging(app)
+    register_exception_handlers(app)
 
     app.add_middleware(
         CORSMiddleware,
