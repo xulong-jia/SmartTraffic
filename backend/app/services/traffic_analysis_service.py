@@ -10,7 +10,10 @@ from app.analysis.artifact_writer import TrafficArtifactWriter
 from app.models import TrafficAnalysisRun
 from app.repositories import (
     DetectionRepository,
+    EventEvidenceRepository,
+    EventRepository,
     FlowCountRepository,
+    RuleExecutionRepository,
     TrackRepository,
     TrafficAnalysisRunRepository,
     TrajectoryPointRepository,
@@ -415,7 +418,57 @@ class TrafficAnalysisService:
         limit: int = 100,
         event_type: str | None = None,
         track_id: int | None = None,
+        db: Session | None = None,
     ) -> dict[str, Any]:
+        if db is not None:
+            rows = EventRepository(db).list(run_id=run_id, type=event_type)
+            rows = [
+                row
+                for row in rows
+                if track_id is None or str(row.track_id) == str(track_id)
+            ]
+            if rows:
+                limited = rows[:limit] if limit > 0 else []
+                event_ids = {row.id for row in limited}
+                evidence_rows = [
+                    row
+                    for row in EventEvidenceRepository(db).list(run_id=run_id)
+                    if row.event_id in event_ids
+                ]
+                rule_rows = [
+                    row
+                    for row in RuleExecutionRepository(db).list(run_id=run_id)
+                    if _rule_execution_matches_event_ids(row, event_ids)
+                ]
+                event_evidence = [
+                    _db_event_evidence_payload(row) for row in evidence_rows
+                ]
+                rule_executions = [
+                    _db_rule_execution_payload(row) for row in rule_rows
+                ]
+                if limit > 0 and (not event_evidence or not rule_executions):
+                    artifact_related = self._read_run_event_related_artifacts(
+                        run_id=run_id,
+                        limit=limit,
+                        event_ids=event_ids,
+                        track_id=track_id,
+                    )
+                    if not event_evidence:
+                        event_evidence = artifact_related["event_evidence"]
+                    if not rule_executions:
+                        rule_executions = artifact_related["rule_executions"]
+                return {
+                    "run_id": run_id,
+                    "video_id": _first_row_video_id(rows),
+                    "summary": _db_result_summary(db, run_id),
+                    "events": [_db_event_payload(row) for row in limited],
+                    "event_evidence": event_evidence,
+                    "rule_executions": rule_executions,
+                    "limit": limit,
+                    "event_type": event_type,
+                    "track_id": track_id,
+                    "source": "db",
+                }
         run_dir = self._run_dir(run_id)
         metadata = self._load_metadata(run_id)
         summary_path = run_dir / "event_summary.json"
@@ -485,6 +538,45 @@ class TrafficAnalysisService:
             "limit": limit,
             "event_type": event_type,
             "track_id": track_id,
+            "source": "artifact",
+        }
+
+    def _read_run_event_related_artifacts(
+        self,
+        *,
+        run_id: str,
+        limit: int,
+        event_ids: set[str] | None,
+        track_id: int | None,
+    ) -> dict[str, list[dict[str, Any]]]:
+        run_dir = self._run_dir(run_id)
+        evidence_path = run_dir / "event_evidence.jsonl"
+        executions_path = run_dir / "rule_executions.jsonl"
+        event_evidence: list[dict[str, Any]] = []
+        rule_executions: list[dict[str, Any]] = []
+        if evidence_path.is_file():
+            event_evidence = _read_jsonl_limited(
+                evidence_path,
+                limit=limit,
+                predicate=lambda item: _event_related_record_matches(
+                    item,
+                    event_ids=event_ids,
+                    track_id=track_id,
+                ),
+            )
+        if executions_path.is_file():
+            rule_executions = _read_jsonl_limited(
+                executions_path,
+                limit=limit,
+                predicate=lambda item: _event_related_record_matches(
+                    item,
+                    event_ids=event_ids,
+                    track_id=track_id,
+                ),
+            )
+        return {
+            "event_evidence": event_evidence,
+            "rule_executions": rule_executions,
         }
 
     def read_run_alerts(
@@ -740,6 +832,78 @@ def _model_dict(row: Any) -> dict[str, Any]:
     if "metadata_json" in payload:
         payload["metadata"] = payload.pop("metadata_json")
     return payload
+
+
+def _db_event_payload(row: Any) -> dict[str, Any]:
+    payload = dict(row.payload or {})
+    payload.update(
+        {
+            "id": row.id,
+            "event_id": row.id,
+            "run_id": row.run_id,
+            "video_id": row.video_id,
+            "rule_id": row.rule_id,
+            "zone_id": row.zone_id,
+            "event_type": row.type,
+            "type": row.type,
+            "status": row.status,
+            "severity": row.severity,
+            "frame_index": row.frame_index,
+            "timestamp_ms": row.timestamp_ms,
+            "track_id": _track_id_value(row.track_id),
+            "source": "db",
+        }
+    )
+    return payload
+
+
+def _db_event_evidence_payload(row: Any) -> dict[str, Any]:
+    return {
+        "id": row.id,
+        "evidence_id": row.id,
+        "event_id": row.event_id,
+        "run_id": row.run_id,
+        "evidence_type": row.evidence_type,
+        "payload": row.payload or {},
+        "artifact_path": row.artifact_path,
+        "source": "db",
+    }
+
+
+def _db_rule_execution_payload(row: Any) -> dict[str, Any]:
+    return {
+        "id": row.id,
+        "run_id": row.run_id,
+        "rule_id": row.rule_id,
+        "status": row.status,
+        "matched_count": row.matched_count,
+        "details": row.details or {},
+        "error_message": row.error_message,
+        "created_at": _to_iso(row.created_at),
+        "source": "db",
+    }
+
+
+def _rule_execution_matches_event_ids(row: Any, event_ids: set[str]) -> bool:
+    if not event_ids:
+        return False
+    details = row.details or {}
+    event_id = details.get("event_id")
+    if event_id is not None:
+        return str(event_id) in event_ids
+    event_id_values = details.get("event_ids")
+    if isinstance(event_id_values, list):
+        return bool({str(value) for value in event_id_values} & event_ids)
+    return True
+
+
+def _track_id_value(value: Any) -> Any:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return value
 
 
 def _jsonable_value(value: Any) -> Any:

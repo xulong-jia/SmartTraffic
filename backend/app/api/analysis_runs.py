@@ -153,6 +153,7 @@ def get_analysis_run_events(
     limit: int = Query(default=100, ge=0, le=1000),
     event_type: str | None = Query(default=None),
     track_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
 ) -> dict:
     try:
         return traffic_analysis_service.read_run_events(
@@ -160,6 +161,7 @@ def get_analysis_run_events(
             limit=limit,
             event_type=event_type,
             track_id=track_id,
+            db=db,
         )
     except KeyError as exc:
         raise HTTPException(

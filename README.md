@@ -2,11 +2,11 @@
 
 ## 项目简介
 
-SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engine、Event Engine、artifact-based Alert Center MVP、artifact-backed Review Center MVP、Stage 8CD Bad Case API/UI MVP、Stage 8HI Bad Case / Evaluation 联动与回归 MVP、FastAPI、SQLAlchemy / Alembic DB foundation、DB-backed Video / Processing / Core Result / Config / Event API foundation、React 和本地结果产物管理的智慧交通视频分析项目。
+SmartTraffic 是一个基于 YOLOv8、DeepSORT / mock tracker、Trajectory Engine、Event Engine、artifact-compatible Alert Center、Review Center、Stage 8CD Bad Case API/UI MVP、Stage 8HI Bad Case / Evaluation 联动与回归 MVP、FastAPI、SQLAlchemy / Alembic DB foundation、DB-backed Video / Processing / Core Result / Config / Event / Alert / Review foundation、React 和本地结果产物管理的智慧交通视频分析项目。
 
-当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 已完成 artifact-based / in-memory MVP，Stage 6 Traffic Analysis Center 已达到 artifact-based MVP 口径。Stage 6 已包含 run manifest、artifact index、metadata、traffic statistics artifacts、Analysis Runs list / summary API、前端真实 run 数据接入和 visual artifacts pipeline。Stage 7B 已补充 Review artifact 与状态模型底座，Stage 7C 已实现 artifact-backed Review API MVP，Stage 7D 已实现 Review Center 前端 MVP，Stage 7E 已实现 Analysis / Alert 到 Review Center 的最小定位联动，Stage 7F 已完成 Review Center artifact-backed MVP 收尾审计口径。Stage 8B 已补充 Bad Case artifact/schema/service 后端底座，Stage 8CD 已实现 Bad Case API 与 Bad Case Center 前端 MVP，Stage 8EFG 已实现 Evaluation artifacts、MVP metrics、API、CLI 与 Evaluation Center 前端 MVP，Stage 8HI 已实现 failed case -> Bad Case 联动、Bad Case regression summary MVP 和 Stage 8 收尾审计。Full Stage 1AB 已完成 DB Foundation，Full Stage 1CD 已新增 core SQLAlchemy models、业务表 migration、repository 层和 CRUD tests，Full Stage 1EF 已新增 artifact discovery、artifact -> DB import helper、DB 优先 read-through helper 和轻量 CLI。Full Stage 2AB 已将 Video API、Processing Task 生命周期和 `traffic_analysis_runs` 处理索引接入 DB；Full Stage 2CD 已将 detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic Analysis Center result index 接入 DB-first / artifact fallback。Full Stage 3AB 已将 Zone / Event Rule CRUD 接入 DB，补齐 top-level Event APIs，并提供 run-level config snapshot 基础能力。完整 Event / Alert lifecycle、Review、Bad Case 和 Evaluation 工作流仍保持 artifact-backed MVP 或后续迁移边界。当前实现仍不是数据库最终版，也不代表真实 rerun-based regression 或工业级 mAP / IDF1 / MOTA 已完成。
+当前项目严格按 `docs/SmartTraffic_最终版项目开发执行手册.md` 对齐：Stage 1-4 已完成，Stage 5 已完成 artifact-based / in-memory MVP，Stage 6 Traffic Analysis Center 已达到 artifact-based MVP 口径。Stage 6 已包含 run manifest、artifact index、metadata、traffic statistics artifacts、Analysis Runs list / summary API、前端真实 run 数据接入和 visual artifacts pipeline。Stage 7B 已补充 Review artifact 与状态模型底座，Stage 7C 已实现 artifact-backed Review API MVP，Stage 7D 已实现 Review Center 前端 MVP，Stage 7E 已实现 Analysis / Alert 到 Review Center 的最小定位联动，Stage 7F 已完成 Review Center artifact-backed MVP 收尾审计口径。Stage 8B 已补充 Bad Case artifact/schema/service 后端底座，Stage 8CD 已实现 Bad Case API 与 Bad Case Center 前端 MVP，Stage 8EFG 已实现 Evaluation artifacts、MVP metrics、API、CLI 与 Evaluation Center 前端 MVP，Stage 8HI 已实现 failed case -> Bad Case 联动、Bad Case regression summary MVP 和 Stage 8 收尾审计。Full Stage 1AB 已完成 DB Foundation，Full Stage 1CD 已新增 core SQLAlchemy models、业务表 migration、repository 层和 CRUD tests，Full Stage 1EF 已新增 artifact discovery、artifact -> DB import helper、DB 优先 read-through helper 和轻量 CLI。Full Stage 2AB 已将 Video API、Processing Task 生命周期和 `traffic_analysis_runs` 处理索引接入 DB；Full Stage 2CD 已将 detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic Analysis Center result index 接入 DB-first / artifact fallback。Full Stage 3AB 已将 Zone / Event Rule CRUD 接入 DB，补齐 top-level Event APIs，并提供 run-level config snapshot 基础能力。Full Stage 3CD 已补充 Event / EventEvidence / RuleExecution DB lifecycle、Alert Center DB 状态流转、Review DB workflow / `review_comments` audit trail，以及规则重跑请求的 `processing_tasks.mode=rule_rerun` 记录。Bad Case 和 Evaluation 完整工作流仍保持 artifact-backed MVP 或后续迁移边界。当前实现仍不是数据库最终版，也不代表真实 rerun-based regression 或工业级 mAP / IDF1 / MOTA 已完成。
 
-当前 Alert Center MVP 支持 `new`、`acknowledged`、`resolved` 和 `ignored` 基础状态流转；这些状态写回本地 alert artifacts，不是数据库持久化生命周期管理。
+当前 Alert Center 支持 `new`、`acknowledged`、`resolved` 和 `ignored` 基础状态流转；DB alert rows 优先持久化这些状态，旧 artifact-only runs 仍 fallback 写回本地 alert artifacts。
 
 当前可验证的本地 artifacts 生成和查询闭环是：
 
@@ -42,7 +42,7 @@ video upload
 - Tracking: DeepSORT adapter / deterministic mock tracker
 - Trajectory: geometry utilities, trajectory features, TrajectoryEngine
 - Events: EventEngine callback framework, event contracts, event artifacts
-- Alerts: artifact-based Alert Center MVP, alert generation, query and status transitions
+- Alerts: artifact-compatible Alert Center, alert generation, DB-first query and status transitions
 - Frontend: React, TypeScript, Vite
 - Test: pytest, Vite build
 - Storage: local videos and artifact-compatible run results, Git-ignored; Video / Processing / Core Result DB foundation defaults to local SQLite
@@ -165,7 +165,7 @@ cp .env.example .env
 
 默认 dry-run 可以不依赖真实模型权重。真实 YOLOv8 推理需要配置本地模型权重路径，例如 `local_models/best.pt`。`.env` 不进入 Git。
 
-默认数据库 URL 是 `sqlite:///./smarttraffic.db`，用于本地 DB foundation、schema/repository、artifact compatibility、Full Stage 2 core flow 和 Full Stage 3AB config / event API 验证。Full Stage 1CD migration 已创建核心业务表，并提供 repository CRUD foundation；Full Stage 1EF 提供旧 artifacts 的结构化导入和 DB 优先 / artifact fallback read-through helper。Full Stage 2AB 后，`POST /api/videos/upload`、`GET /api/videos`、`GET /api/videos/{video_id}`、`GET /api/videos/{video_id}/status`、`GET /api/videos/{video_id}/frames` 和 `POST /api/videos/{video_id}/process` 的 video / task / run-index 部分已 DB-backed。Full Stage 2CD 后，processing 生成 artifacts 后会把 detections、tracks、trajectory_points、flow_counts、zone_statistics 导入 DB；`/api/analysis-runs` 相关核心查询优先读 DB，DB 缺失时 fallback 到本地 artifacts。Full Stage 3AB 后，`/api/zones`、`/api/event-rules` 和 top-level `/api/events` 已提供 DB-first 行为，processing-created run 会记录当前 zone/rule config snapshot。告警完整生命周期、复核、坏例和评测完整 workflow 尚未切换到 DB-backed service。
+默认数据库 URL 是 `sqlite:///./smarttraffic.db`，用于本地 DB foundation、schema/repository、artifact compatibility、Full Stage 2 core flow 和 Full Stage 3 config / event / alert / review API 验证。Full Stage 1CD migration 已创建核心业务表，并提供 repository CRUD foundation；Full Stage 1EF 提供旧 artifacts 的结构化导入和 DB 优先 / artifact fallback read-through helper。Full Stage 2AB 后，`POST /api/videos/upload`、`GET /api/videos`、`GET /api/videos/{video_id}`、`GET /api/videos/{video_id}/status`、`GET /api/videos/{video_id}/frames` 和 `POST /api/videos/{video_id}/process` 的 video / task / run-index 部分已 DB-backed。Full Stage 2CD 后，processing 生成 artifacts 后会把 detections、tracks、trajectory_points、flow_counts、zone_statistics 导入 DB；`/api/analysis-runs` 相关核心查询优先读 DB，DB 缺失时 fallback 到本地 artifacts。Full Stage 3AB 后，`/api/zones`、`/api/event-rules` 和 top-level `/api/events` 已提供 DB-first 行为，processing-created run 会记录当前 zone/rule config snapshot。Full Stage 3CD 后，`/api/analysis-runs/{run_id}/events` 可优先读取 DB events / evidence / rule executions，`/api/alerts` 状态流转优先写 DB，`/api/review` 对 DB events 写入 `review_comments` audit trail，并可创建 `rule_rerun` processing task request。坏例和评测完整 workflow 尚未切换到 DB-backed service。
 
 结构化 artifact 可通过 dry-run CLI 预览导入计划：
 
@@ -215,6 +215,7 @@ python3 scripts/import_artifacts_to_db.py --run-id <run_id> --result-dir results
 - Full Stage 2AB Video / Processing DB-backed foundation completed: video upload/list/detail/status/frames, processing task lifecycle, and multiple run indexes per video
 - Full Stage 2CD Result Persistence completed: detections, tracks, trajectory_points, flow_counts, zone_statistics, and Traffic Analysis Center DB-first index with artifact fallback
 - Full Stage 3AB Config / Event API DB flow completed: zones, event_rules, version fields, run-level config snapshot, top-level Event APIs, Event status update, and Event -> Bad Case minimal DB linkage
+- Full Stage 3CD Event / Alert / Review DB lifecycle completed: event evidence, rule executions, alert status transitions, review audit comments, false-negative DB records, and rule rerun request tasks
 - Zone / Event Rule configuration API MVP, Event Evidence / Rule Execution artifacts, and Alert Center status workflow implemented
 
 `v0.5.0-event-alert-minimal` is an earlier minimal Event / Alert milestone tag and should not be moved to newer commits.
@@ -490,7 +491,7 @@ bddcd93 feat: add congestion rule
 - `generate_alerts`
 - `record_not_matched`
 
-当前 process API 在 `mode=detection_tracking_trajectory` 下会自动生成 event / traffic statistics / alert artifacts，并通过 `GET /api/analysis-runs/{run_id}/events`、`GET /api/analysis-runs/{run_id}/flow-counts`、`GET /api/analysis-runs/{run_id}/zone-statistics` 与 `GET /api/analysis-runs/{run_id}/alerts` 查询。process task 状态、进度、开始/结束时间、错误信息和 run 索引会写入 DB；Full Stage 2CD 后，detection / tracking / trajectory / flow count / zone statistic 核心结构化结果会同步持久化到 DB，Analysis Runs 核心查询优先读 DB，缺失时 fallback artifacts。Full Stage 3AB 后，Zone / Event Rule CRUD 已 DB-backed，run summary 会保存 config snapshot，top-level `/api/events` 支持 DB-first list/detail/status update 和最小 Event -> Bad Case DB linkage。完整 Event / Alert 生命周期、Review DB audit trail、Bad Case / Evaluation 完整 DB workflow 仍留给后续 Full Stage 3CD / 3EF。
+当前 process API 在 `mode=detection_tracking_trajectory` 下会自动生成 event / traffic statistics / alert artifacts，并通过 `GET /api/analysis-runs/{run_id}/events`、`GET /api/analysis-runs/{run_id}/flow-counts`、`GET /api/analysis-runs/{run_id}/zone-statistics` 与 `GET /api/analysis-runs/{run_id}/alerts` 查询。process task 状态、进度、开始/结束时间、错误信息和 run 索引会写入 DB；Full Stage 2CD 后，detection / tracking / trajectory / flow count / zone statistic 核心结构化结果会同步持久化到 DB，Analysis Runs 核心查询优先读 DB，缺失时 fallback artifacts。Full Stage 3AB 后，Zone / Event Rule CRUD 已 DB-backed，run summary 会保存 config snapshot，top-level `/api/events` 支持 DB-first list/detail/status update 和最小 Event -> Bad Case DB linkage。Full Stage 3CD 后，Event / Alert lifecycle 和 Review DB audit trail 已接入 DB-first / artifact fallback；Bad Case / Evaluation 完整 DB workflow 仍留给后续 Full Stage 3EF。
 
 ## 结果产物
 
@@ -543,8 +544,7 @@ The `v0.5.0-event-alert-minimal` tag marks an earlier minimal Event / Alert mile
 - complete Dashboard visualization workbench
 - Evaluation Center 工业级完整评测；当前只有 Stage 8 artifact-backed MVP metrics
 - 真实 rerun-based Bad Case regression pipeline
-- 数据库持久化 Alert 状态和完整 Event / Alert lifecycle
-- production-grade DB aggregate analytics and Alert lifecycle workflow
+- production-grade DB aggregate analytics and complete Alert operations workflow
 - complex video overlay editor
 - video overlay
 - 正式实时流处理

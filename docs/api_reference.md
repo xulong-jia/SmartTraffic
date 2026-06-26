@@ -93,13 +93,14 @@ processing flow creates a DB run.
 Manual alignment note:
 
 - Stage 5 is implemented as an artifact-based / in-memory MVP.
-- Event, traffic statistics, and alert endpoints documented below are
-  artifact-based MVP endpoints.
+- Event and alert artifacts remain available for legacy run directories.
 - Detection, tracking, trajectory, flow count, and zone statistic reads are
   DB-first with artifact fallback.
 - Full Stage 3AB makes Zone / Event Rule CRUD and top-level Event APIs
-  DB-backed. Full Event / Alert lifecycle, Review audit trail, and complete Bad
-  Case / Evaluation workflows are still later-stage work.
+  DB-backed.
+- Full Stage 3CD makes EventEvidence / RuleExecution lifecycle, Alert Center
+  status transitions, and Review audit trail DB-first with artifact fallback.
+  Complete Bad Case / Evaluation workflows are still later-stage work.
 
 ## Zone / Event Rule Config
 
@@ -138,8 +139,9 @@ Supported `event_type` values:
 
 These endpoints form the Traffic Analysis Center result API surface. Full
 Stage 2CD makes the run index and core result reads DB-first while preserving
-artifact fallback. Event / Alert lifecycle, Review Center, Bad Case Center, and
-Evaluation Center are still not final DB-backed workflows.
+artifact fallback. Full Stage 3CD adds DB-first Event / Alert / Review lifecycle
+reads and writes. Bad Case Center and Evaluation Center are still not final
+DB-backed workflows.
 
 - `GET /api/analysis-runs`
 - `GET /api/analysis-runs/{run_id}`
@@ -362,9 +364,11 @@ Behavior:
 
 `GET /api/analysis-runs/{run_id}/events`
 
-This endpoint is an artifact-based run event query. It reads `events.jsonl`,
+This endpoint is a DB-first run event query. When DB event rows exist for the
+run, it reads `events`, `event_evidence`, and `rule_executions` and returns
+`source=db`. When DB rows are unavailable, it falls back to `events.jsonl`,
 `event_evidence.jsonl`, `rule_executions.jsonl`, and `event_summary.json` from a
-local run directory. It remains available for artifact-backed run detail views.
+local run directory.
 
 Full Stage 3AB also provides top-level `/api/events` DB-first APIs. When DB rows
 are unavailable and `run_id` is supplied, the top-level list/detail APIs can
@@ -377,11 +381,11 @@ Top-level Event APIs:
 - `PATCH /api/events/{event_id}/status`
 - `POST /api/events/{event_id}/bad-case`
 
-`PATCH /api/events/{event_id}/status` updates the DB event status only. It does
-not create a full Review audit trail; that remains Full Stage 3CD. `POST
-/api/events/{event_id}/bad-case` creates a minimal DB bad-case record linked to
-the event, run, video, and track. Complete Bad Case workflow remains Full Stage
-3EF.
+`PATCH /api/events/{event_id}/status` updates the DB event status only. Review
+Center actions under `/api/review` write the `review_comments` DB audit trail.
+`POST /api/events/{event_id}/bad-case` creates a minimal DB bad-case record
+linked to the event, run, video, and track. Complete Bad Case workflow remains
+Full Stage 3EF.
 
 Query parameters:
 
@@ -401,7 +405,8 @@ Response shape:
   "rule_executions": [],
   "limit": 100,
   "event_type": null,
-  "track_id": null
+  "track_id": null,
+  "source": "db"
 }
 ```
 
@@ -545,8 +550,9 @@ Behavior:
 
 `GET /api/analysis-runs/{run_id}/alerts`
 
-This endpoint is an artifact-based run alert query. The standalone Alert Center
-MVP endpoints are listed below.
+This endpoint remains an artifact-compatible run alert query for run artifacts.
+The standalone Alert Center endpoints below are DB-first for DB alert rows and
+fallback to artifact alerts for legacy runs.
 
 Query parameters:
 
@@ -617,8 +623,8 @@ Sets `status=acknowledged`, writes `acknowledged_by`, and writes
 
 `PATCH /api/alerts/{alert_id}/ignore` sets `status=ignored`.
 
-These endpoints update the current artifact-backed MVP storage. They are not a
-database-backed workflow engine.
+These endpoints update DB alert rows when a matching DB alert exists. If no DB
+alert is found, they fallback to the current artifact-backed MVP storage.
 
 ## Review API
 
@@ -627,9 +633,9 @@ Review Center MVP that consumes these endpoints for run filters, event
 list/detail, confirm, false-positive, ignore, resolve, comments, and
 false-negative creation. Stage 7E adds frontend URL navigation into Review
 Center from Analysis Detail and Alert Center. Stage 7F audits this as the
-Review Center artifact-backed MVP boundary. The API reads Stage 6 event, alert,
-and visual artifacts, then writes Stage 7B review artifacts. It is not a
-database-backed final review workflow.
+Review Center artifact-backed MVP boundary. Full Stage 3CD adds DB-first Review
+workflow behavior for DB events: actions update `events.status`, append
+`review_comments` audit rows, and preserve artifact fallback for legacy runs.
 
 Per-run review artifact files used by these APIs:
 
@@ -653,6 +659,8 @@ Implemented endpoints:
 - `POST /api/review/comments`
 - `GET /api/review/comments?run_id=&event_id=&limit=50&offset=0`
 - `POST /api/review/false-negatives`
+- `POST /api/review/events/false-negative`
+- `POST /api/review/events/{event_id}/rerun-rule`
 
 `GET /api/review/events` requires `run_id`; this avoids ambiguous global
 `event_id` lookup across local artifact directories. Missing event artifacts for
@@ -700,15 +708,26 @@ Review action request body:
 ```
 
 Action responses include the current review status, the appended review record,
-and the current event review state. Review actions do not overwrite
-`events.jsonl`.
+and the current event review state. For DB events, actions update
+`events.status` and append `review_comments`. For artifact-only runs, actions
+do not overwrite `events.jsonl`.
 
 `POST /api/review/comments` appends a comment-only review record. It preserves
 the current status and increments `comment_count`.
 
-`POST /api/review/false-negatives` writes `false_negative_events.jsonl`, appends
-an `add_false_negative` review comment, and updates `event_review_state.json`.
-It does not create a Bad Case and does not feed Evaluation Center.
+`POST /api/review/false-negatives` writes DB false-negative event/review rows
+when the run exists in DB, otherwise it writes `false_negative_events.jsonl`,
+appends an `add_false_negative` review comment, and updates
+`event_review_state.json`. `POST /api/review/events/false-negative` is the DB
+workflow endpoint and returns the created `event_id`.
+
+`POST /api/review/events/{event_id}/rerun-rule` records a request as a
+`processing_tasks` row with `mode=rule_rerun` and parameters containing
+`event_id`, `run_id`, `rule_id`, `requested_by`, and `reason`. It does not run
+the rule engine or mutate result artifacts.
+
+False-negative and rerun endpoints do not create Bad Cases and do not feed
+Evaluation Center.
 
 HTTP behavior:
 
