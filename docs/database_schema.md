@@ -2,17 +2,20 @@
 
 This document describes the target database schema from
 `docs/SmartTraffic_最终版项目开发执行手册.md`. The current project implementation
-is still primarily local-artifact based and does not yet implement the full
-database / repository / migration layer.
+has a DB foundation, but remains primarily local-artifact based and does not
+yet implement the full business database / repository layer.
 
-本文是目标数据库设计，不代表当前仓库已经实现完整数据库层。
+本文是目标数据库设计，不代表当前仓库已经实现完整业务数据库层。
 
 Current implementation notes:
 
+- Full Stage 1AB has connected SQLAlchemy Declarative Base, engine/session
+  dependency, Alembic baseline migration, and `SMARTTRAFFIC_DATABASE_URL`.
+- The default local database URL is `sqlite:///./smarttraffic.db`.
 - Videos and analysis runs may have local metadata or in-memory registry
   representation.
-- Full SQLAlchemy models, repositories, migrations, and database-backed query
-  services are not complete.
+- Business SQLAlchemy models, repositories, migrations that create domain
+  tables, and database-backed query services are not complete.
 - `event_rules` and `zones` currently have artifact-based / in-memory MVP
   configuration APIs, not database-backed persistence.
 - `review_comments`, `bad_cases`, `evaluation_datasets`, and
@@ -44,4 +47,6 @@ The schema target from the execution manual remains:
 - `evaluation_results`
 - `model_runs`
 
-Database migrations should be introduced when phase one moves from skeleton APIs to persisted state.
+The current Alembic baseline is intentionally empty. Business table migrations
+should be introduced when Full Stage 1CD moves the skeleton APIs toward
+persisted state.
