@@ -65,8 +65,10 @@ class ZoneService:
         self,
         *,
         video_id: str | None = None,
+        camera_id: str | None = None,
         zones: list[dict[str, Any]] | None = None,
     ) -> list[dict[str, Any]]:
+        del camera_id
         source_zones = (
             [dict(zone) for zone in zones]
             if zones is not None
@@ -159,12 +161,13 @@ class ZoneDbService:
         self,
         *,
         video_id: str | None = None,
+        camera_id: str | None = None,
         zones: list[dict[str, Any]] | None = None,
     ) -> list[dict[str, Any]]:
         source_zones = (
             [dict(zone) for zone in zones]
             if zones is not None
-            else self.list_zones(video_id=video_id, enabled=True)
+            else self.list_zones(video_id=video_id, camera_id=camera_id, enabled=True)
         )
         return [_to_event_engine_zone(zone) for zone in source_zones]
 

@@ -501,6 +501,10 @@ def _normalize_polygon(value: Any) -> list[list[float]] | None:
 def _normalize_line(value: Any) -> list[list[float]] | None:
     if value is None or isinstance(value, str | bytes):
         return None
+    if isinstance(value, Mapping):
+        if value.get("enabled", True) is False:
+            return None
+        value = [value.get("start_point"), value.get("end_point")]
     if not isinstance(value, Sequence) or len(value) != 2:
         return None
     start, end = value

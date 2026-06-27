@@ -46,6 +46,36 @@ class EmptyTracker:
         return {"dry_run": True, "available": True, "empty": True}
 
 
+class CrossingLineTracker:
+    def update(
+        self,
+        frame: Any,
+        detections: list[dict[str, Any]],
+        frame_index: int,
+        timestamp_ms: int | None = None,
+    ) -> dict[str, Any]:
+        del frame, detections
+        y1 = 0.0 if frame_index == 0 else 8.0
+        return {
+            "frame_index": frame_index,
+            "timestamp_ms": timestamp_ms,
+            "tracks": [
+                {
+                    "track_id": 7,
+                    "class_id": 2,
+                    "class_name": "car",
+                    "confidence": 0.9,
+                    "bbox": [4.0, y1, 6.0, y1 + 2.0],
+                    "center": [5.0, y1 + 1.0],
+                    "state": "confirmed",
+                }
+            ],
+        }
+
+    def get_tracker_info(self) -> dict[str, Any]:
+        return {"dry_run": True, "available": True, "scripted": True}
+
+
 def test_trajectory_service_dry_run_pipeline(tmp_path: Path) -> None:
     video_path = _make_video(tmp_path / "road.mp4", frame_count=4)
     service = TrajectoryService(
@@ -79,6 +109,55 @@ def test_trajectory_service_dry_run_pipeline(tmp_path: Path) -> None:
         "trajectory_summary.json",
     ]:
         assert (run_dir / artifact_name).is_file()
+
+
+def test_trajectory_service_passes_zones_to_engine(tmp_path: Path) -> None:
+    video_path = _make_video(tmp_path / "road.mp4", frame_count=2)
+    service = TrajectoryService(
+        detector=MovingCarDetector(),
+        tracker=CrossingLineTracker(),
+        results_dir=tmp_path / "traffic_analysis",
+    )
+
+    service.run_trajectory(
+        video_id="video_001",
+        video_path=video_path,
+        run_id="run_stage4_zones",
+        params=TrajectoryRunParams(
+            detector_dry_run=True,
+            tracker_dry_run=True,
+            frame_stride=1,
+            max_frames=2,
+            zones=[
+                {
+                    "zone_id": "lane_1",
+                    "zone_type": "vehicle_lane",
+                    "polygon": [[0, 0], [10, 0], [10, 12], [0, 12]],
+                    "counting_line": {
+                        "start_point": [0, 5],
+                        "end_point": [10, 5],
+                        "in_direction": "any",
+                    },
+                    "enabled": True,
+                }
+            ],
+        ),
+    )
+
+    jsonl_path = (
+        tmp_path
+        / "traffic_analysis"
+        / "run_stage4_zones"
+        / "trajectory_points.jsonl"
+    )
+    frames = [
+        json.loads(line)
+        for line in jsonl_path.read_text(encoding="utf-8").splitlines()
+    ]
+    point = frames[1]["trajectory_points"][0]
+    assert point["zone_history"][0]["zone_id"] == "lane_1"
+    assert point["lane_relation"]["current_vehicle_lane_ids"] == ["lane_1"]
+    assert point["line_crossings"][0]["line_id"] == "lane_1"
 
 
 def test_trajectory_service_returns_stable_contract(tmp_path: Path) -> None:

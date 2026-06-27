@@ -13,6 +13,8 @@ from app.services.event_rule_service import event_rule_service
 class EventRunParams:
     rules: list[dict[str, Any]] | None = None
     zones: list[dict[str, Any]] | None = None
+    source: dict[str, str] | None = None
+    config_snapshot: dict[str, Any] | None = None
     record_not_matched: bool = False
 
 
@@ -68,7 +70,7 @@ class EventService:
         writer.update_metadata(
             run_id,
             {
-                "event_config_snapshot": {
+                "event_config_snapshot": effective_params.config_snapshot or {
                     "source": config["source"],
                     "zones": config["zones"],
                     "event_rules": config["event_rules"],
@@ -122,7 +124,7 @@ def _resolve_event_config(
 ) -> dict[str, Any]:
     request_zones = params.zones
     request_rules = params.rules
-    source = {
+    source = params.source or {
         "zones": "request" if request_zones is not None else "service",
         "rules": "request" if request_rules is not None else "service",
     }

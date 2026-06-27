@@ -51,6 +51,8 @@ class TrajectoryRunParams:
     direction_window: int = 2
     dwell_speed_threshold: float = 1.0
     max_history_points: int | None = None
+    zones: list[dict[str, Any]] | None = None
+    config_snapshot: dict[str, Any] | None = None
 
 
 class TrajectoryService:
@@ -93,6 +95,7 @@ class TrajectoryService:
         detector_config = _build_detector_config(effective_params, settings)
         tracker_config = _build_tracker_config(effective_params, settings)
         trajectory_config = _build_trajectory_config(effective_params, metadata)
+        zones = [dict(zone) for zone in effective_params.zones or []]
         frame_stride = (
             effective_params.frame_stride
             if effective_params.frame_stride is not None
@@ -116,6 +119,7 @@ class TrajectoryService:
                 "detector_config": detector_config,
                 "tracker_config": tracker_config,
                 "trajectory_config": trajectory_config,
+                "processing_config_snapshot": effective_params.config_snapshot,
                 "started_at": started_at,
                 "finished_at": "",
                 "video_metadata": metadata,
@@ -156,7 +160,7 @@ class TrajectoryService:
                     frame_index=frame_index,
                     timestamp_ms=timestamp_ms,
                 )
-                trajectory_result = trajectory_engine.update(tracking_result)
+                trajectory_result = trajectory_engine.update(tracking_result, zones=zones)
                 detection_frame_results.append(detection_result)
                 tracking_frame_results.append(tracking_result)
                 trajectory_frame_results.append(trajectory_result)
@@ -198,6 +202,7 @@ class TrajectoryService:
                 if hasattr(tracker, "get_tracker_info")
                 else tracker_config,
                 "trajectory_config": trajectory_config,
+                "processing_config_snapshot": effective_params.config_snapshot,
                 "started_at": started_at,
                 "finished_at": finished_at,
                 "video_metadata": metadata,
@@ -229,6 +234,7 @@ class TrajectoryService:
             "avg_speed_px_per_second": trajectory_summary["avg_speed_px_per_second"],
             "result_dir": str(run_dir),
             "artifacts": artifacts,
+            "processing_config_snapshot": effective_params.config_snapshot,
         }
 
 

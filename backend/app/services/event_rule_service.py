@@ -90,17 +90,19 @@ class EventRuleService:
         self,
         *,
         video_id: str | None = None,
+        camera_id: str | None = None,
         zones: list[dict[str, Any]] | None = None,
         rules: list[dict[str, Any]] | None = None,
     ) -> dict[str, list[dict[str, Any]]]:
         event_zones = zone_service.build_event_engine_zones(
             video_id=video_id,
+            camera_id=camera_id,
             zones=zones,
         )
         source_rules = rules
         if source_rules is None:
             source_rules = self.list_rules(enabled=True)
-            if video_id is not None:
+            if video_id is not None or camera_id is not None:
                 source_rules = _filter_rules_for_zones(source_rules, event_zones)
         event_rules = self.build_event_engine_rules(
             rules=source_rules,
@@ -273,17 +275,19 @@ class EventRuleDbService:
         self,
         *,
         video_id: str | None = None,
+        camera_id: str | None = None,
         zones: list[dict[str, Any]] | None = None,
         rules: list[dict[str, Any]] | None = None,
     ) -> dict[str, list[dict[str, Any]]]:
         event_zones = self.zone_service.build_event_engine_zones(
             video_id=video_id,
+            camera_id=camera_id,
             zones=zones,
         )
         source_rules = rules
         if source_rules is None:
             source_rules = self.list_rules(enabled=True)
-            if video_id is not None:
+            if video_id is not None or camera_id is not None:
                 source_rules = _filter_rules_for_zones(source_rules, event_zones)
         event_rules = self.build_event_engine_rules(
             rules=source_rules,

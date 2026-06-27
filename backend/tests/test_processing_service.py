@@ -21,6 +21,7 @@ def test_process_pipeline_runs_event_rules_and_generates_alerts(
         "app.services.processing_service.TrajectoryService",
         _FakeTrajectoryService,
     )
+    _FakeTrajectoryService.last_params = None
     video_id = _upload_video(client, tmp_path)
 
     process_response = client.post(
@@ -58,6 +59,10 @@ def test_process_pipeline_runs_event_rules_and_generates_alerts(
     assert process_payload["status"] == "completed"
     assert process_payload["artifacts"]["events"] == "events.jsonl"
     assert process_payload["artifacts"]["alerts"] == "alerts.jsonl"
+    assert _FakeTrajectoryService.last_params.config_snapshot["source"] == {
+        "zones": "request",
+        "rules": "request",
+    }
 
     run_id = process_payload["run_id"]
     events_response = client.get(f"/api/analysis-runs/{run_id}/events")
@@ -78,7 +83,98 @@ def test_process_pipeline_runs_event_rules_and_generates_alerts(
     assert alerts_payload["alerts"][0]["status"] == "new"
 
 
+def test_process_pipeline_uses_db_config_by_default(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    client = _client_for_tmp_run(tmp_path, monkeypatch)
+    monkeypatch.setattr(
+        "app.services.processing_service.TrajectoryService",
+        _FakeTrajectoryService,
+    )
+    _FakeTrajectoryService.last_params = None
+    video_id = _upload_video(client, tmp_path)
+
+    zone_response = client.post(
+        "/api/zones",
+        json={
+            "id": "zone_db_danger",
+            "name": "DB danger zone",
+            "zone_type": "danger_zone",
+            "polygon": [[0, 0], [100, 0], [100, 100], [0, 100]],
+            "enabled": True,
+            "video_id": video_id,
+        },
+    )
+    assert zone_response.status_code == 201
+    rule_response = client.post(
+        "/api/event-rules",
+        json={
+            "id": "rule_db_danger",
+            "name": "DB danger intrusion",
+            "event_type": "danger_zone_intrusion",
+            "zone_id": "zone_db_danger",
+            "enabled": True,
+            "severity": "high",
+            "target_classes": ["car"],
+        },
+    )
+    assert rule_response.status_code == 201
+
+    process_response = client.post(
+        f"/api/videos/{video_id}/process",
+        json={"mode": "detection_tracking_trajectory"},
+    )
+
+    assert process_response.status_code == 200
+    process_payload = process_response.json()
+    events_response = client.get(
+        f"/api/analysis-runs/{process_payload['run_id']}/events"
+    )
+    assert events_response.status_code == 200
+    assert events_response.json()["summary"]["total_events"] == 1
+    assert _FakeTrajectoryService.last_params.zones[0]["zone_id"] == "zone_db_danger"
+    assert _FakeTrajectoryService.last_params.config_snapshot["source"] == {
+        "zones": "db",
+        "rules": "db",
+    }
+    assert _FakeTrajectoryService.last_params.config_snapshot["event_rules"][0][
+        "rule_id"
+    ] == "rule_db_danger"
+
+
+def test_process_pipeline_without_config_keeps_empty_fallback(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    client = _client_for_tmp_run(tmp_path, monkeypatch)
+    monkeypatch.setattr(
+        "app.services.processing_service.TrajectoryService",
+        _FakeTrajectoryService,
+    )
+    _FakeTrajectoryService.last_params = None
+    video_id = _upload_video(client, tmp_path)
+
+    process_response = client.post(
+        f"/api/videos/{video_id}/process",
+        json={"mode": "detection_tracking_trajectory"},
+    )
+
+    assert process_response.status_code == 200
+    run_id = process_response.json()["run_id"]
+    events_response = client.get(f"/api/analysis-runs/{run_id}/events")
+    assert events_response.status_code == 200
+    assert events_response.json()["summary"]["total_events"] == 0
+    assert _FakeTrajectoryService.last_params.zones == []
+    assert _FakeTrajectoryService.last_params.config_snapshot["source"] == {
+        "zones": "db",
+        "rules": "db",
+    }
+
+
 class _FakeTrajectoryService:
+    last_params: Any = None
+
     def __init__(self, results_dir: str | Path | None = None, **_: Any) -> None:
         self.results_dir = Path(results_dir) if results_dir is not None else None
 
@@ -90,7 +186,7 @@ class _FakeTrajectoryService:
         run_id: str | None = None,
         params: Any = None,
     ) -> dict[str, Any]:
-        del params
+        type(self).last_params = params
         effective_run_id = run_id or "run_fake_stage4"
         writer = TrafficArtifactWriter(self.results_dir or Path(video_path).parent)
         writer.create_run_directory(
@@ -100,6 +196,7 @@ class _FakeTrajectoryService:
                 "input_video": Path(video_path).name,
                 "stage": "stage_4_trajectory_engine",
                 "next_stage": "stage_5_event_engine_not_started",
+                "processing_config_snapshot": getattr(params, "config_snapshot", None),
                 "artifacts": {
                     "detections_csv": "detections.csv",
                     "detections_jsonl": "detections.jsonl",
@@ -210,6 +307,7 @@ class _FakeTrajectoryService:
             "max_track_length": 1,
             "avg_speed_px_per_second": None,
             "result_dir": str((self.results_dir or Path(video_path).parent) / effective_run_id),
+            "processing_config_snapshot": getattr(params, "config_snapshot", None),
             "artifacts": {
                 **metadata["artifacts"],
                 "detection_summary": detection_artifacts["detection_summary"].name,

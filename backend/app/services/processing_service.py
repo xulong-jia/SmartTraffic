@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -20,6 +20,7 @@ from app.services.config_snapshot_service import (
 from app.services.alert_service import AlertService
 from app.services.detection_service import DetectionRunParams, DetectionService
 from app.services.event_service import EventRunParams, EventService
+from app.services.event_rule_service import EventRuleDbService, event_rule_service
 from app.services.traffic_analysis_service import traffic_analysis_service
 from app.services.trajectory_service import TrajectoryRunParams, TrajectoryService
 from app.services.tracking_service import TrackingRunParams, TrackingService
@@ -136,8 +137,23 @@ class ProcessingService:
                     params=tracking_params,
                 )
             else:
+                effective_event_alert_params = (
+                    event_alert_params or EventAlertProcessParams()
+                )
+                resolved_config = _resolve_processing_config(
+                    db=db,
+                    video=video,
+                    params=effective_event_alert_params,
+                )
                 trajectory_params = (
-                    params if isinstance(params, TrajectoryRunParams) else None
+                    params
+                    if isinstance(params, TrajectoryRunParams)
+                    else TrajectoryRunParams()
+                )
+                trajectory_params = replace(
+                    trajectory_params,
+                    zones=resolved_config["zones"],
+                    config_snapshot=resolved_config["snapshot"],
                 )
                 result = TrajectoryService(
                     results_dir=settings.results_dir
@@ -151,7 +167,8 @@ class ProcessingService:
                     run_id=run_id,
                     video_id=video["id"],
                     result=result,
-                    params=event_alert_params,
+                    params=effective_event_alert_params,
+                    resolved_config=resolved_config,
                 )
             task.update(
                 {
@@ -193,7 +210,8 @@ class ProcessingService:
                 attach_config_snapshot_to_run(
                     db,
                     run_id,
-                    build_config_snapshot(db, video_id=video["id"]),
+                    result.get("processing_config_snapshot")
+                    or build_config_snapshot(db, video_id=video["id"]),
                 )
                 import_run_artifacts_to_db(
                     db,
@@ -441,24 +459,85 @@ def _artifact_subset(artifacts: Any, *keys: str) -> dict[str, Any]:
     return {key: artifacts[key] for key in keys if key in artifacts}
 
 
+def _resolve_processing_config(
+    *,
+    db: Session | None,
+    video: dict[str, Any],
+    params: EventAlertProcessParams,
+) -> dict[str, Any]:
+    video_id = str(video["id"])
+    camera_id = video.get("camera_id")
+    request_zones = params.zones
+    request_rules = params.event_rules
+    source = {
+        "zones": _config_source(request_zones, db),
+        "rules": _config_source(request_rules, db),
+    }
+
+    if db is None:
+        config = event_rule_service.build_event_engine_config(
+            video_id=video_id,
+            camera_id=camera_id,
+            zones=request_zones,
+            rules=request_rules,
+        )
+    else:
+        config = EventRuleDbService(db).build_event_engine_config(
+            video_id=video_id,
+            camera_id=camera_id,
+            zones=request_zones,
+            rules=request_rules,
+        )
+
+    snapshot = {
+        "schema_version": "stage4.processing_config.v1",
+        "video_id": video_id,
+        "camera_id": camera_id,
+        "source": source,
+        "zones": config["zones"],
+        "event_rules": config["event_rules"],
+    }
+    return {
+        "zones": config["zones"],
+        "event_rules": config["event_rules"],
+        "source": source,
+        "snapshot": snapshot,
+    }
+
+
+def _config_source(value: Any, db: Session | None) -> str:
+    if value is not None:
+        return "request"
+    return "db" if db is not None else "service"
+
+
 def _run_event_alert_pipeline(
     *,
     run_id: str,
     video_id: str,
     result: dict[str, Any],
     params: EventAlertProcessParams | None,
+    resolved_config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     effective_params = params or EventAlertProcessParams()
     if not effective_params.run_events:
         return result
 
+    config = resolved_config or {
+        "zones": effective_params.zones,
+        "event_rules": effective_params.event_rules,
+        "source": None,
+        "snapshot": None,
+    }
     merged_result = dict(result)
     event_result = EventService().run_events(
         run_id=run_id,
         video_id=video_id,
         params=EventRunParams(
-            rules=effective_params.event_rules,
-            zones=effective_params.zones,
+            rules=config["event_rules"],
+            zones=config["zones"],
+            source=config["source"],
+            config_snapshot=config["snapshot"],
             record_not_matched=effective_params.record_not_matched,
         ),
     )

@@ -121,6 +121,8 @@ traffic event analysis platform.
   dwell time.
 - Zone history, lane relation, track length, last-seen state, and line crossing
   features.
+- DB-backed zones and event rules participate in the default processing
+  pipeline when configured.
 - Zone membership can use center or bottom-center point strategies.
 - Pixel speed is not real-world speed in m/s or km/h.
 
