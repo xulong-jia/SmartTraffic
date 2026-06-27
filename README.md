@@ -436,5 +436,5 @@ and placeholder `.gitkeep` files needed for reproducibility.
 
 SmartTraffic is frozen at `v1.0.3-final-hardening`.
 
-Development is closed. Future work should focus on documentation screenshots,
-demo materials, resume bullets, and interview explanation.
+The repository is in final delivery state. No additional feature development is
+planned for the current project scope.
