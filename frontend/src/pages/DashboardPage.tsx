@@ -128,7 +128,11 @@ export default function DashboardPage({ onOpenAnalysisRun }: DashboardPageProps)
                       <tr key={getRunId(run)}>
                         <td>{getRunId(run)}</td>
                         <td>{formatValue(run.video_id)}</td>
-                        <td>{formatStatusValue(run.status)}</td>
+                        <td>
+                          <span className={`status-pill status-${statusClassName(run.status)}`}>
+                            {formatStatusValue(run.status)}
+                          </span>
+                        </td>
                         <td>{formatValue(run.updated_at || run.finished_at)}</td>
                         <td>{formatValue(run.source)}</td>
                         {DASHBOARD_ARTIFACT_KEYS.map((artifactKey) => (
@@ -196,4 +200,9 @@ function formatStatusValue(value: AnalysisRunSummary[keyof AnalysisRunSummary]):
     pending: "待处理 pending"
   };
   return labels[raw] ?? raw;
+}
+
+function statusClassName(value: AnalysisRunSummary[keyof AnalysisRunSummary]): string {
+  const raw = formatValue(value).toLowerCase().replace(/[^a-z0-9_-]+/g, "_");
+  return raw || "unknown";
 }

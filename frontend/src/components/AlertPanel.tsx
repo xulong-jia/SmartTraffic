@@ -76,8 +76,16 @@ export default function AlertPanel({
                   key={row.id}
                   onClick={() => onSelectAlert?.(alert)}
                 >
-                  <td>{row.status}</td>
-                  <td>{row.level}</td>
+                  <td>
+                    <span className={`status-pill status-${statusClassName(alert.status)}`}>
+                      {row.status}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`status-pill status-${statusClassName(alert.level)}`}>
+                      {row.level}
+                    </span>
+                  </td>
                   <td>{row.title}</td>
                   <td>{row.eventId}</td>
                   <td>{row.trackId}</td>
@@ -155,4 +163,11 @@ function openReviewLink(
   event.preventDefault();
   event.stopPropagation();
   onOpenReview(href);
+}
+
+function statusClassName(value: string | number | undefined | null): string {
+  const raw = String(value ?? "unknown")
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "_");
+  return raw || "unknown";
 }

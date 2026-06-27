@@ -115,16 +115,25 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
             accept="video/mp4,video/avi,video/quicktime,video/x-matroska,video/webm"
             onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
           />
-          <button disabled={!selectedFile || loading} type="button" onClick={handleUpload}>
+          <button
+            className="primary-action"
+            disabled={!selectedFile || loading}
+            type="button"
+            onClick={handleUpload}
+          >
             上传 Upload
           </button>
         </div>
-        {error ? <p>{error}</p> : null}
+        {error ? <p className="alert-box error">{error}</p> : null}
         {lastRun ? (
           <div className="summary-strip">
             <h3>最新处理任务 Latest Process Run</h3>
             <p>
-              <strong>{lastRun.run_id}</strong> · {lastRun.status} ·{" "}
+              <strong>{lastRun.run_id}</strong> ·{" "}
+              <span className={`status-pill status-${statusClassName(lastRun.status)}`}>
+                {lastRun.status}
+              </span>{" "}
+              ·{" "}
               {lastRun.total_frames_processed} 帧 frames · {lastRun.total_detections} 检测 detections ·{" "}
               {lastRun.total_tracks ?? 0} 轨迹 tracks
               {lastRun.total_trajectory_points !== undefined &&
@@ -241,11 +250,20 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
               {videos.map((video) => (
                 <tr key={video.id}>
                   <td>{video.filename}</td>
-                  <td>{video.status}</td>
+                  <td>
+                    <span className={`status-pill status-${statusClassName(video.status)}`}>
+                      {video.status}
+                    </span>
+                  </td>
                   <td>{video.fps}</td>
                   <td>{video.total_frames}</td>
                   <td>
-                    <button disabled={loading} type="button" onClick={() => handleProcess(video.id)}>
+                    <button
+                      className="primary-action"
+                      disabled={loading}
+                      type="button"
+                      onClick={() => handleProcess(video.id)}
+                    >
                       开始分析 Process
                     </button>
                   </td>
@@ -263,7 +281,7 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
           </button>
         </div>
         {runsLoading ? <p className="muted">正在加载分析任务...</p> : null}
-        {runsError ? <p>{runsError}</p> : null}
+        {runsError ? <p className="alert-box error">{runsError}</p> : null}
         {recentRuns.length === 0 && !runsLoading ? (
           <p className="muted">暂无分析任务。请先在视频中心上传视频并启动分析。</p>
         ) : (
@@ -283,7 +301,11 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
                 <tr key={getRunId(run)}>
                   <td>{getRunId(run)}</td>
                   <td>{formatValue(run.video_id)}</td>
-                  <td>{formatValue(run.status)}</td>
+                  <td>
+                    <span className={`status-pill status-${statusClassName(run.status)}`}>
+                      {formatValue(run.status)}
+                    </span>
+                  </td>
                   <td>{formatValue(run.updated_at || run.finished_at)}</td>
                   <td>{formatValue(run.source)}</td>
                   {onOpenAnalysisRun ? (
@@ -321,4 +343,9 @@ function formatValue(value: string | number | undefined | null): string {
     return "-";
   }
   return String(value);
+}
+
+function statusClassName(value: string | number | undefined | null): string {
+  const raw = formatValue(value).toLowerCase().replace(/[^a-z0-9_-]+/g, "_");
+  return raw || "unknown";
 }
