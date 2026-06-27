@@ -78,6 +78,17 @@ directories 中，例如 `local_videos`、`local_models`、`results`、`evals/re
 
 不要把大视频、模型权重、结果文件、`.env`、本地数据库或缓存提交到 Git。
 
+### 真实 YOLOv8 推理怎么配置
+
+把模型文件放到项目根目录的 `local_models/yolov8n.pt`。Docker 容器内使用
+`/app/local_models/yolov8n.pt`，本地 `.env` 推荐配置：
+
+```env
+YOLO_MODEL_PATH=/app/local_models/yolov8n.pt
+YOLO_DRY_RUN=false
+DEEPSORT_DRY_RUN=true
+```
+
 ## 6. 项目边界
 
 - 这是 local validation prototype。

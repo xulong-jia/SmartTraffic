@@ -12,7 +12,7 @@ services:
       SMARTTRAFFIC_LOCAL_VIDEOS_DIR: /app/local_videos
       SMARTTRAFFIC_LOCAL_MODELS_DIR: /app/local_models
       SMARTTRAFFIC_EVALS_DIR: /app/evals
-      YOLO_MODEL_PATH: /app/local_models/best.pt
+      YOLO_MODEL_PATH: ${YOLO_MODEL_PATH:-/app/local_models/yolov8n.pt}
     ports:
       - "8000:8000"
     volumes:

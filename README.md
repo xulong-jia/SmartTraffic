@@ -213,6 +213,9 @@ Docker Compose is the local validation and demo delivery path. It starts the
 FastAPI backend at `http://localhost:8000`, the Vite frontend at
 `http://localhost:5173`, runs Alembic migrations at backend startup, and stores
 SQLite / artifact output in ignored local directories such as `results/`.
+For real local YOLOv8 detection, place `yolov8n.pt` in `local_models/` and set
+`YOLO_MODEL_PATH=/app/local_models/yolov8n.pt`, `YOLO_DRY_RUN=false`, and
+`DEEPSORT_DRY_RUN=true` in the local `.env`.
 
 ### One-click Start
 
