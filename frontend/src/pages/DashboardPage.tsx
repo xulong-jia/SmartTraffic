@@ -78,81 +78,88 @@ export default function DashboardPage({ onOpenAnalysisRun }: DashboardPageProps)
             <div className="grid content-grid">
               <section className="panel">
                 <h3>产物状态汇总 Artifact Status</h3>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>产物 Artifact</th>
-                      <th>可用 Available</th>
-                      <th>缺失 Missing</th>
-                      <th>计划中 Planned</th>
-                      <th>为空 Empty</th>
-                      <th>缺少来源 Missing source</th>
-                      <th>错误 Error</th>
-                      <th>其他 Other</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {DASHBOARD_ARTIFACT_KEYS.map((artifactKey) => (
-                      <tr key={artifactKey}>
-                        <td>{artifactKey}</td>
-                        <td>{formatCount(artifactCounts[artifactKey]?.available)}</td>
-                        <td>{formatCount(artifactCounts[artifactKey]?.missing)}</td>
-                        <td>{formatCount(artifactCounts[artifactKey]?.planned)}</td>
-                        <td>{formatCount(artifactCounts[artifactKey]?.empty)}</td>
-                        <td>{formatCount(artifactCounts[artifactKey]?.missing_source_video)}</td>
-                        <td>{formatCount(artifactCounts[artifactKey]?.error)}</td>
-                        <td>{formatOtherStatusCount(artifactCounts[artifactKey])}</td>
+                <div className="table-scroll">
+                  <table className="data-table dashboard-table">
+                    <thead>
+                      <tr>
+                        <th>Artifact</th>
+                        <th>Available</th>
+                        <th>Missing</th>
+                        <th>Planned</th>
+                        <th>Empty</th>
+                        <th>Missing source</th>
+                        <th>Error</th>
+                        <th>Other</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {DASHBOARD_ARTIFACT_KEYS.map((artifactKey) => (
+                        <tr key={artifactKey}>
+                          <td>{artifactLabel(artifactKey)}</td>
+                          <td>{formatCount(artifactCounts[artifactKey]?.available)}</td>
+                          <td>{formatCount(artifactCounts[artifactKey]?.missing)}</td>
+                          <td>{formatCount(artifactCounts[artifactKey]?.planned)}</td>
+                          <td>{formatCount(artifactCounts[artifactKey]?.empty)}</td>
+                          <td>{formatCount(artifactCounts[artifactKey]?.missing_source_video)}</td>
+                          <td>{formatCount(artifactCounts[artifactKey]?.error)}</td>
+                          <td>{formatOtherStatusCount(artifactCounts[artifactKey])}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </section>
               <section className="panel">
                 <h3>最近分析任务 Recent Analysis Runs</h3>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Run ID</th>
-                      <th>Video ID</th>
-                      <th>状态 Status</th>
-                      <th>更新时间 Updated</th>
-                      <th>来源 Source</th>
-                      {DASHBOARD_ARTIFACT_KEYS.map((artifactKey) => (
-                        <th key={artifactKey}>{artifactKey}</th>
-                      ))}
-                      {onOpenAnalysisRun ? <th>操作 Action</th> : null}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {overview.recentRuns.map((run) => (
-                      <tr key={getRunId(run)}>
-                        <td>{getRunId(run)}</td>
-                        <td>{formatValue(run.video_id)}</td>
-                        <td>
-                          <span className={`status-pill status-${statusClassName(run.status)}`}>
-                            {formatStatusValue(run.status)}
-                          </span>
-                        </td>
-                        <td>{formatValue(run.updated_at || run.finished_at)}</td>
-                        <td>{formatValue(run.source)}</td>
+                <div className="table-scroll">
+                  <table className="data-table dashboard-table">
+                    <thead>
+                      <tr>
+                        <th>Run</th>
+                        <th>Video</th>
+                        <th>Status</th>
+                        <th>Updated</th>
+                        <th>Source</th>
                         {DASHBOARD_ARTIFACT_KEYS.map((artifactKey) => (
-                          <td key={artifactKey}>
-                            <span className={`status-pill status-${getArtifactStatus(run, artifactKey)}`}>
-                              {getArtifactStatus(run, artifactKey)}
+                          <th key={artifactKey}>{artifactLabel(artifactKey)}</th>
+                        ))}
+                        {onOpenAnalysisRun ? <th>Action</th> : null}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {overview.recentRuns.map((run) => (
+                        <tr key={getRunId(run)}>
+                          <td className="cell-id">{getRunId(run)}</td>
+                          <td className="cell-id">{formatValue(run.video_id)}</td>
+                          <td>
+                            <span className={`status-pill status-${statusClassName(run.status)}`}>
+                              {formatStatusValue(run.status)}
                             </span>
                           </td>
-                        ))}
-                        {onOpenAnalysisRun ? (
-                          <td>
-                            <button type="button" onClick={() => onOpenAnalysisRun(getRunId(run))}>
-                              打开 Open
-                            </button>
-                          </td>
-                        ) : null}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          <td>{formatValue(run.updated_at || run.finished_at)}</td>
+                          <td>{formatValue(run.source)}</td>
+                          {DASHBOARD_ARTIFACT_KEYS.map((artifactKey) => {
+                            const status = getArtifactStatus(run, artifactKey);
+                            return (
+                              <td key={artifactKey}>
+                                <span className={`status-pill status-${status}`}>
+                                  {status}
+                                </span>
+                              </td>
+                            );
+                          })}
+                          {onOpenAnalysisRun ? (
+                            <td>
+                              <button type="button" onClick={() => onOpenAnalysisRun(getRunId(run))}>
+                                Open
+                              </button>
+                            </td>
+                          ) : null}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </section>
             </div>
           )}
@@ -205,4 +212,16 @@ function formatStatusValue(value: AnalysisRunSummary[keyof AnalysisRunSummary]):
 function statusClassName(value: AnalysisRunSummary[keyof AnalysisRunSummary]): string {
   const raw = formatValue(value).toLowerCase().replace(/[^a-z0-9_-]+/g, "_");
   return raw || "unknown";
+}
+
+function artifactLabel(value: string): string {
+  const labels: Record<string, string> = {
+    detections: "Detections",
+    tracks: "Tracks",
+    events: "Events",
+    alerts: "Alerts",
+    flow_counts: "Flow",
+    zone_statistics: "Zones"
+  };
+  return labels[value] ?? value;
 }

@@ -186,8 +186,8 @@ nav button.active {
 .workspace {
   width: 100%;
   max-width: 1440px;
-  margin-inline: auto;
-  padding: 32px;
+  margin: 0 auto 0 0;
+  padding: 28px 32px 32px;
 }
 
 .main-content,
@@ -401,12 +401,14 @@ table {
 }
 
 .table-scroll {
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: visible;
   width: 100%;
 }
 
 .data-table {
   width: 100%;
+  min-width: max-content;
 }
 
 th,
@@ -415,7 +417,7 @@ td {
   padding: 11px 12px;
   text-align: left;
   vertical-align: top;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 th {
@@ -428,6 +430,35 @@ th {
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+.data-table td {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.data-table td.wrap-cell {
+  white-space: normal;
+  min-width: 220px;
+}
+
+.cell-id {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}
+
+.dashboard-table th,
+.dashboard-table td {
+  height: 42px;
+}
+
+td button {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 12px;
 }
 
 tbody tr:hover {
@@ -446,7 +477,7 @@ th:first-child {
 button,
 .button {
   display: inline-flex;
-  min-height: 38px;
+  min-height: 36px;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(31, 111, 235, 0.32);
@@ -456,7 +487,7 @@ button,
   cursor: pointer;
   font-weight: 750;
   line-height: 1.2;
-  padding: 9px 13px;
+  padding: 8px 12px;
   box-shadow: var(--shadow-soft);
 }
 
@@ -607,9 +638,19 @@ button.button-danger:hover:not(:disabled),
 
 .metric-card,
 .metric-row .card {
+  display: flex;
+  min-height: 112px;
+  flex-direction: column;
+  justify-content: center;
   position: relative;
   overflow: hidden;
   padding: 16px;
+}
+
+.metric-card strong,
+.metric-row .card strong {
+  display: block;
+  margin-bottom: 4px;
 }
 
 .metric-row .card::before,
@@ -658,6 +699,7 @@ button.button-danger:hover:not(:disabled),
 .status-resolved,
 .status-fixed,
 .status-verified,
+.status-ready,
 .status-uploaded,
 .status-enabled,
 .status-success,
@@ -671,6 +713,8 @@ button.button-danger:hover:not(:disabled),
 .status-running,
 .status-active,
 .status-new,
+.status-pending,
+.status-processing,
 .status-info,
 .status-created {
   border-color: rgba(31, 111, 235, 0.28);
@@ -679,16 +723,13 @@ button.button-danger:hover:not(:disabled),
 }
 
 .status-warning,
-.status-empty,
 .status-missing,
 .status-missing_source_video,
 .status-not_applicable,
 .status-planned,
-.status-unknown,
-.status-pending,
+.status-needs_check,
 .status-open,
 .status-insufficient_data,
-.status-skipped,
 .status-medium {
   border-color: rgba(183, 121, 31, 0.3);
   background: var(--color-warning-soft);
@@ -708,7 +749,10 @@ button.button-danger:hover:not(:disabled),
 
 .status-ignored,
 .status-disabled,
-.status-wont_fix {
+.status-wont_fix,
+.status-unknown,
+.status-empty,
+.status-skipped {
   border-color: #cbd5e1;
   background: #f1f5f9;
   color: #64748b;
