@@ -378,9 +378,6 @@ Final v1.0.3 validation was completed under the execution manual scope:
 | `python3 scripts/run_evals.py --help` | Passed |
 | `make docker-config` / `make danger-check` | Passed |
 
-This README polish is documentation-only and does not move the final
-implementation tag.
-
 ## Milestones
 
 Important preserved tags:
@@ -398,8 +395,9 @@ Important preserved tags:
 - `v1.0.2-spec-alignment`
 - `v1.0.3-final-hardening`
 
-Old tags are preserved and must not be moved. The final display version is
-`v1.0.3-final-hardening`.
+Old tags are preserved and must not be moved. The final implementation baseline
+is `v1.0.3-final-hardening`. The `main` branch may include documentation-only
+README polish commits after that tag.
 
 ## Safety And Data Policy
 
@@ -434,7 +432,8 @@ and placeholder `.gitkeep` files needed for reproducibility.
 
 ## Final Status
 
-SmartTraffic is frozen at `v1.0.3-final-hardening`.
+The SmartTraffic implementation is frozen at `v1.0.3-final-hardening`.
 
-The repository is in final delivery state. No additional feature development is
-planned for the current project scope.
+The repository is in final delivery state. The `main` branch may include
+documentation-only README polish after the final implementation tag. No
+additional feature development is planned for the current project scope.
