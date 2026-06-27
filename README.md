@@ -15,7 +15,8 @@ SmartTraffic is a 智慧交通事件检测平台. It is not a traffic enforcemen
 | Item | Current status |
 | --- | --- |
 | Project type | Local intelligent traffic event detection and review platform |
-| Final implementation tag | `v1.0.3-final-hardening` |
+| Current final tag | `v1.0.1-spec-completion` |
+| Final baseline | SmartTraffic `v1.0.1-spec-completion`, spec-complete final local delivery baseline |
 | Backend | FastAPI, Pydantic, SQLAlchemy, Alembic |
 | Frontend | React, TypeScript, Vite |
 | Detection | YOLOv8 wrapper with deterministic dry-run support |
@@ -80,7 +81,7 @@ traffic event analysis platform.
 | 8. Bad Case and Evaluation Center | Add measurable quality feedback | Bad Case Center, evaluation datasets/results, detection/tracking/trajectory/event/flow metrics, failed cases, and deterministic regression replay |
 | 9. Engineering delivery and hardening | Make the project reproducible and safe to publish | Docker Compose, `.env.example`, `.gitignore`, demo seed data, docs, safety checks, and final validation |
 
-### Final Hardening Milestones
+### Final Hardening And Completion Milestones
 
 | Milestone | Purpose |
 | --- | --- |
@@ -92,6 +93,7 @@ traffic event analysis platform.
 | `v0.9.6-report-center` | CSV / JSON / PDF report exports and bundle metadata |
 | `v0.9.7-realtime-security-preview` | Camera / realtime preview and security / ops hardening |
 | `v1.0.3-final-hardening` | Final execution-manual alignment and validation hardening |
+| `v1.0.1-spec-completion` | Current spec-complete final local delivery baseline after execution-manual gap closure |
 
 ## Final Feature Set
 
@@ -413,11 +415,13 @@ Important preserved tags:
 - `v1.0.1-audit-polish`
 - `v1.0.2-spec-alignment`
 - `v1.0.3-final-hardening`
+- `v1.0.1-spec-completion`
 
-Old tags are preserved and must not be moved. `v1.0.3-final-hardening` remains
-a preserved hardening baseline. The `main` branch may include post-baseline
-closure commits for evidence persistence, API boundaries, local demo
-validation, and Docker local delivery.
+Old tags are preserved and must not be moved. `v1.0.0-smarttraffic-final-local-delivery`
+and `v1.0.3-final-hardening` remain historical local delivery / hardening
+baselines. The current final baseline is SmartTraffic `v1.0.1-spec-completion`,
+the spec-complete final local delivery baseline after execution-manual gap
+closure.
 
 ## Safety And Data Policy
 
@@ -452,9 +456,13 @@ and placeholder `.gitkeep` files needed for reproducibility.
 
 ## Final Status
 
-The preserved SmartTraffic hardening baseline is `v1.0.3-final-hardening`.
+SmartTraffic `v1.0.1-spec-completion` is the current spec-complete final local
+delivery baseline.
 
-The repository is in post-baseline closure state. The `main` branch may include
-targeted hardening for evidence persistence, API boundaries, and local demo
-validation, plus Docker local delivery cleanup. No additional feature
+The repository is in final local validation state. No additional feature
 development is planned beyond the current closure scope.
+
+Boundary: local validation prototype only; not production-ready, not
+law-enforcement-grade, not commercial deployment, not a formal traffic
+enforcement system, and not an official COCO / TrackEval / real-world traffic
+benchmark.

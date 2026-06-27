@@ -4,11 +4,15 @@
 
 - The current `main` branch is the final local validation and demo delivery
   line.
-- `v1.0.3-final-hardening` remains a preserved hardening baseline tag. It must
-  not be moved, deleted, rebuilt, or retagged.
-- Post-baseline commits on `main` cover DB config / trajectory event pipeline
-  closure, event evidence / API / review / evaluation closure, and Docker local
-  delivery cleanup.
+- Current final tag: `v1.0.1-spec-completion`.
+- Current final baseline: SmartTraffic `v1.0.1-spec-completion`, the
+  spec-complete final local delivery baseline.
+- `v1.0.0-smarttraffic-final-local-delivery` and `v1.0.3-final-hardening`
+  remain preserved historical local delivery / hardening tags. They must not
+  be moved, deleted, rebuilt, or retagged.
+- The eight core completion areas passed within the local delivery / local
+  validation scope: trajectory, zone/rule config, event engine, traffic
+  analysis, dashboard/alerts, review/bad case, evaluation, and Docker delivery.
 - This checklist is for local prototype acceptance, not production deployment,
   traffic enforcement, production IAM, calibrated traffic engineering, or
   commercial operations.
@@ -87,10 +91,14 @@ a fake Docker build pass.
 ## 7. Remaining Boundaries
 
 - SmartTraffic is not a formal traffic enforcement system.
+- SmartTraffic is not production-ready.
+- SmartTraffic is not law-enforcement-grade.
+- SmartTraffic is not commercial deployment.
 - SmartTraffic is not production IAM.
 - Realtime preview is not production realtime monitoring.
 - Detection mAP is VOC-style single-IoU, not COCO official.
 - IDF1 / MOTA are lightweight deterministic metrics, not TrackEval official.
+- Demo validation is not a real-world traffic benchmark.
 - Regression is deterministic replay / stored rule replay, not full video
   pipeline rerun.
 - SQLite and Docker Compose are for local prototype reproducibility.

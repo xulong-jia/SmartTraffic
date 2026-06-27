@@ -6,10 +6,11 @@ local delivery baseline 与后续 spec completion patch 的边界。它只描述
 
 ## 1. 当前版本状态
 
-当前 `main` 已完成 SmartTraffic final local delivery baseline，并已在
-`v1.0.0-smarttraffic-final-local-delivery` 上冻结本地交付基线。本轮
-spec completion patch 继续只修复执行手册逐项审计发现的对齐缺口，不重打、
-不移动已有 tag，也不改变 local validation prototype 的项目边界。Full Stage
+当前 `main` 已完成 SmartTraffic spec-complete final local delivery baseline。
+`v1.0.0-smarttraffic-final-local-delivery` 是此前 final local delivery
+baseline；`v1.0.1-spec-completion` 是执行手册对齐后的当前 spec-complete
+baseline。本轮 spec completion patch 只修复执行手册逐项审计发现的对齐缺口，
+不重打、不移动已有 tag，也不改变 local validation prototype 的项目边界。Full Stage
 1AB 已补充 DB Foundation：SQLAlchemy Declarative Base、engine/session
 dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 已接入。Full
 Stage 1CD 已新增 core models、业务表 migration、repositories 和 CRUD tests。
@@ -55,7 +56,7 @@ video upload
 ```
 
 Final audit / docs consistency 已补充 `docs/final_acceptance_checklist.md`。
-当前 final local delivery tag 是 `v1.0.0-smarttraffic-final-local-delivery`。
+当前 final local delivery tag 是 `v1.0.1-spec-completion`。
 
 `v1.0.1-audit-polish` 是 v1.0.0 冻结后的 scoped audit polish：只修复
 后审计发现的缺口，不移动、不重打 `v1.0.0-full-final-version`，也不新增
@@ -82,6 +83,13 @@ patch schema 层强制为 `low` / `medium` / `high`，明确 `critical` 只属�
 Alert Center `level`；视频上传增加 extension / size / duration / codec
 allowlist 校验，并将 `frames` / `tracks` 字段粒度说明为本地 prototype 的
 metadata / artifact-compatible 边界。
+
+`v1.0.1-spec-completion` 是当前最终 annotated tag：它保留
+`v1.0.0-smarttraffic-final-local-delivery` 作为历史 local delivery baseline，
+并在执行手册对齐后确认八个大项均在 local delivery / local validation 范围内
+通过。该 tag 不新增 production IAM、production realtime、commercial
+deployment、正式交通执法能力、COCO official mAP、TrackEval official metrics
+或真实道路 benchmark claim。
 
 当前项目仍是本地开发和验证口径，不是生产部署版、production IAM、生产级实时监控或交通执法系统。
 
@@ -165,8 +173,9 @@ Final acceptance 已用于确认当前 main 作为 local delivery baseline：
 - 扫描 tracked forbidden files、敏感词、大文件、生成结果、视频、模型权重、cache、dist 和 node_modules。
 - 确认 README、API reference、architecture、database schema、evaluation、demo plan 和 final delivery plan 一致。
 - 确认旧 tag 未移动。
-- 最终 annotated tag 为 `v1.0.0-smarttraffic-final-local-delivery`。
-- 后续 README/docs/spec completion commits 不移动、不重打该 tag，除非用户明确要求新的版本标签。
+- 当前最终 annotated tag 为 `v1.0.1-spec-completion`。
+- `v1.0.0-smarttraffic-final-local-delivery` 保留为历史 local delivery
+  baseline；后续 README/docs commits 不移动、不重打旧 tag。
 
 ## 6. 数据与安全要求
 
