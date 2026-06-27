@@ -215,10 +215,10 @@ export default function CameraCenterPage() {
       {error ? <p className="status-pill status-error">{error}</p> : null}
       {successMessage ? <p className="status-pill status-completed">{successMessage}</p> : null}
 
-      <section className="grid two">
+      <section className="grid two content-grid">
         <div className="panel">
           <h3>创建摄像头 Create Camera</h3>
-          <div className="toolbar">
+          <div className="form-grid">
             <label>
               名称 Name
               <input
@@ -340,10 +340,7 @@ export default function CameraCenterPage() {
 
           <div className="metric-row">
             {statusCards.map((card) => (
-              <div className="metric-card" key={card.label}>
-                <span className="muted">{card.label}</span>
-                <span className="metric-value">{card.value}</span>
-              </div>
+              <RealtimeMetricCard key={card.label} label={card.label} value={card.value} />
             ))}
           </div>
         </div>
@@ -351,79 +348,127 @@ export default function CameraCenterPage() {
 
       <section className="panel">
         <h3>最近帧 Recent Frames</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>帧 Frame</th>
-              <th>来源 Source</th>
-              <th>状态 Status</th>
-              <th>时间戳 Timestamp</th>
-              <th>说明 Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {frameRows.map((frame) => (
-              <tr key={frame.id}>
-                <td>{frame.frame}</td>
-                <td>{frame.source}</td>
-                <td>{frame.status}</td>
-                <td>{frame.timestamp}</td>
-                <td>{frame.description}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      <section className="grid two">
-        <div className="panel">
-          <h3>最近事件 Recent Events</h3>
-          <table>
+        <div className="table-scroll">
+          <table className="data-table">
             <thead>
               <tr>
-                <th>类型 Type</th>
-                <th>严重程度 Severity</th>
                 <th>帧 Frame</th>
+                <th>来源 Source</th>
                 <th>状态 Status</th>
+                <th>时间戳 Timestamp</th>
+                <th>说明 Description</th>
               </tr>
             </thead>
             <tbody>
-              {eventRows.map((event) => (
-                <tr key={event.id}>
-                  <td>{event.type}</td>
-                  <td>{event.severity}</td>
-                  <td>{event.frame}</td>
-                  <td>{event.status}</td>
+              {frameRows.map((frame) => (
+                <tr key={frame.id}>
+                  <td>{frame.frame}</td>
+                  <td>{frame.source}</td>
+                  <td>
+                    <span className={`status-pill status-${statusClassName(frame.status)}`}>
+                      {frame.status}
+                    </span>
+                  </td>
+                  <td>{frame.timestamp}</td>
+                  <td className="wrap-cell">{frame.description}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <section className="grid two content-grid">
+        <div className="panel">
+          <h3>最近事件 Recent Events</h3>
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>类型 Type</th>
+                  <th>严重程度 Severity</th>
+                  <th>帧 Frame</th>
+                  <th>状态 Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {eventRows.map((event) => (
+                  <tr key={event.id}>
+                    <td>{event.type}</td>
+                    <td>{event.severity}</td>
+                    <td>{event.frame}</td>
+                    <td>
+                      <span className={`status-pill status-${statusClassName(event.status)}`}>
+                        {event.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="panel">
           <h3>最近告警 Recent Alerts</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>级别 Level</th>
-                <th>类型 Type</th>
-                <th>状态 Status</th>
-                <th>消息 Message</th>
-              </tr>
-            </thead>
-            <tbody>
-              {alertRows.map((alert) => (
-                <tr key={alert.id}>
-                  <td>{alert.level}</td>
-                  <td>{alert.type}</td>
-                  <td>{alert.status}</td>
-                  <td>{alert.message}</td>
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>级别 Level</th>
+                  <th>类型 Type</th>
+                  <th>状态 Status</th>
+                  <th>消息 Message</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {alertRows.map((alert) => (
+                  <tr key={alert.id}>
+                    <td>{alert.level}</td>
+                    <td>{alert.type}</td>
+                    <td>
+                      <span className={`status-pill status-${statusClassName(alert.status)}`}>
+                        {alert.status}
+                      </span>
+                    </td>
+                    <td className="wrap-cell">{alert.message}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
     </>
   );
+}
+
+function RealtimeMetricCard({ label, value }: { label: string; value: string | number }) {
+  const status = label === "状态 Status" && typeof value === "string" ? splitStatusValue(value) : null;
+  return (
+    <div className="metric-card">
+      <span className="metric-label">{label}</span>
+      {status ? (
+        <>
+          <span className="metric-value metric-status-main">{status.primary}</span>
+          <span className={`status-pill status-${statusClassName(status.secondary)}`}>
+            {status.secondary}
+          </span>
+        </>
+      ) : (
+        <span className="metric-value">{value}</span>
+      )}
+    </div>
+  );
+}
+
+function splitStatusValue(value: string): { primary: string; secondary: string } {
+  const [primary, ...rest] = value.split(" ");
+  return { primary, secondary: rest.join(" ") || value };
+}
+
+function statusClassName(value: string): string {
+  const parts = value.split(" ");
+  const raw = parts[parts.length - 1] || value;
+  return raw.toLowerCase().replace(/[^a-z0-9_-]+/g, "_") || "unknown";
 }

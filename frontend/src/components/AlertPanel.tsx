@@ -51,102 +51,104 @@ export default function AlertPanel({
     <div>
       {emptyLabel ? <p className={error ? "alert-box error" : "empty-state"}>{emptyLabel}</p> : null}
       {rows.length > 0 ? (
-        <table>
-          <thead>
-            <tr>
-              <th>状态 Status</th>
-              <th>级别 Level</th>
-              <th>标题 Title</th>
-              <th>事件 Event</th>
-              <th>Track</th>
-              <th>Run</th>
-              <th>创建时间 Created</th>
-              <th>消息 Message</th>
-              <th>操作 Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, index) => {
-              const alert = visibleAlerts[index];
-              const href = buildReviewHref?.(alert) ?? null;
-              const busy = actionAlertId === row.id || actionAlertId === alert.id;
-              return (
-                <tr
-                  className={row.selected ? "selected-row" : ""}
-                  key={row.id}
-                  onClick={() => onSelectAlert?.(alert)}
-                >
-                  <td>
-                    <span className={`status-pill status-${statusClassName(alert.status)}`}>
-                      {row.status}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`status-pill status-${statusClassName(alert.level)}`}>
-                      {row.level}
-                    </span>
-                  </td>
-                  <td>{row.title}</td>
-                  <td>{row.eventId}</td>
-                  <td>{row.trackId}</td>
-                  <td>{row.runId}</td>
-                  <td>{row.createdAt}</td>
-                  <td>{row.message}</td>
-                  <td>
-                    <div className="button-group">
-                      {onAcknowledge ? (
-                        <button
-                          disabled={busy || !row.canAcknowledge}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onAcknowledge(buildAlertActionPayload(row.id, "acknowledge"));
-                          }}
-                          type="button"
-                        >
-                          确认 Acknowledge
-                        </button>
-                      ) : null}
-                      {onResolve ? (
-                        <button
-                          disabled={busy || !row.canResolve}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onResolve(buildAlertActionPayload(row.id, "resolve"));
-                          }}
-                          type="button"
-                        >
-                          解决 Resolve
-                        </button>
-                      ) : null}
-                      {onIgnore ? (
-                        <button
-                          disabled={busy || !row.canIgnore}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onIgnore(buildAlertActionPayload(row.id, "ignore"));
-                          }}
-                          type="button"
-                        >
-                          忽略 Ignore
-                        </button>
-                      ) : null}
-                      {href ? (
-                        <a
-                          href={href}
-                          onClick={(event) => openReviewLink(event, href, onOpenReview)}
-                        >
-                          复核关联事件 Review
-                        </a>
-                      ) : (
-                        <span className="muted">无关联事件 No linked event</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>状态 Status</th>
+                <th>级别 Level</th>
+                <th>标题 Title</th>
+                <th>事件 Event</th>
+                <th>Track</th>
+                <th>Run</th>
+                <th>创建时间 Created</th>
+                <th>消息 Message</th>
+                <th>操作 Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, index) => {
+                const alert = visibleAlerts[index];
+                const href = buildReviewHref?.(alert) ?? null;
+                const busy = actionAlertId === row.id || actionAlertId === alert.id;
+                return (
+                  <tr
+                    className={row.selected ? "selected-row" : ""}
+                    key={row.id}
+                    onClick={() => onSelectAlert?.(alert)}
+                  >
+                    <td>
+                      <span className={`status-pill status-${statusClassName(alert.status)}`}>
+                        {row.status}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`status-pill status-${statusClassName(alert.level)}`}>
+                        {row.level}
+                      </span>
+                    </td>
+                    <td>{row.title}</td>
+                    <td className="cell-id">{row.eventId}</td>
+                    <td>{row.trackId}</td>
+                    <td className="cell-id">{row.runId}</td>
+                    <td>{row.createdAt}</td>
+                    <td className="wrap-cell">{row.message}</td>
+                    <td>
+                      <div className="button-group">
+                        {onAcknowledge ? (
+                          <button
+                            disabled={busy || !row.canAcknowledge}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onAcknowledge(buildAlertActionPayload(row.id, "acknowledge"));
+                            }}
+                            type="button"
+                          >
+                            确认 Acknowledge
+                          </button>
+                        ) : null}
+                        {onResolve ? (
+                          <button
+                            disabled={busy || !row.canResolve}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onResolve(buildAlertActionPayload(row.id, "resolve"));
+                            }}
+                            type="button"
+                          >
+                            解决 Resolve
+                          </button>
+                        ) : null}
+                        {onIgnore ? (
+                          <button
+                            disabled={busy || !row.canIgnore}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onIgnore(buildAlertActionPayload(row.id, "ignore"));
+                            }}
+                            type="button"
+                          >
+                            忽略 Ignore
+                          </button>
+                        ) : null}
+                        {href ? (
+                          <a
+                            href={href}
+                            onClick={(event) => openReviewLink(event, href, onOpenReview)}
+                          >
+                            复核关联事件 Review
+                          </a>
+                        ) : (
+                          <span className="muted">无关联事件 No linked event</span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       ) : null}
     </div>
   );

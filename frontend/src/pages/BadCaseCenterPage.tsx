@@ -88,6 +88,7 @@ export default function BadCaseCenterPage() {
 
   const cases = data?.items ?? [];
   const summary = data?.summary;
+  const topType = summary ? topEntryParts(summary.by_type) : null;
 
   useEffect(() => {
     loadCases();
@@ -270,7 +271,11 @@ export default function BadCaseCenterPage() {
             <MetricCard label="总数 Total" value={String(summary.total)} />
             <MetricCard label="未处理 Open" value={String(summary.by_status.open ?? 0)} />
             <MetricCard label="已修复 Fixed" value={String(summary.by_status.fixed ?? 0)} />
-            <MetricCard label="主要类型 Top Type" value={topEntryLabel(summary.by_type)} />
+            <MetricCard
+              detail={topType?.detail}
+              label="主要类型 Top Type"
+              value={topType?.value ?? "-"}
+            />
           </div>
         ) : null}
         {summary ? (
@@ -284,7 +289,8 @@ export default function BadCaseCenterPage() {
           <p className="empty-state">暂无坏例。复核误报、漏报或评测失败后可生成坏例。</p>
         ) : null}
         {cases.length > 0 ? (
-          <table>
+          <div className="table-scroll">
+          <table className="data-table">
             <thead>
               <tr>
                 <th>坏例 Case</th>
@@ -328,7 +334,7 @@ export default function BadCaseCenterPage() {
                     <td>{display.event}</td>
                     <td>{display.track}</td>
                     <td>{display.frame}</td>
-                    <td>{display.tags}</td>
+                    <td>{renderTags(badCase.tags)}</td>
                     <td>{display.source}</td>
                     <td>{display.linkedFailedCaseId}</td>
                     <td>{display.updatedAt}</td>
@@ -337,6 +343,7 @@ export default function BadCaseCenterPage() {
               })}
             </tbody>
           </table>
+          </div>
         ) : null}
       </section>
 
@@ -521,10 +528,11 @@ export default function BadCaseCenterPage() {
   }
 }
 
-function MetricCard({ label, value }: { label: string; value: string }) {
+function MetricCard({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
     <div className="metric-card card">
       <span className="metric-value">{value}</span>
+      {detail ? <span className="metric-subvalue">{detail}</span> : null}
       <span className="muted">{label}</span>
     </div>
   );
@@ -605,9 +613,16 @@ function parseOptionalInteger(value: string): number | null {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
-function topEntryLabel(entries: Record<string, number>): string {
+function topEntryParts(entries: Record<string, number>): { value: string; detail: string } | null {
   const [key, count] = Object.entries(entries).sort((left, right) => right[1] - left[1])[0] ?? [];
-  return key ? `${formatBadCaseTypeLabel(key)} (${count})` : "-";
+  if (!key) {
+    return null;
+  }
+  const [value, ...rest] = formatBadCaseTypeLabel(key).split(" ");
+  return {
+    value,
+    detail: `${rest.join(" ") || key} · ${count}`
+  };
 }
 
 function topEntries(entries: Record<string, number>): string {
@@ -616,4 +631,20 @@ function topEntries(entries: Record<string, number>): string {
     .slice(0, 3)
     .map(([key, count]) => `${key}:${count}`);
   return formatted.length ? formatted.join(", ") : "-";
+}
+
+function renderTags(tags: string[] | string | null | undefined) {
+  const normalized = normalizeBadCaseTags(tags);
+  if (normalized.length === 0) {
+    return "-";
+  }
+  return (
+    <span className="tag-list">
+      {normalized.map((tag) => (
+        <span className="tag-pill" key={tag}>
+          {tag}
+        </span>
+      ))}
+    </span>
+  );
 }

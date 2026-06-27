@@ -280,12 +280,20 @@ export default function ReportCenterPage() {
             <span className="status-pill">{summary?.run.status || "无任务 No run"}</span>
           </div>
           <div className="metric-row">
-            {summaryCards.map((card) => (
-              <div className="card metric-card" key={card.label}>
-                <span className="metric-value">{card.value}</span>
-                <span className="muted">{card.label}</span>
-              </div>
-            ))}
+            {summaryCards.map((card) => {
+              const label = splitMetricLabel(card.label);
+              return (
+                <div className="card metric-card" key={card.label}>
+                  <span className="metric-value">{card.value}</span>
+                  <span className={label.secondary ? "metric-label" : "muted"}>
+                    {label.primary}
+                  </span>
+                  {label.secondary ? (
+                    <span className="metric-subvalue">{label.secondary}</span>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
           <dl className="detail-grid">
             <div>
@@ -312,7 +320,8 @@ export default function ReportCenterPage() {
             <h3>导出区块 Export Sections</h3>
             <span className="status-pill">{sectionOptions.length} 个区块 sections</span>
           </div>
-          <table>
+          <div className="table-scroll">
+          <table className="data-table">
             <thead>
               <tr>
                 <th>区块 Section</th>
@@ -334,6 +343,7 @@ export default function ReportCenterPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </section>
 
@@ -385,7 +395,8 @@ export default function ReportCenterPage() {
             <span className="status-pill">{activeBundle?.schema_version || "无 bundle No bundle"}</span>
           </div>
           <p className="muted">{buildBundleSectionLabel(activeBundle)}</p>
-          <table>
+          <div className="table-scroll">
+          <table className="data-table">
             <thead>
               <tr>
                 <th>产物 Artifact</th>
@@ -411,6 +422,7 @@ export default function ReportCenterPage() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
 
         <div className="panel">
@@ -432,7 +444,8 @@ export default function ReportCenterPage() {
               <dd>{annotatedVideoLabel}</dd>
             </div>
           </dl>
-          <table>
+          <div className="table-scroll">
+          <table className="data-table">
             <thead>
               <tr>
                 <th>Source</th>
@@ -458,6 +471,7 @@ export default function ReportCenterPage() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       </section>
     </>
@@ -471,4 +485,9 @@ function triggerDownload(blob: Blob, filename: string) {
   anchor.download = filename;
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+function splitMetricLabel(label: string): { primary: string; secondary: string } {
+  const [primary, ...rest] = label.split(" ");
+  return { primary, secondary: rest.join(" ") };
 }

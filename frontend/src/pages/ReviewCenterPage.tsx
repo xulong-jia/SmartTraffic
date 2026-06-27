@@ -370,7 +370,7 @@ export default function ReviewCenterPage({
       </header>
 
       <section className="panel">
-        <div className="toolbar">
+        <div className="form-grid">
           <label>
             Run ID
             <input
@@ -481,7 +481,7 @@ export default function ReviewCenterPage({
           <h3>添加漏报 Add False Negative</h3>
           <span className="muted">仅记录本地复核产物</span>
         </div>
-        <div className="toolbar">
+        <div className="form-grid">
           <label>
             Run ID
             <input
