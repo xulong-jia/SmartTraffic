@@ -29,6 +29,12 @@ def test_event_metrics_match_by_type_and_frame_overlap() -> None:
     assert metrics["precision"] == 0.5
     assert metrics["recall"] == 0.5
     assert metrics["f1"] == 0.5
+    assert metrics["event_accuracy"] == 0.5
+    assert metrics["false_alarm_rate"] == 0.5
+    assert metrics["event_recall"] == 0.5
+    assert metrics["event_f1"] == 0.5
+    assert metrics["per_event_type"]["wrong_way_driving"]["event_accuracy"] == 1.0
+    assert metrics["per_event_type"]["danger_zone_intrusion"]["false_alarm_rate"] == 1.0
     assert metrics["failed_cases"][0]["failure_type"] == "false_negative"
 
 

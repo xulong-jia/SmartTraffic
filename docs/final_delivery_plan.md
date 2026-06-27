@@ -1,12 +1,44 @@
 # SmartTraffic 最终交付计划
 
-本文档最初用于 Stage 9 最终交付前审计和文档收口；Full Stage 8AB
-将其更新为 full final audit / docs consistency 入口。它只描述计划、边界和
-检查清单，不引入非当前阶段核心业务功能、生产部署或新 tag。
+本文档最初用于 Stage 9 最终交付前审计和文档收口；当前用于记录 final
+local delivery baseline 与后续 spec completion patch 的边界。它只描述计划、
+边界和检查清单，不引入生产部署或不属于当前本地验证范围的能力。
 
 ## 1. 当前版本状态
 
-当前已完成 Stage 9EF 最终验收准备。最新工程交付 commit 是 Stage 9CD 后的 `5538a3a`，当前建议 final engineering delivery tag 为 `v0.9.0-final-engineering-delivery`。该 tag 不是 `v1.0.0`，不代表 DB-backed final version、production deployment 或执法级系统。Full Stage 1AB 已在最终交付后补充 DB Foundation：SQLAlchemy Declarative Base、engine/session dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 已接入。Full Stage 1CD 已新增 core models、业务表 migration、repositories 和 CRUD tests。Full Stage 1EF 已新增 artifact compatibility / import / read-through helper 和 dry-run CLI。Full Stage 2AB 已完成 Video API、Processing Task 生命周期和 `traffic_analysis_runs` run index 的 DB-backed 迁移；Full Stage 2CD 已完成 detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic Analysis Center DB-first index；Full Stage 3AB 已完成 Zone / Event Rule DB CRUD、run-level config snapshot 和 top-level Event APIs；Full Stage 3CD 已完成 Event / EventEvidence / RuleExecution DB lifecycle、Alert Center DB 状态流转、Review DB workflow / `review_comments` audit trail，以及 rule rerun request 的 `processing_tasks.mode=rule_rerun` 记录；Full Stage 3EF 已完成 Bad Case DB workflow、Evaluation Dataset / Result DB workflow、failed cases DB persistence 方案和 failed-case -> Bad Case DB 转换；Full Stage 4AB 已完成 Trajectory final features 和六类 Event Rule final behavior；Full Stage 4CD 已完成 Detection / Tracking benchmark algorithm foundation；Full Stage 4E 已完成 Bad Case deterministic replay / rule replay regression evaluation；Full Stage 5AB 已完成 ZoneEditor UI + API integration；Full Stage 5CD 已完成 Video Overlay UI + EventTimeline；Full Stage 5E 已完成 Review UX + Evaluation UI；Full Stage 6AB 已完成 Report Center 页面、Report API、CSV export 和 JSON export；Full Stage 6CD 已完成 PDF export、report bundle metadata、keyframe summary 和 annotated video artifact reference；Full Stage 7AB 已完成 Cameras DB API、stream_url masking、realtime preview metadata、recent frame/event/alert cache、`processing_tasks.mode=realtime_process` 记录和 Camera Center 最小前端接入；Full Stage 7CD 已完成 minimal actor identity、permissive / strict permission guard、audit actor propagation、API error handling、request id logging、DB readiness check 和 security / ops docs。Stage 1-9 已完成 artifact-backed MVP 与最终工程交付准备主链路：
+当前 `main` 已完成 SmartTraffic final local delivery baseline，并已在
+`v1.0.0-smarttraffic-final-local-delivery` 上冻结本地交付基线。本轮
+spec completion patch 继续只修复执行手册逐项审计发现的对齐缺口，不重打、
+不移动已有 tag，也不改变 local validation prototype 的项目边界。Full Stage
+1AB 已补充 DB Foundation：SQLAlchemy Declarative Base、engine/session
+dependency、Alembic baseline 和 `SMARTTRAFFIC_DATABASE_URL` 已接入。Full
+Stage 1CD 已新增 core models、业务表 migration、repositories 和 CRUD tests。
+Full Stage 1EF 已新增 artifact compatibility / import / read-through helper
+和 dry-run CLI。Full Stage 2AB 已完成 Video API、Processing Task 生命周期和
+`traffic_analysis_runs` run index 的 DB-backed 迁移；Full Stage 2CD 已完成
+detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic
+Analysis Center DB-first index；Full Stage 3AB 已完成 Zone / Event Rule DB
+CRUD、run-level config snapshot 和 top-level Event APIs；Full Stage 3CD 已
+完成 Event / EventEvidence / RuleExecution DB lifecycle、Alert Center DB
+状态流转、Review DB workflow / `review_comments` audit trail，以及
+event-rules-only rule rerun 的 `processing_tasks.mode=rule_rerun` 记录和
+结果落库；Full Stage 3EF 已完成 Bad Case DB workflow、Evaluation Dataset /
+Result DB workflow、failed cases DB persistence 方案和 failed-case -> Bad
+Case DB 转换；Full Stage 4AB 已完成 Trajectory final features 和六类 Event
+Rule final behavior；Full Stage 4CD 已完成 Detection / Tracking benchmark
+algorithm foundation 和 tracking failed-case 输出；Full Stage 4E 已完成 Bad
+Case deterministic replay / rule replay regression evaluation；Full Stage 5AB
+已完成 ZoneEditor UI + API integration；Full Stage 5CD 已完成 Video Overlay UI
++ EventTimeline；Full Stage 5E 已完成 Review UX + Evaluation UI；Full Stage
+6AB 已完成 Report Center 页面、Report API、CSV export 和 JSON export；Full
+Stage 6CD 已完成 PDF export、report bundle metadata、keyframe summary 和
+annotated video artifact reference；Full Stage 7AB 已完成 Cameras DB API、
+stream_url masking、realtime preview metadata、recent frame/event/alert
+cache、`processing_tasks.mode=realtime_process` 记录和 Camera Center 最小前端
+接入；Full Stage 7CD 已完成 minimal actor identity、permissive / strict
+permission guard、audit actor propagation、API error handling、request id
+logging、DB readiness check 和 security / ops docs。Stage 1-9 已完成
+artifact-backed MVP 与最终工程交付准备主链路：
 
 ```text
 video upload
@@ -22,9 +54,8 @@ video upload
 -> Evaluation Center MVP
 ```
 
-Full Stage 8AB 当前补充 full final audit、文档一致性修正和
-`docs/final_acceptance_checklist.md`。`v1.0.0-full-final-version` 留给 Full
-Stage 8CD 最终全量验收后再创建。
+Final audit / docs consistency 已补充 `docs/final_acceptance_checklist.md`。
+当前 final local delivery tag 是 `v1.0.0-smarttraffic-final-local-delivery`。
 
 `v1.0.1-audit-polish` 是 v1.0.0 冻结后的 scoped audit polish：只修复
 后审计发现的缺口，不移动、不重打 `v1.0.0-full-final-version`，也不新增
@@ -72,10 +103,10 @@ metadata / artifact-compatible 边界。
 - Full Stage 2AB Video / Processing DB-backed foundation：Video upload/list/detail/status/frames、Processing Task 状态/进度/时间/错误信息、以及同一 video 多 run index 已接入 DB，同时保留本地 artifact 生成。
 - Full Stage 2CD Result Persistence：detections、tracks、trajectory_points、flow_counts、zone_statistics 和 Traffic Analysis Center DB index 已接入 DB-first / artifact fallback，同时保留本地 artifact 生成。
 - Full Stage 3AB Config / Event API DB flow：Zone / Event Rule CRUD、version 字段、run-level config snapshot、top-level Event APIs、Event status update 和 Event -> Bad Case 最小 DB linkage 已完成；前端 ZoneEditor 未在本阶段改造。
-- Full Stage 3CD Event / Alert / Review DB lifecycle：EventEvidence、RuleExecution、Alert status transitions、Review action audit trail、false-negative DB records 和 rule rerun request task 已接入 DB-first / artifact fallback；未执行真实规则重跑。
+- Full Stage 3CD Event / Alert / Review DB lifecycle：EventEvidence、RuleExecution、Alert status transitions、Review action audit trail、false-negative DB records 和 event-rules-only rule rerun task / rerun event rows 已接入 DB-first / artifact fallback；完整视频级 rerun 不在本阶段。
 - Full Stage 3EF Bad Case / Evaluation DB workflow：Bad Case list/detail/create/update/filter/summary、from-review、from-failed-case、Evaluation dataset/result、failed cases persistence 和 `run_evals.py --write-db` 已接入 DB-first / artifact fallback。
 - Full Stage 4AB Trajectory / Event Rules：TrajectoryEngine 已输出 `zone_history`、`lane_relation`、`line_crossings`、dwell/speed/moving_angle/direction consistency 和 center / bottom-center 策略；wrong_way、illegal_parking、danger_zone、pedestrian_lane、congestion、flow_counting 六类规则已补齐 final behavior；速度仍是像素级估计。
-- Full Stage 4CD Detection / Tracking benchmark：已实现 IoU、按 class matching、precision、recall、VOC-style single-IoU AP/mAP、per-class AP、frame-level tracking association、IDF1、MOTA、ID switch、track lost、insufficient-data handling，并可写入 DB-backed `evaluation_results`；该实现不是 COCO official mAP 或 TrackEval official implementation。
+- Full Stage 4CD Detection / Tracking benchmark：已实现 IoU、按 class matching、precision、recall、VOC-style single-IoU AP/mAP、per-class AP、frame-level tracking association、IDF1、MOTA、ID switch、track lost、insufficient-data handling，并可写入 DB-backed `evaluation_results`；ID switch / track lost 可输出 Evaluation failed cases 供 Bad Case 转换；该实现不是 COCO official mAP 或 TrackEval official implementation。
 - Full Stage 4E Regression Evaluation：已实现 status-based deterministic replay、stored rule replay fixture、per-case regression result、failed regression cases、`regression_pass_rate`、fixed / reopened / failed counts、DB-backed evaluation result persistence 和 CLI/API config 透传；`apply_updates=false` 为默认策略，完整视频级 rerun 不在本阶段。
 - Full Stage 5AB ZoneEditor UI：已将 ZoneEditor 从 placeholder 改为真实交互组件，支持 polygon、direction line、counting line 绘制，DB-backed zones / event_rules 保存、更新、删除、读取回显，enabled/version 展示，基础 loading/error/empty 状态和前端 utility tests。
 - Full Stage 5CD Video Overlay / EventTimeline：DetectionOverlay、TrackOverlay 和 Zone overlay 已不再是 placeholder；AnalysisDetailPage 已接入 detections、tracks、trajectory_points、zones 和 events 数据叠加展示；EventTimeline 支持过滤、选中和点击事件跳转到对应 timestamp。
@@ -84,10 +115,9 @@ metadata / artifact-compatible 边界。
 - Full Stage 6CD Report Export：已新增 `/api/reports/{run_id}/export.pdf`、`/api/reports/{run_id}/bundle`、keyframe summary、annotated video artifact reference、前端 PDF download 和 bundle / visual artifact summary panel；PDF 与 bundle 均不写入仓库，不复制大视频或图片。
 - Full Stage 7AB Camera / Realtime Preview：已新增 DB-backed Cameras API、`upload` / `rtsp` / `file` / `mock` source_type、enable / disable、`stream_url` masking、mock stream preview、local file smoke-level preview、RTSP no-connect preview、recent frames / events / alerts bounded cache、`processing_tasks.mode=realtime_process` linkage、Camera Center 最小前端页面、后端与前端测试和文档。该阶段不是 production realtime monitoring。
 - Full Stage 7CD Security / Audit / Ops：已新增 `X-SmartTraffic-Actor` / `X-SmartTraffic-Role` minimal identity、`SMARTTRAFFIC_AUTH_MODE=permissive|strict`、strict-mode preview permission guard、关键写操作 actor propagation、structured audit logging、标准错误响应、request id logging、`/health/ready` DB readiness、env/docs hardening 和测试。该阶段不是 production IAM。
-- Full Stage 8AB Full Final Audit / Docs Consistency：对照执行手册 26.1-26.14
+- Full Final Audit / Docs Consistency：对照执行手册 26.1-26.14
   完成文档一致性审计，修正 README/docs/API/database/evaluation/realtime/reporting/security
-  口径，并新增 `docs/final_acceptance_checklist.md`。该阶段不创建
-  `v1.0.0` tag，不新增业务功能。
+  口径，并新增 `docs/final_acceptance_checklist.md`。
 - v1.0.1 Audit Polish：修复 v1.0.0 后审计缺口，包括 AlertPanel /
   EventTable 真实组件接入、DB-backed processing task list、detector/tracker
   `model_runs` business writes，以及 Stage 6 historical / archived 文档标记。
@@ -127,17 +157,16 @@ Stage 9CD 已完成交付可运行性收口：
 
 Stage 9CD 不应实现新业务中心、数据库迁移、真实数据下载器、模型训练或生产部署。
 
-## 5. Stage 9EF：最终验收 / Tag 准备
+## 5. Final Acceptance / Tag 状态
 
-Stage 9EF 用于最终验收和 final tag 准备：
+Final acceptance 已用于确认当前 main 作为 local delivery baseline：
 
 - 运行后端全量测试、前端测试、前端 build、`docker compose config`、`git diff --check` 和 `scripts/danger_check.py`。
 - 扫描 tracked forbidden files、敏感词、大文件、生成结果、视频、模型权重、cache、dist 和 node_modules。
 - 确认 README、API reference、architecture、database schema、evaluation、demo plan 和 final delivery plan 一致。
 - 确认旧 tag 未移动。
-- 所有检查通过且用户明确要求后，才创建 `v0.9.0-final-engineering-delivery`。
-
-`v0.9.0-final-engineering-delivery` 是最终工程交付里程碑，不是 production `v1.0.0`。
+- 最终 annotated tag 为 `v1.0.0-smarttraffic-final-local-delivery`。
+- 后续 README/docs/spec completion commits 不移动、不重打该 tag，除非用户明确要求新的版本标签。
 
 ## 6. 数据与安全要求
 

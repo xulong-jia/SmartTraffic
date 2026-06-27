@@ -245,9 +245,11 @@ class EvaluationService:
                 frame_tolerance=int(config.get("frame_tolerance", 5)),
             )
             return [
+                ("event_accuracy", details["event_accuracy"], details),
                 ("event_precision", details["precision"], details),
                 ("event_recall", details["recall"], details),
                 ("event_f1", details["f1"], details),
+                ("false_alarm_rate", details["false_alarm_rate"], details),
             ], list(details.get("failed_cases", []))
         if evaluation_type == "flow_counting":
             details = compute_flow_counting_metrics(
@@ -308,7 +310,7 @@ class EvaluationService:
                 ("tracking_mota", details.get("mota"), details),
                 ("tracking_id_switches", details.get("id_switch_count"), details),
                 ("tracking_track_lost", details.get("track_lost_count"), details),
-            ], []
+            ], _tracking_failed_cases(details)
         details = self._bad_case_regression_summary(
             run_id=run_dir.name,
             run_dir=run_dir,
@@ -708,6 +710,70 @@ def _read_json(path: Path) -> dict[str, Any]:
     with path.open(encoding="utf-8") as file:
         payload = json.load(file)
     return payload if isinstance(payload, dict) else {}
+
+
+def _tracking_failed_cases(details: dict[str, Any]) -> list[dict[str, Any]]:
+    failed_cases: list[dict[str, Any]] = []
+    for item in details.get("switch_details") or []:
+        if not isinstance(item, dict):
+            continue
+        frame_index = _optional_int(item.get("frame_index"))
+        failed_cases.append(
+            {
+                "failure_type": "id_switch",
+                "module": "tracker",
+                "expected": {
+                    "gt_track_id": item.get("gt_track_id"),
+                    "previous_track_id": item.get("previous_track_id"),
+                },
+                "actual": {
+                    "new_track_id": item.get("new_track_id"),
+                    "tags": ["tracker", "id_switch"],
+                },
+                "frame_range": {
+                    "start_frame": frame_index,
+                    "end_frame": frame_index,
+                },
+                "suggested_bad_case_type": "id_switch",
+            }
+        )
+    for item in details.get("lost_track_details") or []:
+        if not isinstance(item, dict):
+            continue
+        start_frame = _optional_int(item.get("start_frame"))
+        end_frame = _optional_int(item.get("end_frame"))
+        failed_cases.append(
+            {
+                "failure_type": "track_lost",
+                "module": "tracker",
+                "expected": {
+                    "gt_track_id": item.get("gt_track_id"),
+                    "frame_range": {
+                        "start_frame": start_frame,
+                        "end_frame": end_frame,
+                    },
+                },
+                "actual": {
+                    "track_id": None,
+                    "tags": ["tracker", "track_lost"],
+                },
+                "frame_range": {
+                    "start_frame": start_frame,
+                    "end_frame": end_frame,
+                },
+                "suggested_bad_case_type": "track_lost",
+            }
+        )
+    return failed_cases
+
+
+def _optional_int(value: Any) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _read_jsonl(path: Path) -> list[dict[str, Any]]:

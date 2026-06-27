@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.db.base import Base
 import app.models  # noqa: F401
 from app.repositories import EvaluationResultRepository, TrafficAnalysisRunRepository, VideoRepository
+from app.services.bad_case_service import BadCaseService
 from app.services.evaluation_service import EvaluationService
 
 
@@ -83,6 +84,7 @@ def test_tracking_evaluation_writes_benchmark_metrics_to_db(tmp_path: Path) -> N
                 "tracks": [
                     {"frame_index": 1, "gt_track_id": "g1", "class_name": "car", "bbox": [0, 0, 10, 10]},
                     {"frame_index": 2, "gt_track_id": "g1", "class_name": "car", "bbox": [1, 0, 11, 10]},
+                    {"frame_index": 3, "gt_track_id": "g1", "class_name": "car", "bbox": [2, 0, 12, 10]},
                 ]
             },
         )
@@ -107,6 +109,27 @@ def test_tracking_evaluation_writes_benchmark_metrics_to_db(tmp_path: Path) -> N
         metric_names = {result["metric_name"] for result in response["results"]}
         assert {"tracking_idf1", "tracking_mota", "tracking_id_switches", "tracking_track_lost"} <= metric_names
         assert response["results"][0]["details"]["id_switch_count"] == 1
+        assert response["results"][0]["details"]["track_lost_count"] == 1
+        failed_case_types = {item["failure_type"] for item in response["failed_cases"]}
+        assert {"id_switch", "track_lost"} <= failed_case_types
+        id_switch_failed_case = next(
+            item
+            for item in response["failed_cases"]
+            if item["failure_type"] == "id_switch"
+        )
+        bad_case_service = BadCaseService(eval_root=tmp_path / "evals", session=session)
+        bad_case = bad_case_service.create_bad_case_from_failed_case(
+            run_id="run-tracking-db",
+            failed_case_id=id_switch_failed_case["failed_case_id"],
+        )
+        assert bad_case["case_type"] == "id_switch"
+        assert bad_case["module"] == "tracker"
+        assert bad_case["linked_failed_case_id"] == id_switch_failed_case["failed_case_id"]
+        assert bad_case_service.list_bad_cases(
+            run_id="run-tracking-db",
+            case_type="id_switch",
+            module="tracker",
+        )
         rows = EvaluationResultRepository(session).list(run_id="run-tracking-db", evaluation_type="tracking")
         stored_names = {row.metrics["metric_name"] for row in rows}
         assert {"tracking_idf1", "tracking_mota", "tracking_id_switches", "tracking_track_lost"} <= stored_names

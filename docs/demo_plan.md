@@ -80,7 +80,10 @@ Demo seed 验收：
 ## 6. Local Delivery 验收
 
 - 无模型权重时，可通过 dry-run 跑通 upload -> process -> artifacts -> frontend 展示。
-- 有本地视频和权重时，可按 README 配置真实 YOLOv8 推理，但输出只保存在 ignored 本地目录。
+- 有本地视频和权重时，可按 README 配置真实 YOLOv8 推理；如本地环境安装
+  `deep-sort-realtime`，也可关闭 DeepSORT dry-run 做 smoke 级 tracking
+  验证。模型权重、真实视频和输出结果仍只保存在 ignored 本地目录，不提交
+  Git，也不作为真实道路 benchmark。
 - Docker Compose 可用于本地验证 / demo，启动 backend、frontend、SQLite 和本地目录挂载；它不是生产部署声明。
 - demo 文档能说明如何清理本地 results。
 - danger check、tracked forbidden scan 和大文件扫描均通过。

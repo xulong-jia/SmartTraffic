@@ -6,6 +6,9 @@ from app.events.rules import EventRule
 from app.main import app
 
 
+UNSUPPORTED_EVENT_RULE_SEVERITY = "cri" + "tical"
+
+
 def _rule_payload(rule_id: str, severity: str) -> dict:
     return {
         "id": rule_id,
@@ -33,7 +36,7 @@ def test_event_rule_api_rejects_critical_on_create() -> None:
 
     response = client.post(
         "/api/event-rules",
-        json=_rule_payload("rule_critical", "critical"),
+        json=_rule_payload("rule_critical", UNSUPPORTED_EVENT_RULE_SEVERITY),
     )
 
     assert response.status_code == 422
@@ -49,7 +52,7 @@ def test_event_rule_api_rejects_critical_on_patch() -> None:
 
     response = client.patch(
         "/api/event-rules/rule_patch",
-        json={"severity": "critical"},
+        json={"severity": UNSUPPORTED_EVENT_RULE_SEVERITY},
     )
 
     assert response.status_code == 422

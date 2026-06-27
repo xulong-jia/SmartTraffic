@@ -55,7 +55,7 @@ DEMO_ZONES: dict[str, Any] = {
         {
             "id": "zone_counting_line_demo",
             "name": "Demo counting line",
-            "zone_type": "counting_line",
+            "zone_type": "counting_zone",
             "polygon": [[290, 90], [310, 90], [310, 440], [290, 440]],
             "counting_line": {
                 "start_point": [300, 100],
@@ -101,7 +101,7 @@ DEMO_EVENT_RULES: dict[str, Any] = {
             "target_classes": ["person", "bicycle", "motorcycle"],
             "parameters": {"min_dwell_frames": 1},
             "cooldown_seconds": 1.0,
-            "severity": "critical",
+            "severity": "high",
             "version": 1,
             "min_track_length": 1,
         },
@@ -165,7 +165,7 @@ DEMO_EVENT_RULES: dict[str, Any] = {
                 "count_once_per_track": True,
             },
             "cooldown_seconds": 0.0,
-            "severity": "info",
+            "severity": "low",
             "version": 1,
             "min_track_length": 2,
         },
@@ -217,7 +217,7 @@ DEMO_EXPECTED_EVENTS: dict[str, Any] = {
             "zone_id": "zone_danger_demo",
             "start_frame": 18,
             "end_frame": 20,
-            "severity": "critical",
+            "severity": "high",
         },
         {
             "event_id": "expected_flow_count_001",
@@ -225,7 +225,7 @@ DEMO_EXPECTED_EVENTS: dict[str, Any] = {
             "track_id": 303,
             "zone_id": "zone_counting_line_demo",
             "frame_index": 25,
-            "severity": "info",
+            "severity": "low",
         },
         {
             "event_id": "expected_illegal_parking_001",

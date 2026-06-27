@@ -24,6 +24,11 @@ def compute_event_metrics(
             "precision": None,
             "recall": None,
             "f1": None,
+            "event_accuracy": None,
+            "false_alarm_rate": None,
+            "event_recall": None,
+            "event_f1": None,
+            "per_event_type": {},
             "failed_cases": [],
         }
 
@@ -48,6 +53,8 @@ def compute_event_metrics(
         if precision is not None and recall is not None and precision + recall > 0
         else None
     )
+    event_accuracy = _safe_ratio(true_positive, len(expected_events))
+    false_alarm_rate = _zero_ratio(false_positive, len(actual_events))
     failed_cases = [
         _event_failed_case("false_negative", expected=expected_events[index], actual={})
         for index in range(len(expected_events))
@@ -69,6 +76,16 @@ def compute_event_metrics(
         "precision": precision,
         "recall": recall,
         "f1": f1,
+        "event_accuracy": event_accuracy,
+        "false_alarm_rate": false_alarm_rate,
+        "event_recall": recall,
+        "event_f1": f1,
+        "per_event_type": _per_event_type_metrics(
+            expected_events,
+            actual_events,
+            matched_expected=matched_expected,
+            matched_actual=matched_actual,
+        ),
         "failed_cases": failed_cases,
     }
 
@@ -225,6 +242,57 @@ def _event_failed_case(
     }
 
 
+def _per_event_type_metrics(
+    expected_events: list[dict[str, Any]],
+    actual_events: list[dict[str, Any]],
+    *,
+    matched_expected: set[int],
+    matched_actual: set[int],
+) -> dict[str, dict[str, Any]]:
+    event_types = sorted(
+        {
+            str(event.get("event_type"))
+            for event in [*expected_events, *actual_events]
+            if event.get("event_type") is not None
+        }
+    )
+    metrics: dict[str, dict[str, Any]] = {}
+    for event_type in event_types:
+        expected_indices = [
+            index
+            for index, event in enumerate(expected_events)
+            if str(event.get("event_type")) == event_type
+        ]
+        actual_indices = [
+            index
+            for index, event in enumerate(actual_events)
+            if str(event.get("event_type")) == event_type
+        ]
+        true_positive = len(set(expected_indices) & matched_expected)
+        false_negative = len(expected_indices) - true_positive
+        false_positive = len(actual_indices) - len(set(actual_indices) & matched_actual)
+        precision = _safe_ratio(true_positive, true_positive + false_positive)
+        recall = _safe_ratio(true_positive, true_positive + false_negative)
+        f1 = (
+            _round_metric((2 * precision * recall) / (precision + recall))
+            if precision is not None and recall is not None and precision + recall > 0
+            else None
+        )
+        metrics[event_type] = {
+            "expected_count": len(expected_indices),
+            "actual_count": len(actual_indices),
+            "true_positive": true_positive,
+            "false_positive": false_positive,
+            "false_negative": false_negative,
+            "precision": precision,
+            "recall": recall,
+            "f1": f1,
+            "event_accuracy": _safe_ratio(true_positive, len(expected_indices)),
+            "false_alarm_rate": _zero_ratio(false_positive, len(actual_indices)),
+        }
+    return metrics
+
+
 def _extract_total_count(payload: Mapping[str, Any]) -> int:
     summary = payload.get("summary")
     if isinstance(summary, Mapping):
@@ -306,6 +374,12 @@ def _mean(values: list[float]) -> int | float:
 def _safe_ratio(numerator: int | float, denominator: int | float) -> float | None:
     if denominator == 0:
         return None
+    return _round_metric(float(numerator) / float(denominator))
+
+
+def _zero_ratio(numerator: int | float, denominator: int | float) -> float:
+    if denominator == 0:
+        return 0.0
     return _round_metric(float(numerator) / float(denominator))
 
 

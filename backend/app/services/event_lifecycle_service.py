@@ -5,6 +5,7 @@ from uuid import uuid4
 from sqlalchemy.orm import Session
 
 from app.alerts.contracts import build_alert
+from app.events.engine import EventEngine
 from app.repositories import (
     AlertRepository,
     EventEvidenceRepository,
@@ -13,7 +14,9 @@ from app.repositories import (
     ReviewCommentRepository,
     RuleExecutionRepository,
     TrafficAnalysisRunRepository,
+    TrajectoryPointRepository,
 )
+from app.services.event_rule_service import EventRuleDbService
 
 
 REVIEW_ACTION_TO_STATUS = {
@@ -34,6 +37,7 @@ class EventLifecycleService:
         self.review_comments = ReviewCommentRepository(session)
         self.tasks = ProcessingTaskRepository(session)
         self.runs = TrafficAnalysisRunRepository(session)
+        self.trajectory_points = TrajectoryPointRepository(session)
 
     def create_event_with_evidence(
         self,
@@ -365,6 +369,7 @@ class EventLifecycleService:
         video_id = event.video_id or (run.video_id if run is not None else None)
         if video_id is None:
             raise KeyError("video_id")
+        selected_rule_id = rule_id or event.rule_id
         task = self.tasks.create(
             id=f"task_{uuid4().hex[:12]}",
             video_id=video_id,
@@ -373,7 +378,8 @@ class EventLifecycleService:
             parameters={
                 "event_id": event_id,
                 "run_id": run_id,
-                "rule_id": rule_id or event.rule_id,
+                "rule_id": selected_rule_id,
+                "rerun_scope": "event_rules_only",
                 "requested_by": reviewer,
                 "reason": comment,
             },
@@ -381,6 +387,22 @@ class EventLifecycleService:
             result=None,
             error_message=None,
         )
+        result = self._execute_event_rule_rerun(
+            run=run,
+            task_id=task.id,
+            run_id=run_id,
+            video_id=video_id,
+            event_id=event_id,
+            selected_rule_id=selected_rule_id,
+        )
+        if result is not None:
+            task = self.tasks.update_status(
+                task.id,
+                "completed",
+                progress=1.0,
+                result=result,
+                finished_at=datetime.now(UTC),
+            ) or task
         return {
             "run_id": run_id,
             "event_id": event_id,
@@ -388,6 +410,8 @@ class EventLifecycleService:
             "task_id": task.id,
             "mode": task.mode,
             "parameters": task.parameters or {},
+            "rerun_scope": "event_rules_only",
+            "result": task.result,
         }
 
     def has_db_events(self, *, run_id: str | None = None) -> bool:
@@ -458,6 +482,196 @@ class EventLifecycleService:
             payload=payload,
         )
         return _review_record_from_model(row)
+
+    def _execute_event_rule_rerun(
+        self,
+        *,
+        run: Any | None,
+        task_id: str,
+        run_id: str,
+        video_id: str,
+        event_id: str,
+        selected_rule_id: str | None,
+    ) -> dict[str, Any] | None:
+        config = self._event_engine_config(
+            run=run,
+            video_id=video_id,
+            selected_rule_id=selected_rule_id,
+        )
+        rules = config["event_rules"]
+        frames = _trajectory_frames_from_rows(
+            self.trajectory_points.list(run_id=run_id)
+        )
+        if not rules or not frames:
+            return None
+
+        output = EventEngine(
+            run_id=run_id,
+            video_id=video_id,
+            record_not_matched=True,
+        ).evaluate(frames, rules=rules, zones=config["zones"])
+        return self._persist_rerun_output(
+            task_id=task_id,
+            run_id=run_id,
+            video_id=video_id,
+            event_id=event_id,
+            output=output,
+            trajectory_frame_count=len(frames),
+            rule_count=len(rules),
+        )
+
+    def _event_engine_config(
+        self,
+        *,
+        run: Any | None,
+        video_id: str,
+        selected_rule_id: str | None,
+    ) -> dict[str, list[dict[str, Any]]]:
+        snapshot = _event_config_snapshot(run)
+        if snapshot is not None:
+            config = EventRuleDbService(self.session).build_event_engine_config(
+                video_id=video_id,
+                zones=_config_items(snapshot.get("zones")),
+                rules=_config_items(snapshot.get("event_rules")),
+            )
+        else:
+            config = EventRuleDbService(self.session).build_event_engine_config(
+                video_id=video_id,
+            )
+        if selected_rule_id is None:
+            return config
+        filtered_rules = [
+            rule
+            for rule in config["event_rules"]
+            if str(rule.get("rule_id") or rule.get("id")) == str(selected_rule_id)
+        ]
+        if filtered_rules:
+            config = {**config, "event_rules": filtered_rules}
+        return config
+
+    def _persist_rerun_output(
+        self,
+        *,
+        task_id: str,
+        run_id: str,
+        video_id: str,
+        event_id: str,
+        output: dict[str, Any],
+        trajectory_frame_count: int,
+        rule_count: int,
+    ) -> dict[str, Any]:
+        source_to_rerun_event_id: dict[str, str] = {}
+        generated_event_ids: list[str] = []
+        for index, event in enumerate(output.get("events") or []):
+            if not isinstance(event, dict):
+                continue
+            rerun_event_id = f"rerun_{task_id}_{index:04d}"
+            source_event_id = str(event.get("event_id") or rerun_event_id)
+            source_to_rerun_event_id[source_event_id] = rerun_event_id
+            generated_event_ids.append(rerun_event_id)
+            payload = dict(event)
+            payload.update(
+                {
+                    "source_event_id": source_event_id,
+                    "rerun_source_event_id": event_id,
+                    "rerun_task_id": task_id,
+                    "rerun_scope": "event_rules_only",
+                }
+            )
+            self.events.create(
+                id=rerun_event_id,
+                run_id=run_id,
+                video_id=str(event.get("video_id") or video_id),
+                rule_id=event.get("rule_id"),
+                zone_id=event.get("zone_id"),
+                type=str(event.get("event_type") or "rule_rerun"),
+                status=str(event.get("status") or "pending"),
+                severity=event.get("severity"),
+                frame_index=_optional_int(
+                    event.get("end_frame") or event.get("start_frame")
+                ),
+                timestamp_ms=_optional_float(
+                    event.get("end_time_ms") or event.get("start_time_ms")
+                ),
+                track_id=(
+                    str(event["track_id"]) if event.get("track_id") is not None else None
+                ),
+                payload=payload,
+            )
+
+        generated_evidence_ids: list[str] = []
+        for index, evidence in enumerate(output.get("event_evidence") or []):
+            if not isinstance(evidence, dict):
+                continue
+            source_event_id = str(evidence.get("event_id") or "")
+            rerun_event_id = source_to_rerun_event_id.get(source_event_id)
+            if rerun_event_id is None:
+                continue
+            evidence_id = f"rerun_{task_id}_evidence_{index:04d}"
+            payload = dict(evidence)
+            payload.update(
+                {
+                    "source_event_id": source_event_id,
+                    "rerun_task_id": task_id,
+                    "rerun_scope": "event_rules_only",
+                }
+            )
+            self.event_evidence.create(
+                id=evidence_id,
+                event_id=rerun_event_id,
+                run_id=run_id,
+                evidence_type=str(evidence.get("evidence_type") or "rule"),
+                payload=payload,
+                artifact_path=evidence.get("snapshot_path"),
+            )
+            generated_evidence_ids.append(evidence_id)
+
+        generated_execution_ids: list[str] = []
+        for index, execution in enumerate(output.get("rule_executions") or []):
+            if not isinstance(execution, dict):
+                continue
+            execution_id = f"rerun_{task_id}_exec_{index:04d}"
+            source_event_id = str(execution.get("event_id") or "")
+            details = dict(execution)
+            if source_event_id in source_to_rerun_event_id:
+                details["event_id"] = source_to_rerun_event_id[source_event_id]
+                details["source_event_id"] = source_event_id
+            details.update(
+                {
+                    "rerun_source_event_id": event_id,
+                    "rerun_task_id": task_id,
+                    "rerun_scope": "event_rules_only",
+                }
+            )
+            status = str(execution.get("status") or "skipped")
+            self.rule_executions.create(
+                id=execution_id,
+                run_id=run_id,
+                rule_id=execution.get("rule_id"),
+                status=status,
+                matched_count=1 if status == "matched" else 0,
+                details=details,
+                error_message=(
+                    str(execution.get("error_message"))
+                    if execution.get("error_message") is not None
+                    else None
+                ),
+            )
+            generated_execution_ids.append(execution_id)
+
+        return {
+            "task_type": "rule_rerun",
+            "rerun_scope": "event_rules_only",
+            "run_id": run_id,
+            "source_event_id": event_id,
+            "trajectory_frame_count": trajectory_frame_count,
+            "rule_count": rule_count,
+            "generated_event_count": len(generated_event_ids),
+            "generated_evidence_count": len(generated_evidence_ids),
+            "generated_rule_execution_count": len(generated_execution_ids),
+            "generated_event_ids": generated_event_ids,
+            "summary": dict(output.get("summary") or {}),
+        }
 
 
 def _event_from_model(row: Any) -> dict[str, Any]:
@@ -644,11 +858,82 @@ def _review_state(
     }
 
 
+def _event_config_snapshot(run: Any | None) -> dict[str, Any] | None:
+    if run is None:
+        return None
+    summary = run.summary or {}
+    if not isinstance(summary, dict):
+        return None
+    snapshot = summary.get("event_config_snapshot")
+    if isinstance(snapshot, dict):
+        return snapshot
+    if isinstance(summary.get("zones"), list) or isinstance(summary.get("event_rules"), list):
+        return summary
+    return None
+
+
+def _config_items(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    return [dict(item) for item in value if isinstance(item, dict)]
+
+
+def _trajectory_frames_from_rows(rows: list[Any]) -> list[dict[str, Any]]:
+    frames_by_key: dict[tuple[int, float | None], dict[str, Any]] = {}
+    for row in sorted(
+        rows,
+        key=lambda item: (
+            int(item.frame_index),
+            float(item.timestamp_ms or 0.0),
+            str(item.track_id),
+        ),
+    ):
+        key = (int(row.frame_index), _optional_float(row.timestamp_ms))
+        frame = frames_by_key.setdefault(
+            key,
+            {
+                "frame_index": int(row.frame_index),
+                "timestamp_ms": _optional_float(row.timestamp_ms),
+                "trajectory_points": [],
+            },
+        )
+        frame["trajectory_points"].append(_trajectory_point_from_row(row))
+    return list(frames_by_key.values())
+
+
+def _trajectory_point_from_row(row: Any) -> dict[str, Any]:
+    features = dict(row.features or {})
+    point = dict(features)
+    point.setdefault("track_id", _optional_int(row.track_id) or str(row.track_id))
+    point.setdefault("frame_index", int(row.frame_index))
+    point.setdefault("timestamp_ms", _optional_float(row.timestamp_ms))
+    point.setdefault("x", float(row.x))
+    point.setdefault("y", float(row.y))
+    point.setdefault("center", [float(row.x), float(row.y)])
+    point.setdefault("bottom_center", [float(row.x), float(row.y)])
+    point.setdefault("track_length", int(features.get("track_length") or 1))
+    if row.speed is not None:
+        point.setdefault("speed_px_per_second", _optional_float(row.speed))
+    moving_angle = _optional_float(row.direction)
+    if moving_angle is not None:
+        point.setdefault("moving_angle", moving_angle)
+    return point
+
+
 def _optional_int(value: Any) -> int | None:
     if value is None:
         return None
     try:
         return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _optional_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    try:
+        return float(value)
     except (TypeError, ValueError):
         return None
 

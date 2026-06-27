@@ -46,6 +46,9 @@ Full Stage 4CD 已实现：
 - `evaluation_type=detection` / `tracking` 已接入 EvaluationService；
   有 tiny fixture annotations 时可把 mAP / precision / recall / per-class AP
   以及 IDF1 / MOTA / ID switch / track lost 写入 `evaluation_results`。
+- Tracking evaluation 会把 ID switch 和 track lost segment 输出为 Evaluation
+  failed cases，`suggested_bad_case_type` 分别为 `id_switch` 和 `track_lost`，
+  供显式 Bad Case 转换使用。
 - 没有 annotation 时返回 `status=insufficient_data`、
   `reason=not_enough_annotations`，不写假指标。
 
@@ -155,8 +158,15 @@ rule replay regression；它不执行完整视频模型重跑。
 当前指标是 artifact-backed MVP：
 
 - Event：按 `event_type` 和 frame range overlap / tolerance 做贪心匹配，
-  输出 precision、recall、F1，并把 unmatched expected / actual 写为
-  failed cases。
+  输出 `event_accuracy`、`event_precision`、`event_recall`、`event_f1` 和
+  `false_alarm_rate`，并把 unmatched expected / actual 写为 failed cases。
+  当前 local definition 为：
+  - `event_accuracy = TP / expected_events`，表示 expected events 中被匹配的比例；没有 TN 口径，不代表真实道路总体准确率。
+  - `event_recall = TP / (TP + FN)`。
+  - `false_alarm_rate = FP / predicted_events`，等价于 `FP / (TP + FP)`；没有预测时为 0。
+  - `event_f1 = 2 * precision * recall / (precision + recall)`。
+  Details payload 还包含 per-event-type metrics；这些指标只用于 synthetic /
+  sample / local validation，不是官方 benchmark。
 - Flow counting：比较 expected counts 与 `flow_counts.json` 的 total、
   class、direction 误差，输出 absolute error、MAE、MAPE。
 - Trajectory：从 `trajectory_points.jsonl` 统计 track count、trajectory
@@ -168,7 +178,8 @@ rule replay regression；它不执行完整视频模型重跑。
 - Tracking：读取 tracking annotations 与 `tracks.jsonl`，输出 `tracking_idf1`、
   `tracking_mota`、`tracking_id_switches` 和 `tracking_track_lost`。当前实现是
   lightweight deterministic frame-level association；它不是 TrackEval official
-  implementation。
+  implementation。`id_switch` 和 `track_lost` 会作为 Evaluation failed cases
+  输出，可通过 failed-case -> Bad Case 流程显式转换。
 - Detection / Tracking：若没有 annotation，返回 `insufficient_data` /
   `not_enough_annotations`；不伪造真实 benchmark dataset 指标。
 - Regression：读取 Bad Case replay payload，输出 per-case replay result、

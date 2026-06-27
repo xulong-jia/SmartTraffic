@@ -186,6 +186,9 @@ Purpose:
 
 - Count vehicle or person track crossings over a configured counting line as
   Stage 5 event records.
+- The canonical zone config is `zone_type=counting_zone` with a nested
+  `counting_line` object. EventRule config resolution derives `line`, `line_id`,
+  and `direction` from that zone when the rule references the counting zone.
 
 Trigger condition:
 

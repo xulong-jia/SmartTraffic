@@ -917,8 +917,14 @@ workflow endpoint and returns the created `event_id`.
 
 `POST /api/review/events/{event_id}/rerun-rule` records a request as a
 `processing_tasks` row with `mode=rule_rerun` and parameters containing
-`event_id`, `run_id`, `rule_id`, `requested_by`, and `reason`. It does not run
-the rule engine or mutate result artifacts.
+`event_id`, `run_id`, `rule_id`, `rerun_scope=event_rules_only`,
+`requested_by`, and `reason`. For DB runs that already have persisted
+`trajectory_points` plus zone / event-rule config, the endpoint replays only
+the EventEngine rule layer against the existing trajectory records, appends new
+`rerun_*` event, evidence, and rule execution rows, and marks the task
+`completed`. It does not rerun YOLOv8, DeepSORT, trajectory extraction, or
+overwrite previous result rows. If the run has no usable trajectory/config data,
+the endpoint still preserves the request as a pending rule-rerun task.
 
 False-negative and rerun endpoints do not automatically create Bad Cases and do
 not automatically feed Evaluation Center.
@@ -926,7 +932,7 @@ not automatically feed Evaluation Center.
 Full Stage 5E Review UI uses these endpoints through a ReviewDrawer workflow:
 confirm / false-positive / ignore / resolve / comment stay in Review, Review ->
 Bad Case calls `POST /api/bad-cases/from-review`, and rule rerun request records
-only the `rule_rerun` task described above.
+the event-rules-only `rule_rerun` task described above.
 
 HTTP behavior:
 
@@ -1032,23 +1038,28 @@ Available endpoints:
 
 `POST /api/evaluation/run` accepts `event`, `flow_counting`, `trajectory`,
 `detection`, `tracking`, and `regression`. Event / flow / trajectory are MVP
-comparisons that can be written to DB. Detection writes `detection_mAP`,
-`detection_precision`, `detection_recall`, and `detection_ap_<class>` when
-annotation fixtures are available. Tracking writes `tracking_idf1`,
-`tracking_mota`, `tracking_id_switches`, and `tracking_track_lost` when
-annotation fixtures are available. Without annotations, detection / tracking
-return `insufficient_data` with `reason=not_enough_annotations` and do not emit
-fake benchmark numbers. Detection mAP is VOC-style single-IoU AP, not COCO
-official mAP. Tracking metrics are lightweight deterministic frame-level
-association, not TrackEval official implementation. Regression reads Bad Case
-DB rows or `bad_cases.jsonl` and uses `config` filters such as `case_type`,
-`module`, `status`, `tag`, and `apply_updates`. It writes per-case replay
-results plus `regression_pass_rate`, `failed_case_count`, `fixed_case_count`,
-and `reopened_case_count`. `apply_updates` defaults to false; when true,
-passed open / triaged cases are marked `fixed`, while failed fixed / verified
-cases are reopened as `open`. Missing replay payload returns
-`insufficient_data` and does not emit a fake pass. This does not execute a
-complete video-level rerun pipeline.
+comparisons that can be written to DB. Event evaluation writes
+`event_accuracy`, `event_precision`, `event_recall`, `event_f1`, and
+`false_alarm_rate`; the details payload also includes per-event-type metrics
+where available. Detection writes `detection_mAP`, `detection_precision`,
+`detection_recall`, and `detection_ap_<class>` when annotation fixtures are
+available. Tracking writes `tracking_idf1`, `tracking_mota`,
+`tracking_id_switches`, and `tracking_track_lost` when annotation fixtures are
+available; ID switches and lost tracks are also emitted as Evaluation failed
+cases with suggested Bad Case types `id_switch` and `track_lost`. Without
+annotations, detection / tracking return `insufficient_data` with
+`reason=not_enough_annotations` and do not emit fake benchmark numbers.
+Detection mAP is VOC-style single-IoU AP, not COCO official mAP. Tracking
+metrics are lightweight deterministic frame-level association, not TrackEval
+official implementation. Regression reads Bad Case DB rows or `bad_cases.jsonl`
+and uses `config` filters such as `case_type`, `module`, `status`, `tag`, and
+`apply_updates`. It writes per-case replay results plus
+`regression_pass_rate`, `failed_case_count`, `fixed_case_count`, and
+`reopened_case_count`. `apply_updates` defaults to false; when true, passed open
+/ triaged cases are marked `fixed`, while failed fixed / verified cases are
+reopened as `open`. Missing replay payload returns `insufficient_data` and does
+not emit a fake pass. This does not execute a complete video-level rerun
+pipeline.
 
 Full Stage 5E Evaluation UI presents run / dataset / type filters, result cards,
 JSON-friendly result details, failed-case -> Bad Case conversion, regression
@@ -1130,7 +1141,6 @@ implemented as working behavior yet:
 - complete video-level Bad Case rerun pipeline
 - COCO official mAP / TrackEval official evaluation
 - production realtime monitoring and production IAM
-- Full final `v1.0.0` release tag; Stage 8AB only prepares final audit docs
 
 ## Placeholders For Later Phases
 

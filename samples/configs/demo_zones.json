@@ -95,7 +95,7 @@
     {
       "id": "zone_counting_line_demo",
       "name": "Demo counting line",
-      "zone_type": "counting_line",
+      "zone_type": "counting_zone",
       "polygon": [
         [
           290,

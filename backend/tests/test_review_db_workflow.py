@@ -14,10 +14,14 @@ from app.repositories import (
     EventRepository,
     ProcessingTaskRepository,
     ReviewCommentRepository,
+    RuleExecutionRepository,
     TrafficAnalysisRunRepository,
+    TrajectoryPointRepository,
     VideoRepository,
 )
 from app.services.event_lifecycle_service import EventLifecycleService
+from app.services.event_rule_service import EventRuleDbService
+from app.services.zone_service import ZoneDbService
 
 
 @pytest.fixture
@@ -165,6 +169,56 @@ def test_review_false_positive_ignore_resolve_false_negative_and_rerun_request(
         assert task.parameters["requested_by"] == "operator_4"
 
 
+def test_rule_rerun_executes_event_rules_only_from_db_trajectory(
+    client: TestClient,
+    session_factory: sessionmaker[Session],
+) -> None:
+    with session_factory() as session:
+        _seed_rule_rerun_fixture(session)
+        session.commit()
+
+    response = client.post(
+        "/api/review/events/event-rerun-source/rerun-rule",
+        json={
+            "run_id": "run-rerun-db",
+            "comment": "rerun flow rule",
+            "reviewer": "operator_5",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "completed"
+    assert payload["rerun_scope"] == "event_rules_only"
+    assert payload["result"]["rerun_scope"] == "event_rules_only"
+    assert payload["result"]["trajectory_frame_count"] == 2
+    assert payload["result"]["rule_count"] == 1
+    assert payload["result"]["generated_event_count"] == 1
+    assert payload["result"]["generated_rule_execution_count"] >= 1
+
+    with session_factory() as session:
+        task = ProcessingTaskRepository(session).get(payload["task_id"])
+        assert task.status == "completed"
+        assert task.result["rerun_scope"] == "event_rules_only"
+        rerun_events = [
+            event
+            for event in EventRepository(session).list(run_id="run-rerun-db")
+            if event.id.startswith("rerun_")
+        ]
+        assert len(rerun_events) == 1
+        assert rerun_events[0].type == "flow_counting"
+        assert rerun_events[0].payload["rerun_source_event_id"] == "event-rerun-source"
+        executions = RuleExecutionRepository(session).list(run_id="run-rerun-db")
+        matched_rerun_executions = [
+            execution
+            for execution in executions
+            if execution.details.get("rerun_task_id") == payload["task_id"]
+            and execution.status == "matched"
+        ]
+        assert matched_rerun_executions
+        assert matched_rerun_executions[0].details["rerun_scope"] == "event_rules_only"
+
+
 def _seed_review_event(session: Session, *, event_id: str = "event-review-1") -> None:
     if VideoRepository(session).get("video-review-db") is None:
         VideoRepository(session).create(
@@ -192,4 +246,113 @@ def _seed_review_event(session: Session, *, event_id: str = "event-review-1") ->
         frame_index=5,
         rule_id="rule-review-db",
         payload={},
+    )
+
+
+def _seed_rule_rerun_fixture(session: Session) -> None:
+    VideoRepository(session).create(
+        id="video-rerun-db",
+        filename="rerun.mp4",
+        storage_path="local_videos/rerun.mp4",
+        status="completed",
+    )
+    zone = ZoneDbService(session).create_zone(
+        {
+            "id": "zone-rerun-counting",
+            "name": "Rerun counting zone",
+            "zone_type": "counting_zone",
+            "polygon": [[0, 0], [100, 0], [100, 100], [0, 100]],
+            "counting_line": {
+                "start_point": [50, 0],
+                "end_point": [50, 100],
+                "in_direction": "positive",
+                "enabled": True,
+            },
+            "video_id": "video-rerun-db",
+        }
+    )
+    rule = EventRuleDbService(session).create_rule(
+        {
+            "id": "rule-rerun-flow",
+            "name": "Rerun flow count",
+            "event_type": "flow_counting",
+            "zone_id": zone["id"],
+            "target_classes": ["car"],
+            "parameters": {},
+            "severity": "low",
+            "min_track_length": 1,
+        }
+    )
+    TrafficAnalysisRunRepository(session).create(
+        id="run-rerun-db",
+        video_id="video-rerun-db",
+        status="completed",
+        result_dir="results/traffic_analysis/run-rerun-db",
+        artifact_index={},
+        summary={
+            "event_config_snapshot": {
+                "zones": [zone],
+                "event_rules": [rule],
+            }
+        },
+    )
+    EventLifecycleService(session).create_event_with_evidence(
+        run_id="run-rerun-db",
+        video_id="video-rerun-db",
+        event_id="event-rerun-source",
+        event_type="flow_counting",
+        status="pending",
+        severity="low",
+        track_id="44",
+        frame_index=2,
+        rule_id=rule["id"],
+        zone_id=zone["id"],
+        payload={},
+    )
+    repo = TrajectoryPointRepository(session)
+    repo.create(
+        id="tp-rerun-1",
+        run_id="run-rerun-db",
+        video_id="video-rerun-db",
+        track_id="44",
+        frame_index=1,
+        timestamp_ms=100.0,
+        x=40.0,
+        y=50.0,
+        speed=12.0,
+        direction=None,
+        features={
+            "track_id": 44,
+            "class_name": "car",
+            "track_length": 1,
+            "center": [40.0, 50.0],
+            "bottom_center": [40.0, 50.0],
+        },
+    )
+    repo.create(
+        id="tp-rerun-2",
+        run_id="run-rerun-db",
+        video_id="video-rerun-db",
+        track_id="44",
+        frame_index=2,
+        timestamp_ms=200.0,
+        x=60.0,
+        y=50.0,
+        speed=12.0,
+        direction=None,
+        features={
+            "track_id": 44,
+            "class_name": "car",
+            "track_length": 2,
+            "center": [60.0, 50.0],
+            "bottom_center": [60.0, 50.0],
+            "line_crossings": [
+                {
+                    "line_id": zone["id"],
+                    "direction": "positive",
+                    "previous_point": [40.0, 50.0],
+                    "current_point": [60.0, 50.0],
+                }
+            ],
+        },
     )

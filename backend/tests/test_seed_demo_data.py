@@ -3,6 +3,13 @@ import json
 from pathlib import Path
 
 from app.analysis.evaluation_metrics import compute_event_metrics
+from app.events.engine import EventEngine
+from app.events.rules import EventRule
+from app.schemas.event_rule import EventRuleCreate
+from app.schemas.processing import DetectionProcessRequest
+from app.schemas.zone import ZoneCreate
+from app.services.event_rule_service import event_rule_service
+from app.trajectory.engine import TrajectoryEngine
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
@@ -112,3 +119,70 @@ def test_demo_expected_events_match_synthetic_actuals_for_six_types():
     assert metrics["recall"] == 1.0
     assert metrics["f1"] == 1.0
     assert metrics["failed_cases"] == []
+
+
+def test_demo_processing_request_matches_backend_contract():
+    payload = json.loads(
+        (PROJECT_DIR / "samples" / "configs" / "demo_processing_request.json").read_text(
+            encoding="utf-8"
+        )
+    )["body"]
+
+    request = DetectionProcessRequest(**payload)
+    assert request.event_rules is not None
+    assert request.zones is not None
+    assert {rule["severity"] for rule in request.event_rules} <= {"low", "medium", "high"}
+    assert {zone["zone_type"] for zone in request.zones} >= {"counting_zone"}
+
+    for rule in request.event_rules:
+        EventRuleCreate(**rule)
+        EventRule.from_dict(rule)
+    for zone in request.zones:
+        ZoneCreate(**zone)
+
+
+def test_demo_counting_zone_drives_line_crossing_and_flow_event():
+    payload = json.loads(
+        (PROJECT_DIR / "samples" / "configs" / "demo_processing_request.json").read_text(
+            encoding="utf-8"
+        )
+    )["body"]
+    config = event_rule_service.build_event_engine_config(
+        zones=payload["zones"],
+        rules=payload["event_rules"],
+    )
+    engine = TrajectoryEngine()
+    first = engine.update(
+        _trajectory_frame(1, [260, 200, 280, 240]),
+        zones=config["zones"],
+    )
+    second = engine.update(
+        _trajectory_frame(2, [320, 200, 340, 240]),
+        zones=config["zones"],
+    )
+
+    crossing = second["trajectory_points"][0]["line_crossings"][0]
+    assert crossing["line_id"] == "zone_counting_line_demo"
+    result = EventEngine(run_id="demo-run", video_id="demo-video").evaluate(
+        [first, second],
+        rules=config["event_rules"],
+        zones=config["zones"],
+    )
+    assert "flow_counting" in {event["event_type"] for event in result["events"]}
+
+
+def _trajectory_frame(frame_index: int, bbox: list[float]) -> dict:
+    return {
+        "frame_index": frame_index,
+        "timestamp_ms": frame_index * 100,
+        "tracks": [
+            {
+                "track_id": 303,
+                "class_id": 2,
+                "class_name": "car",
+                "confidence": 0.9,
+                "bbox": bbox,
+                "state": "confirmed",
+            }
+        ],
+    }

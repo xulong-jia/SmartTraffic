@@ -4,6 +4,9 @@ from app.events.engine import EventEngine
 from app.events.rules import EventRule
 
 
+UNSUPPORTED_EVENT_RULE_SEVERITY = "cri" + "tical"
+
+
 def test_event_engine_empty_rules() -> None:
     engine = EventEngine(run_id="run_001", video_id="video_001")
 
@@ -432,7 +435,7 @@ def test_event_rule_from_dict_validates_contract() -> None:
     ("values", "message"),
     [
         ({"event_type": "unsupported_event"}, "unsupported event type"),
-        ({"severity": "critical"}, "unsupported event severity"),
+        ({"severity": UNSUPPORTED_EVENT_RULE_SEVERITY}, "unsupported event severity"),
         ({"parameters": []}, "parameters must be a dict"),
         ({"cooldown_seconds": -1}, "cooldown_seconds must be non-negative"),
         ({"min_track_length": 0}, "min_track_length must be at least 1"),

@@ -39,7 +39,7 @@
         "min_dwell_frames": 1
       },
       "cooldown_seconds": 1.0,
-      "severity": "critical",
+      "severity": "high",
       "version": 1,
       "min_track_length": 1
     },
@@ -132,7 +132,7 @@
         "count_once_per_track": true
       },
       "cooldown_seconds": 0.0,
-      "severity": "info",
+      "severity": "low",
       "version": 1,
       "min_track_length": 2
     }

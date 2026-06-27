@@ -19,7 +19,7 @@
       "zone_id": "zone_danger_demo",
       "start_frame": 18,
       "end_frame": 20,
-      "severity": "critical"
+      "severity": "high"
     },
     {
       "event_id": "expected_flow_count_001",
@@ -27,7 +27,7 @@
       "track_id": 303,
       "zone_id": "zone_counting_line_demo",
       "frame_index": 25,
-      "severity": "info"
+      "severity": "low"
     },
     {
       "event_id": "expected_illegal_parking_001",
