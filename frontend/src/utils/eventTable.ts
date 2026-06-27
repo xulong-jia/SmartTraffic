@@ -60,7 +60,7 @@ export function buildEventTableRows(
       id,
       eventType: formatOptional(event.event_type),
       severity: formatOptional(event.severity),
-      status: formatOptional(event.status),
+      status: formatEventStatusLabel(event.status),
       trackId: formatOptional(event.track_id),
       zoneId: formatOptional(event.zone_id),
       startTimeMs: formatOptional(event.start_time_ms ?? event.timestamp_ms ?? event.start_frame),
@@ -76,15 +76,27 @@ export function eventTableEmptyLabel(
   events: EventRecord[]
 ): string {
   if (loading) {
-    return "Loading events";
+    return "正在加载事件...";
   }
   if (error) {
     return error;
   }
   if (events.length === 0) {
-    return "No events match the current filters.";
+    return "暂无事件。请先运行一次视频分析。";
   }
   return "";
+}
+
+function formatEventStatusLabel(status: string | number | boolean | null | undefined | object): string {
+  const raw = formatOptional(status);
+  const labels: Record<string, string> = {
+    pending: "待处理 pending",
+    confirmed: "已确认 confirmed",
+    new: "新事件 new",
+    resolved: "已解决 resolved",
+    ignored: "已忽略 ignored"
+  };
+  return labels[raw] ?? raw;
 }
 
 export function getEventTableId(event: EventRecord, index = 0): string {

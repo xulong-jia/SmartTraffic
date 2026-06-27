@@ -55,8 +55,8 @@ export function buildAlertPanelRows(
       id,
       title: normalizeText(alert.title) || normalizeDisplay(alert.alert_type),
       message: normalizeDisplay(alert.message),
-      level: normalizeDisplay(alert.level),
-      status: normalizeDisplay(alert.status),
+      level: formatAlertLevelLabel(alert.level),
+      status: formatAlertStatusLabel(alert.status),
       eventId: normalizeDisplay(alert.event_id),
       runId: normalizeDisplay(alert.run_id),
       trackId: formatOptional(alert.track_id),
@@ -82,15 +82,36 @@ export function alertPanelEmptyLabel(
   alerts: AlertRecord[]
 ): string {
   if (loading) {
-    return "Loading alerts";
+    return "正在加载告警...";
   }
   if (error) {
     return error;
   }
   if (alerts.length === 0) {
-    return "No alerts match the current filters.";
+    return "暂无告警。事件触发后会在这里显示。";
   }
   return "";
+}
+
+export function formatAlertStatusLabel(status: string | null | undefined): string {
+  const normalized = normalizeText(status);
+  const labels: Record<string, string> = {
+    new: "新告警 new",
+    acknowledged: "已确认 acknowledged",
+    resolved: "已解决 resolved",
+    ignored: "已忽略 ignored"
+  };
+  return labels[normalized] ?? normalizeDisplay(status);
+}
+
+export function formatAlertLevelLabel(level: string | null | undefined): string {
+  const normalized = normalizeText(level);
+  const labels: Record<string, string> = {
+    info: "信息 info",
+    warning: "警告 warning",
+    critical: "严重 critical"
+  };
+  return labels[normalized] ?? normalizeDisplay(level);
 }
 
 function normalizeFilter(value: string | null | undefined): string {

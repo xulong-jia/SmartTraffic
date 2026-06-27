@@ -38,43 +38,43 @@ export interface ReviewWorkflowActionItem {
 export const REVIEW_WORKFLOW_ACTIONS: ReviewWorkflowActionItem[] = [
   {
     action: "confirm",
-    label: "Confirm",
+    label: "确认 Confirm",
     description: "Confirm the event as a valid detection.",
     requiresComment: false
   },
   {
     action: "false-positive",
-    label: "False positive",
+    label: "标记误报 False positive",
     description: "Mark the event as incorrectly triggered.",
     requiresComment: true
   },
   {
     action: "ignore",
-    label: "Ignore",
+    label: "忽略 Ignore",
     description: "Leave the event out of current review decisions.",
     requiresComment: false
   },
   {
     action: "resolve",
-    label: "Resolve",
+    label: "解决 Resolve",
     description: "Close a reviewed event after follow-up.",
     requiresComment: false
   },
   {
     action: "comment",
-    label: "Comment",
+    label: "添加评论 Comment",
     description: "Append an audit comment without changing status.",
     requiresComment: true
   },
   {
     action: "bad-case",
-    label: "Create Bad Case",
+    label: "创建坏例 Create Bad Case",
     description: "Create a review-linked Bad Case for later regression.",
     requiresComment: false
   },
   {
     action: "rerun-rule",
-    label: "Request rule rerun",
+    label: "请求规则重跑 Request rule rerun",
     description: "Record a rule_rerun processing task request.",
     requiresComment: true
   }

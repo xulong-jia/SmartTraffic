@@ -52,16 +52,16 @@ const camera = {
 
 test("camera source and masked display helpers are deterministic", () => {
   assert.equal(realtimePreview.formatCameraSourceLabel("rtsp"), "RTSP");
-  assert.equal(realtimePreview.formatCameraSourceLabel("file"), "Local file");
+  assert.equal(realtimePreview.formatCameraSourceLabel("file"), "本地文件 Local file");
   assert.equal(realtimePreview.buildMaskedStreamDisplay(camera), "rtsp://***@example.local/...");
-  assert.equal(realtimePreview.buildMaskedStreamDisplay(null), "No camera selected");
+  assert.equal(realtimePreview.buildMaskedStreamDisplay(null), "未选择摄像头 No camera selected");
 });
 
 test("start disabled reason reflects camera selection and enabled state", () => {
-  assert.equal(realtimePreview.buildStartDisabledReason(null), "Select a camera");
+  assert.equal(realtimePreview.buildStartDisabledReason(null), "请选择摄像头 Select a camera");
   assert.equal(
     realtimePreview.buildStartDisabledReason({ ...camera, enabled: false }),
-    "Camera disabled"
+    "摄像头已停用 Camera disabled"
   );
   assert.equal(realtimePreview.buildStartDisabledReason(camera), "");
 });
@@ -80,10 +80,10 @@ test("status cards expose realtime preview counts", () => {
       alert_count: 1
     }),
     [
-      { label: "Status", value: "running" },
-      { label: "Frames", value: 3 },
-      { label: "Events", value: 1 },
-      { label: "Alerts", value: 1 }
+      { label: "状态 Status", value: "运行中 running" },
+      { label: "帧 Frames", value: 3 },
+      { label: "事件 Events", value: 1 },
+      { label: "告警 Alerts", value: 1 }
     ]
   );
 });
@@ -131,7 +131,7 @@ test("recent frame event and alert rows are display ready", () => {
       {
         id: "event_1",
         type: "motion",
-        severity: "low",
+        severity: "低 low",
         frame: 2,
         status: "preview",
         description: "motion"
@@ -153,7 +153,7 @@ test("recent frame event and alert rows are display ready", () => {
     [
       {
         id: "alert_1",
-        level: "info",
+        level: "信息 info",
         type: "motion",
         status: "preview",
         message: "alert"

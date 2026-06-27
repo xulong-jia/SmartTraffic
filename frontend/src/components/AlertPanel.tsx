@@ -54,15 +54,15 @@ export default function AlertPanel({
         <table>
           <thead>
             <tr>
-              <th>Status</th>
-              <th>Level</th>
-              <th>Title</th>
-              <th>Event</th>
+              <th>状态 Status</th>
+              <th>级别 Level</th>
+              <th>标题 Title</th>
+              <th>事件 Event</th>
               <th>Track</th>
               <th>Run</th>
-              <th>Created</th>
-              <th>Message</th>
-              <th>Actions</th>
+              <th>创建时间 Created</th>
+              <th>消息 Message</th>
+              <th>操作 Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -95,7 +95,7 @@ export default function AlertPanel({
                           }}
                           type="button"
                         >
-                          Acknowledge
+                          确认 Acknowledge
                         </button>
                       ) : null}
                       {onResolve ? (
@@ -107,7 +107,7 @@ export default function AlertPanel({
                           }}
                           type="button"
                         >
-                          Resolve
+                          解决 Resolve
                         </button>
                       ) : null}
                       {onIgnore ? (
@@ -119,7 +119,7 @@ export default function AlertPanel({
                           }}
                           type="button"
                         >
-                          Ignore
+                          忽略 Ignore
                         </button>
                       ) : null}
                       {href ? (
@@ -127,10 +127,10 @@ export default function AlertPanel({
                           href={href}
                           onClick={(event) => openReviewLink(event, href, onOpenReview)}
                         >
-                          Review linked event
+                          复核关联事件 Review
                         </a>
                       ) : (
-                        <span className="muted">No linked event</span>
+                        <span className="muted">无关联事件 No linked event</span>
                       )}
                     </div>
                   </td>

@@ -95,7 +95,7 @@ export default function ZoneEditor() {
         : await createZone(buildZonePayload(zoneState));
       await loadConfig();
       setZoneState((current) => ({ ...current, id: saved.id, version: saved.version }));
-      setMessage(`Zone ${saved.name} saved.`);
+      setMessage(`区域已保存 Zone saved: ${saved.name}.`);
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Failed to save zone.");
     } finally {
@@ -114,7 +114,7 @@ export default function ZoneEditor() {
       await deleteZone(zoneState.id);
       await loadConfig();
       setZoneState(createEmptyZoneEditorState());
-      setMessage("Zone deleted.");
+      setMessage("区域已删除 Zone deleted.");
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Failed to delete zone.");
     } finally {
@@ -132,7 +132,7 @@ export default function ZoneEditor() {
         : await saveNewRule(ruleState);
       await loadConfig();
       setRuleState(eventRuleToFormState(saved));
-      setMessage(`Event rule ${saved.name} saved.`);
+      setMessage(`事件规则已保存 Event rule saved: ${saved.name}.`);
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Failed to save rule.");
     } finally {
@@ -170,7 +170,7 @@ export default function ZoneEditor() {
       await deleteEventRule(ruleState.id);
       await loadConfig();
       setRuleState(createEmptyEventRuleFormState());
-      setMessage("Event rule deleted.");
+      setMessage("事件规则已删除 Event rule deleted.");
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Failed to delete rule.");
     } finally {
@@ -180,7 +180,7 @@ export default function ZoneEditor() {
 
   return (
     <div className="zone-editor">
-      {loading ? <div className="panel muted">Loading zone and rule config...</div> : null}
+      {loading ? <div className="panel muted">正在加载区域和规则配置...</div> : null}
       {error ? <div className="panel status-error">{error}</div> : null}
       {message ? <div className="panel status-available">{message}</div> : null}
 
@@ -188,13 +188,13 @@ export default function ZoneEditor() {
         <section className="panel zone-editor-canvas-panel">
           <div className="section-heading-row">
             <div>
-              <h3>Zone Canvas</h3>
+              <h3>区域画布 Zone Canvas</h3>
               <p className="muted">
                 {mode === "polygon"
-                  ? "Polygon geometry"
+                  ? "多边形 Polygon geometry"
                   : mode === "direction"
-                    ? "Direction line geometry"
-                    : "Counting line geometry"}
+                    ? "方向线 Direction line geometry"
+                    : "计数线 Counting line geometry"}
               </p>
             </div>
             <div className="toolbar compact">
@@ -205,14 +205,14 @@ export default function ZoneEditor() {
                   onClick={() => setMode(drawingMode)}
                   type="button"
                 >
-                  {drawingMode}
+                  {formatDrawingModeLabel(drawingMode)}
                 </button>
               ))}
               <button
                 onClick={() => setZoneState((current) => clearDrawingForMode(current, mode))}
                 type="button"
               >
-                Clear
+                清除 Clear
               </button>
             </div>
           </div>
@@ -242,22 +242,22 @@ export default function ZoneEditor() {
             <SvgEditorLine line={zoneState.countingLine} variant="counting" />
           </svg>
           <div className="zone-canvas-footer">
-            <span>Polygon points: {zoneState.polygon.length}</span>
-            <span>Direction angle: {lineAngleDegrees(zoneState.directionLine) ?? "-"}</span>
-            <span>Counting line: {formatLineState(zoneState.countingLine)}</span>
+            <span>多边形点 Polygon points: {zoneState.polygon.length}</span>
+            <span>方向角 Direction angle: {lineAngleDegrees(zoneState.directionLine) ?? "-"}</span>
+            <span>计数线 Counting line: {formatLineState(zoneState.countingLine)}</span>
           </div>
         </section>
 
         <section className="panel">
           <div className="section-heading-row">
-            <h3>{zoneState.id ? "Edit Zone" : "New Zone"}</h3>
+            <h3>{zoneState.id ? "编辑区域 Edit Zone" : "新建区域 New Zone"}</h3>
             <button onClick={() => setZoneState(createEmptyZoneEditorState())} type="button">
-              New
+              新建 New
             </button>
           </div>
           <div className="zone-form-grid">
             <label className="stacked-control">
-              Name
+              名称 Name
               <input
                 onChange={(event) =>
                   setZoneState((current) => ({ ...current, name: event.target.value }))
@@ -266,7 +266,7 @@ export default function ZoneEditor() {
               />
             </label>
             <label className="stacked-control">
-              Type
+              类型 Type
               <select
                 onChange={(event) =>
                   setZoneState((current) => ({
@@ -278,13 +278,13 @@ export default function ZoneEditor() {
               >
                 {ZONE_TYPES.map((zoneType) => (
                   <option key={zoneType} value={zoneType}>
-                    {zoneType}
+                    {formatZoneTypeLabel(zoneType)}
                   </option>
                 ))}
               </select>
             </label>
             <label className="stacked-control">
-              Version
+              版本 Version
               <input
                 min="1"
                 onChange={(event) =>
@@ -305,7 +305,7 @@ export default function ZoneEditor() {
                 }
                 type="checkbox"
               />
-              Enabled
+              启用 Enabled
             </label>
             <label className="stacked-control">
               Video ID
@@ -326,7 +326,7 @@ export default function ZoneEditor() {
               />
             </label>
             <label className="stacked-control">
-              Allowed angle
+              允许角度 Allowed angle
               <input
                 onChange={(event) =>
                   setZoneState((current) => ({
@@ -339,7 +339,7 @@ export default function ZoneEditor() {
               />
             </label>
             <label className="stacked-control">
-              Reverse threshold
+              逆行阈值 Reverse threshold
               <input
                 onChange={(event) =>
                   setZoneState((current) => ({
@@ -352,7 +352,7 @@ export default function ZoneEditor() {
               />
             </label>
             <label className="stacked-control">
-              In direction
+              进入方向 In direction
               <select
                 onChange={(event) =>
                   setZoneState((current) => ({
@@ -362,18 +362,18 @@ export default function ZoneEditor() {
                 }
                 value={zoneState.inDirection}
               >
-                <option value="any">any</option>
-                <option value="positive">positive</option>
-                <option value="negative">negative</option>
+                <option value="any">任意 any</option>
+                <option value="positive">正向 positive</option>
+                <option value="negative">反向 negative</option>
               </select>
             </label>
           </div>
           <div className="toolbar compact">
             <button disabled={savingZone} onClick={handleSaveZone} type="button">
-              {savingZone ? "Saving..." : "Save Zone"}
+              {savingZone ? "保存中..." : "保存区域 Save Zone"}
             </button>
             <button disabled={!zoneState.id || savingZone} onClick={handleDeleteZone} type="button">
-              Delete Zone
+              删除区域 Delete Zone
             </button>
           </div>
         </section>
@@ -381,30 +381,30 @@ export default function ZoneEditor() {
 
       <section className="panel">
         <div className="section-heading-row">
-          <h3>Saved Zones</h3>
+          <h3>已保存区域 Saved Zones</h3>
           <button onClick={loadConfig} type="button">
-            Refresh
+            刷新 Refresh
           </button>
         </div>
-        {zones.length === 0 && !loading ? <p className="muted">No zones saved yet.</p> : null}
+        {zones.length === 0 && !loading ? <p className="muted">暂无已保存区域。</p> : null}
         {zones.length > 0 ? (
           <table>
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Enabled</th>
-                <th>Version</th>
-                <th>Geometry</th>
-                <th>Action</th>
+                <th>名称 Name</th>
+                <th>类型 Type</th>
+                <th>启用 Enabled</th>
+                <th>版本 Version</th>
+                <th>几何 Geometry</th>
+                <th>操作 Action</th>
               </tr>
             </thead>
             <tbody>
               {zones.map((zone) => (
                 <tr className={zoneState.id === zone.id ? "selected-row" : ""} key={zone.id}>
                   <td>{zone.name}</td>
-                  <td>{zone.zone_type}</td>
-                  <td>{zone.enabled ? "enabled" : "disabled"}</td>
+                  <td>{formatZoneTypeLabel(zone.zone_type)}</td>
+                  <td>{zone.enabled ? "启用 enabled" : "停用 disabled"}</td>
                   <td>{zone.version}</td>
                   <td>
                     polygon {zone.polygon.length} · direction {zone.direction ? "yes" : "no"} ·
@@ -412,7 +412,7 @@ export default function ZoneEditor() {
                   </td>
                   <td>
                     <button onClick={() => setZoneStateFromZone(zone)} type="button">
-                      Edit
+                      编辑 Edit
                     </button>
                   </td>
                 </tr>
@@ -424,14 +424,14 @@ export default function ZoneEditor() {
 
       <section className="panel">
         <div className="section-heading-row">
-          <h3>{ruleState.id ? "Edit Event Rule" : "New Event Rule"}</h3>
+          <h3>{ruleState.id ? "编辑事件规则 Edit Event Rule" : "新建事件规则 New Event Rule"}</h3>
           <button onClick={() => setRuleState(createEmptyEventRuleFormState())} type="button">
-            New Rule
+            新建规则 New Rule
           </button>
         </div>
         <div className="rule-form-grid">
           <label className="stacked-control">
-            Name
+            名称 Name
             <input
               onChange={(event) =>
                 setRuleState((current) => ({ ...current, name: event.target.value }))
@@ -440,7 +440,7 @@ export default function ZoneEditor() {
             />
           </label>
           <label className="stacked-control">
-            Event type
+            事件类型 Event type
             <select
               onChange={(event) =>
                 setRuleState((current) => ({ ...current, eventType: event.target.value }))
@@ -455,14 +455,14 @@ export default function ZoneEditor() {
             </select>
           </label>
           <label className="stacked-control">
-            Zone
+            区域 Zone
             <select
               onChange={(event) =>
                 setRuleState((current) => ({ ...current, zoneId: event.target.value }))
               }
               value={ruleState.zoneId}
             >
-              <option value="">none</option>
+              <option value="">无 none</option>
               {zones.map((zone) => (
                 <option key={zone.id} value={zone.id}>
                   {zone.name}
@@ -471,7 +471,7 @@ export default function ZoneEditor() {
             </select>
           </label>
           <label className="stacked-control">
-            Severity
+            严重程度 Severity
             <select
               onChange={(event) =>
                 setRuleState((current) => ({ ...current, severity: event.target.value }))
@@ -480,13 +480,13 @@ export default function ZoneEditor() {
             >
               {EVENT_RULE_SEVERITIES.map((severity) => (
                 <option key={severity} value={severity}>
-                  {severity}
+                  {formatSeverityLabel(severity)}
                 </option>
               ))}
             </select>
           </label>
           <label className="stacked-control">
-            Target classes
+            目标类别 Target classes
             <input
               onChange={(event) =>
                 setRuleState((current) => ({
@@ -498,7 +498,7 @@ export default function ZoneEditor() {
             />
           </label>
           <label className="stacked-control">
-            Cooldown seconds
+            冷却秒数 Cooldown seconds
             <input
               min="0"
               onChange={(event) =>
@@ -512,7 +512,7 @@ export default function ZoneEditor() {
             />
           </label>
           <label className="stacked-control">
-            Version
+            版本 Version
             <input
               min="1"
               onChange={(event) =>
@@ -523,7 +523,7 @@ export default function ZoneEditor() {
             />
           </label>
           <label className="stacked-control">
-            Min track length
+            最小轨迹长度 Min track length
             <input
               min="1"
               onChange={(event) =>
@@ -544,11 +544,11 @@ export default function ZoneEditor() {
               }
               type="checkbox"
             />
-            Enabled
+            启用 Enabled
           </label>
         </div>
         <label className="stacked-control">
-          Parameters JSON
+          参数 JSON Parameters JSON
           <textarea
             onChange={(event) =>
               setRuleState((current) => ({ ...current, parametersText: event.target.value }))
@@ -559,28 +559,28 @@ export default function ZoneEditor() {
         </label>
         <div className="toolbar compact">
           <button disabled={savingRule} onClick={handleSaveRule} type="button">
-            {savingRule ? "Saving..." : "Save Rule"}
+            {savingRule ? "保存中..." : "保存规则 Save Rule"}
           </button>
           <button disabled={!ruleState.id || savingRule} onClick={handleDeleteRule} type="button">
-            Delete Rule
+            删除规则 Delete Rule
           </button>
         </div>
       </section>
 
       <section className="panel">
-        <h3>Event Rules</h3>
-        {rules.length === 0 && !loading ? <p className="muted">No event rules saved yet.</p> : null}
+        <h3>事件规则 Event Rules</h3>
+        {rules.length === 0 && !loading ? <p className="muted">暂无已保存事件规则。</p> : null}
         {rules.length > 0 ? (
           <table>
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Zone</th>
-                <th>Enabled</th>
-                <th>Severity</th>
-                <th>Version</th>
-                <th>Action</th>
+                <th>名称 Name</th>
+                <th>类型 Type</th>
+                <th>区域 Zone</th>
+                <th>启用 Enabled</th>
+                <th>严重程度 Severity</th>
+                <th>版本 Version</th>
+                <th>操作 Action</th>
               </tr>
             </thead>
             <tbody>
@@ -589,12 +589,12 @@ export default function ZoneEditor() {
                   <td>{rule.name}</td>
                   <td>{rule.event_type}</td>
                   <td>{rule.zone_id ?? "-"}</td>
-                  <td>{rule.enabled ? "enabled" : "disabled"}</td>
-                  <td>{rule.severity}</td>
+                  <td>{rule.enabled ? "启用 enabled" : "停用 disabled"}</td>
+                  <td>{formatSeverityLabel(rule.severity)}</td>
                   <td>{rule.version}</td>
                   <td>
                     <button onClick={() => setRuleState(eventRuleToFormState(rule))} type="button">
-                      Edit
+                      编辑 Edit
                     </button>
                   </td>
                 </tr>
@@ -644,4 +644,33 @@ function formatLineState(line: EditorLine): string {
     return "1 point";
   }
   return "-";
+}
+
+function formatDrawingModeLabel(mode: DrawingMode): string {
+  const labels: Record<DrawingMode, string> = {
+    polygon: "多边形 polygon",
+    direction: "方向线 direction",
+    counting: "计数线 counting"
+  };
+  return labels[mode];
+}
+
+function formatZoneTypeLabel(zoneType: string): string {
+  const labels: Record<string, string> = {
+    roi: "ROI 区域 roi",
+    vehicle_lane: "机动车道 vehicle_lane",
+    no_parking_zone: "禁停区 no_parking_zone",
+    danger_zone: "危险区 danger_zone",
+    counting_zone: "计数区 counting_zone"
+  };
+  return labels[zoneType] ?? zoneType;
+}
+
+function formatSeverityLabel(severity: string): string {
+  const labels: Record<string, string> = {
+    low: "低 low",
+    medium: "中 medium",
+    high: "高 high"
+  };
+  return labels[severity] ?? severity;
 }

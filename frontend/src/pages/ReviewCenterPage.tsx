@@ -364,8 +364,8 @@ export default function ReviewCenterPage({
     <>
       <header className="page-header">
         <div>
-          <h2>Review Center</h2>
-          <p>Artifact-backed event review workflow for the Stage 7 MVP.</p>
+          <h2>复核中心 Review Center</h2>
+          <p>人工确认事件、标记误报/漏报，并沉淀复核记录。</p>
         </div>
       </header>
 
@@ -380,19 +380,19 @@ export default function ReviewCenterPage({
             />
           </label>
           <label>
-            Status
+            状态 Status
             <select value={status} onChange={(event) => setStatus(event.target.value)}>
-              <option value="">All</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="false_positive">False positive</option>
-              <option value="false_negative">False negative</option>
-              <option value="ignored">Ignored</option>
-              <option value="resolved">Resolved</option>
+              <option value="">全部 All</option>
+              <option value="pending">待复核 pending</option>
+              <option value="confirmed">已确认 confirmed</option>
+              <option value="false_positive">误报 false_positive</option>
+              <option value="false_negative">漏报 false_negative</option>
+              <option value="ignored">已忽略 ignored</option>
+              <option value="resolved">已解决 resolved</option>
             </select>
           </label>
           <label>
-            Event type
+            事件类型 Event type
             <input
               placeholder="all"
               value={eventType}
@@ -400,47 +400,47 @@ export default function ReviewCenterPage({
             />
           </label>
           <button type="button" onClick={() => loadEvents()} disabled={loadingEvents}>
-            Refresh
+            刷新 Refresh
           </button>
         </div>
         <div className="metric-row review-metric-row">
-          <Metric label="Pending" value={counts.pending} />
-          <Metric label="Confirmed" value={counts.confirmed} />
-          <Metric label="False positive" value={counts.false_positive} />
-          <Metric label="Resolved" value={counts.resolved} />
+          <Metric label="待复核 pending" value={counts.pending} />
+          <Metric label="已确认 confirmed" value={counts.confirmed} />
+          <Metric label="误报 false_positive" value={counts.false_positive} />
+          <Metric label="已解决 resolved" value={counts.resolved} />
         </div>
         {successMessage ? <p className="muted">{successMessage}</p> : null}
         {error ? <p className="muted">{error}</p> : null}
-        {loadingEvents ? <p className="muted">Loading review events</p> : null}
+        {loadingEvents ? <p className="muted">正在加载复核事件...</p> : null}
         {!loadingEvents && !eventsData ? (
-          <p className="muted">Enter a run_id and refresh to review events.</p>
+          <p className="muted">请输入 run_id 并刷新，开始复核事件。</p>
         ) : null}
         {!loadingEvents && eventsData && events.length === 0 ? (
-          <p className="muted">No review events match the current filters.</p>
+          <p className="muted">暂无匹配的复核事件。</p>
         ) : null}
       </section>
 
       <div className="grid two review-workspace">
         <section className="panel">
           <div className="section-heading-row">
-            <h3>Events</h3>
-            {eventsData ? <span className="muted">{eventsData.total} total</span> : null}
+            <h3>事件列表 Events</h3>
+            {eventsData ? <span className="muted">{eventsData.total} 条 total</span> : null}
           </div>
           {events.length > 0 ? (
             <table>
               <thead>
                 <tr>
-                  <th>Event</th>
-                  <th>Status</th>
-                  <th>Original</th>
-                  <th>Type</th>
-                  <th>Severity</th>
+                  <th>事件 Event</th>
+                  <th>状态 Status</th>
+                  <th>原状态 Original</th>
+                  <th>类型 Type</th>
+                  <th>严重程度 Severity</th>
                   <th>Track</th>
-                  <th>Zone</th>
-                  <th>Frames</th>
-                  <th>Alerts</th>
-                  <th>Comments</th>
-                  <th>Action</th>
+                  <th>区域 Zone</th>
+                  <th>帧 Frames</th>
+                  <th>告警 Alerts</th>
+                  <th>评论 Comments</th>
+                  <th>操作 Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -458,7 +458,7 @@ export default function ReviewCenterPage({
               </tbody>
             </table>
           ) : (
-            <p className="muted">No event list loaded.</p>
+            <p className="muted">暂无事件列表。请先运行一次视频分析。</p>
           )}
         </section>
 
@@ -478,8 +478,8 @@ export default function ReviewCenterPage({
 
       <section className="panel">
         <div className="section-heading-row">
-          <h3>Add False Negative</h3>
-          <span className="muted">MVP review artifact only</span>
+          <h3>添加漏报 Add False Negative</h3>
+          <span className="muted">仅记录本地复核产物</span>
         </div>
         <div className="toolbar">
           <label>
@@ -490,7 +490,7 @@ export default function ReviewCenterPage({
             />
           </label>
           <label>
-            Expected event type
+            期望事件类型 Expected event type
             <input
               value={falseNegativeForm.expected_event_type}
               onChange={(event) =>
@@ -499,14 +499,14 @@ export default function ReviewCenterPage({
             />
           </label>
           <label>
-            Reviewer
+            复核人 Reviewer
             <input
               value={falseNegativeForm.reviewer}
               onChange={(event) => updateFalseNegativeField("reviewer", event.target.value)}
             />
           </label>
           <label>
-            Zone
+            区域 Zone
             <input
               value={falseNegativeForm.zone_id}
               onChange={(event) => updateFalseNegativeField("zone_id", event.target.value)}
@@ -521,7 +521,7 @@ export default function ReviewCenterPage({
             />
           </label>
           <label>
-            Start frame
+            起始帧 Start frame
             <input
               type="number"
               value={falseNegativeForm.start_frame}
@@ -529,7 +529,7 @@ export default function ReviewCenterPage({
             />
           </label>
           <label>
-            End frame
+            结束帧 End frame
             <input
               type="number"
               value={falseNegativeForm.end_frame}
@@ -537,7 +537,7 @@ export default function ReviewCenterPage({
             />
           </label>
           <label>
-            Start ms
+            起始 ms Start ms
             <input
               type="number"
               value={falseNegativeForm.start_time_ms}
@@ -545,7 +545,7 @@ export default function ReviewCenterPage({
             />
           </label>
           <label>
-            End ms
+            结束 ms End ms
             <input
               type="number"
               value={falseNegativeForm.end_time_ms}
@@ -554,7 +554,7 @@ export default function ReviewCenterPage({
           </label>
         </div>
         <label className="stacked-control">
-          Description
+          描述 Description
           <textarea
             rows={3}
             value={falseNegativeForm.description}
@@ -562,7 +562,7 @@ export default function ReviewCenterPage({
           />
         </label>
         <button type="button" disabled={submitting !== null} onClick={submitFalseNegative}>
-          Add false negative
+          添加漏报 Add false negative
         </button>
       </section>
     </>
@@ -601,7 +601,7 @@ function ReviewEventRow({
       <td>{summary.commentCount}</td>
       <td>
         <button type="button" onClick={onOpen}>
-          Open
+          打开 Open
         </button>
       </td>
     </tr>

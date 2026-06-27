@@ -34,7 +34,7 @@ import {
 } from "../utils/realtimePreview";
 
 const initialForm: CameraCreatePayload = {
-  name: "Mock Intersection Camera",
+  name: "Mock 路口摄像头",
   location: "demo-intersection",
   source_type: "mock",
   stream_url: "",
@@ -100,7 +100,7 @@ export default function CameraCenterPage() {
         stream_url: form.stream_url?.trim() || null,
         location: form.location?.trim() || null
       });
-      setSuccessMessage(`Created ${created.name}.`);
+      setSuccessMessage(`已创建 Created ${created.name}.`);
       await refreshCameras(created.id);
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Create camera failed");
@@ -146,7 +146,7 @@ export default function CameraCenterPage() {
       const nextStatus = await startRealtimePreview(selectedCamera.id);
       setStatus(nextStatus);
       await refreshRealtime(selectedCamera.id);
-      setSuccessMessage(`Started ${selectedCamera.name}.`);
+      setSuccessMessage(`已启动 Started ${selectedCamera.name}.`);
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Start preview failed");
     } finally {
@@ -165,7 +165,7 @@ export default function CameraCenterPage() {
       const nextStatus = await stopRealtimePreview(selectedCamera.id);
       setStatus(nextStatus);
       await refreshRealtime(selectedCamera.id);
-      setSuccessMessage(`Stopped ${selectedCamera.name}.`);
+      setSuccessMessage(`已停止 Stopped ${selectedCamera.name}.`);
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Stop preview failed");
     } finally {
@@ -184,7 +184,7 @@ export default function CameraCenterPage() {
       const updated = selectedCamera.enabled
         ? await disableCamera(selectedCamera.id)
         : await enableCamera(selectedCamera.id);
-      setSuccessMessage(`${updated.name} ${updated.enabled ? "enabled" : "disabled"}.`);
+      setSuccessMessage(`${updated.name} ${updated.enabled ? "已启用 enabled" : "已停用 disabled"}.`);
       await refreshCameras(updated.id);
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Camera update failed");
@@ -204,11 +204,11 @@ export default function CameraCenterPage() {
     <>
       <header className="page-header">
         <div>
-          <h2>Camera Center</h2>
-          <p>DB-backed cameras and realtime preview metadata.</p>
+          <h2>摄像头中心 Camera Center</h2>
+          <p>管理本地摄像头、文件源和 RTSP 预览配置。</p>
         </div>
         <button type="button" onClick={() => refreshCameras()} disabled={loading}>
-          Refresh
+          刷新 Refresh
         </button>
       </header>
 
@@ -217,45 +217,45 @@ export default function CameraCenterPage() {
 
       <section className="grid two">
         <div className="panel">
-          <h3>Create Camera</h3>
+          <h3>创建摄像头 Create Camera</h3>
           <div className="toolbar">
             <label>
-              Name
+              名称 Name
               <input
                 value={form.name}
                 onChange={(event) => setForm({ ...form, name: event.target.value })}
               />
             </label>
             <label>
-              Source
+              来源 Source
               <select
                 value={form.source_type}
                 onChange={(event) =>
                   setForm({ ...form, source_type: event.target.value as CameraSourceType })
                 }
               >
-                <option value="mock">Mock</option>
-                <option value="file">Local file</option>
+                <option value="mock">模拟 Mock</option>
+                <option value="file">本地文件 Local file</option>
                 <option value="rtsp">RTSP</option>
-                <option value="upload">Upload</option>
+                <option value="upload">上传 Upload</option>
               </select>
             </label>
             <label>
-              Location
+              位置 Location
               <input
                 value={form.location || ""}
                 onChange={(event) => setForm({ ...form, location: event.target.value })}
               />
             </label>
             <label>
-              URL / path
+              URL / 路径 URL / path
               <input
                 value={form.stream_url || ""}
                 onChange={(event) => setForm({ ...form, stream_url: event.target.value })}
               />
             </label>
             <label>
-              Width
+              宽度 Width
               <input
                 min="0"
                 type="number"
@@ -264,7 +264,7 @@ export default function CameraCenterPage() {
               />
             </label>
             <label>
-              Height
+              高度 Height
               <input
                 min="0"
                 type="number"
@@ -284,20 +284,20 @@ export default function CameraCenterPage() {
             </label>
           </div>
           <button type="button" onClick={submitCamera} disabled={loading || !form.name.trim()}>
-            Create
+            创建 Create
           </button>
         </div>
 
         <div className="panel">
-          <h3>Realtime Preview</h3>
+          <h3>实时预览 Realtime Preview</h3>
           <div className="toolbar">
             <label>
-              Camera
+              摄像头 Camera
               <select
                 value={selectedCameraId}
                 onChange={(event) => void setSelectedCamera(event.target.value)}
               >
-                <option value="">Select camera</option>
+                <option value="">选择摄像头 Select camera</option>
                 {cameras.map((camera) => (
                   <option key={camera.id} value={camera.id}>
                     {camera.name}
@@ -311,29 +311,29 @@ export default function CameraCenterPage() {
               disabled={loading || Boolean(startDisabledReason)}
               title={startDisabledReason || "Start preview"}
             >
-              Start
+              启动 Start
             </button>
             <button type="button" onClick={stopSelectedCamera} disabled={loading || !selectedCamera}>
-              Stop
+              停止 Stop
             </button>
             <button type="button" onClick={toggleSelectedCamera} disabled={loading || !selectedCamera}>
-              {selectedCamera?.enabled ? "Disable" : "Enable"}
+              {selectedCamera?.enabled ? "停用 Disable" : "启用 Enable"}
             </button>
           </div>
 
           {selectedCamera ? (
             <dl className="detail-grid">
               <div>
-                <dt>Source</dt>
+                <dt>来源 Source</dt>
                 <dd>{formatCameraSourceLabel(selectedCamera.source_type)}</dd>
               </div>
               <div>
-                <dt>Masked stream</dt>
+                <dt>脱敏流地址 Masked stream</dt>
                 <dd>{buildMaskedStreamDisplay(selectedCamera)}</dd>
               </div>
               <div>
-                <dt>Enabled</dt>
-                <dd>{selectedCamera.enabled ? "Yes" : "No"}</dd>
+                <dt>启用状态 Enabled</dt>
+                <dd>{selectedCamera.enabled ? "是 Yes" : "否 No"}</dd>
               </div>
             </dl>
           ) : null}
@@ -350,15 +350,15 @@ export default function CameraCenterPage() {
       </section>
 
       <section className="panel">
-        <h3>Recent Frames</h3>
+        <h3>最近帧 Recent Frames</h3>
         <table>
           <thead>
             <tr>
-              <th>Frame</th>
-              <th>Source</th>
-              <th>Status</th>
-              <th>Timestamp</th>
-              <th>Description</th>
+              <th>帧 Frame</th>
+              <th>来源 Source</th>
+              <th>状态 Status</th>
+              <th>时间戳 Timestamp</th>
+              <th>说明 Description</th>
             </tr>
           </thead>
           <tbody>
@@ -377,14 +377,14 @@ export default function CameraCenterPage() {
 
       <section className="grid two">
         <div className="panel">
-          <h3>Recent Events</h3>
+          <h3>最近事件 Recent Events</h3>
           <table>
             <thead>
               <tr>
-                <th>Type</th>
-                <th>Severity</th>
-                <th>Frame</th>
-                <th>Status</th>
+                <th>类型 Type</th>
+                <th>严重程度 Severity</th>
+                <th>帧 Frame</th>
+                <th>状态 Status</th>
               </tr>
             </thead>
             <tbody>
@@ -401,14 +401,14 @@ export default function CameraCenterPage() {
         </div>
 
         <div className="panel">
-          <h3>Recent Alerts</h3>
+          <h3>最近告警 Recent Alerts</h3>
           <table>
             <thead>
               <tr>
-                <th>Level</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Message</th>
+                <th>级别 Level</th>
+                <th>类型 Type</th>
+                <th>状态 Status</th>
+                <th>消息 Message</th>
               </tr>
             </thead>
             <tbody>

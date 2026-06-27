@@ -37,50 +37,58 @@ export default function DashboardPage({ onOpenAnalysisRun }: DashboardPageProps)
     <>
       <header className="page-header">
         <div>
-          <h2>Dashboard</h2>
-          <p>Analysis run status and artifact availability from the Stage 6 APIs.</p>
+          <h2>总览 Dashboard</h2>
+          <p>查看分析任务状态、结果产物和系统运行概况。</p>
         </div>
       </header>
-      {loading ? <p className="muted">Loading analysis runs...</p> : null}
+      {loading ? <p className="muted">正在加载分析任务...</p> : null}
       {error ? <p>{error}</p> : null}
       {overview ? (
         <>
           <MetricCards
             metrics={[
-              { label: "Total runs", value: String(overview.totalRuns), detail: "indexed" },
+              { label: "总分析数", value: String(overview.totalRuns), detail: "已索引 indexed" },
               {
-                label: "Completed",
+                label: "已完成",
                 value: String(overview.statusCounts.completed),
-                detail: "ready"
+                detail: "可查看 ready"
               },
-              { label: "Running", value: String(overview.statusCounts.running), detail: "active" },
-              { label: "Failed", value: String(overview.statusCounts.failed), detail: "needs check" },
               {
-                label: "Unknown",
+                label: "运行中",
+                value: String(overview.statusCounts.running),
+                detail: "处理中 active"
+              },
+              {
+                label: "失败",
+                value: String(overview.statusCounts.failed),
+                detail: "需检查 needs check"
+              },
+              {
+                label: "未知",
                 value: String(overview.statusCounts.unknown),
-                detail: "unclassified"
+                detail: "未分类 unclassified"
               }
             ]}
           />
           {runs.length === 0 ? (
             <section className="panel">
-              <p className="muted">No analysis runs found.</p>
+              <p className="muted">暂无分析任务。请先在视频中心上传视频并启动分析。</p>
             </section>
           ) : (
             <div className="grid">
               <section className="panel">
-                <h3>Artifact Status Summary</h3>
+                <h3>产物状态汇总 Artifact Status</h3>
                 <table>
                   <thead>
                     <tr>
-                      <th>Artifact</th>
-                      <th>Available</th>
-                      <th>Missing</th>
-                      <th>Planned</th>
-                      <th>Empty</th>
-                      <th>Missing source</th>
-                      <th>Error</th>
-                      <th>Other</th>
+                      <th>产物 Artifact</th>
+                      <th>可用 Available</th>
+                      <th>缺失 Missing</th>
+                      <th>计划中 Planned</th>
+                      <th>为空 Empty</th>
+                      <th>缺少来源 Missing source</th>
+                      <th>错误 Error</th>
+                      <th>其他 Other</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -100,19 +108,19 @@ export default function DashboardPage({ onOpenAnalysisRun }: DashboardPageProps)
                 </table>
               </section>
               <section className="panel">
-                <h3>Recent Analysis Runs</h3>
+                <h3>最近分析任务 Recent Analysis Runs</h3>
                 <table>
                   <thead>
                     <tr>
                       <th>Run ID</th>
                       <th>Video ID</th>
-                      <th>Status</th>
-                      <th>Updated</th>
-                      <th>Source</th>
+                      <th>状态 Status</th>
+                      <th>更新时间 Updated</th>
+                      <th>来源 Source</th>
                       {DASHBOARD_ARTIFACT_KEYS.map((artifactKey) => (
                         <th key={artifactKey}>{artifactKey}</th>
                       ))}
-                      {onOpenAnalysisRun ? <th>Action</th> : null}
+                      {onOpenAnalysisRun ? <th>操作 Action</th> : null}
                     </tr>
                   </thead>
                   <tbody>
@@ -120,7 +128,7 @@ export default function DashboardPage({ onOpenAnalysisRun }: DashboardPageProps)
                       <tr key={getRunId(run)}>
                         <td>{getRunId(run)}</td>
                         <td>{formatValue(run.video_id)}</td>
-                        <td>{formatValue(run.status)}</td>
+                        <td>{formatStatusValue(run.status)}</td>
                         <td>{formatValue(run.updated_at || run.finished_at)}</td>
                         <td>{formatValue(run.source)}</td>
                         {DASHBOARD_ARTIFACT_KEYS.map((artifactKey) => (
@@ -133,7 +141,7 @@ export default function DashboardPage({ onOpenAnalysisRun }: DashboardPageProps)
                         {onOpenAnalysisRun ? (
                           <td>
                             <button type="button" onClick={() => onOpenAnalysisRun(getRunId(run))}>
-                              Open
+                              打开 Open
                             </button>
                           </td>
                         ) : null}
@@ -177,4 +185,15 @@ function formatValue(value: AnalysisRunSummary[keyof AnalysisRunSummary]): strin
     return "-";
   }
   return String(value);
+}
+
+function formatStatusValue(value: AnalysisRunSummary[keyof AnalysisRunSummary]): string {
+  const raw = formatValue(value);
+  const labels: Record<string, string> = {
+    completed: "已完成 completed",
+    running: "运行中 running",
+    failed: "失败 failed",
+    pending: "待处理 pending"
+  };
+  return labels[raw] ?? raw;
 }

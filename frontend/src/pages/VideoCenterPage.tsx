@@ -104,8 +104,8 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
     <>
       <header className="page-header">
         <div>
-          <h2>Video Center</h2>
-          <p>视频资产与处理状态</p>
+          <h2>视频中心 Video Center</h2>
+          <p>上传视频、查看元数据，并创建本地分析任务。</p>
         </div>
       </header>
       <section className="panel">
@@ -116,41 +116,41 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
             onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
           />
           <button disabled={!selectedFile || loading} type="button" onClick={handleUpload}>
-            Upload
+            上传 Upload
           </button>
         </div>
         {error ? <p>{error}</p> : null}
         {lastRun ? (
           <div className="summary-strip">
-            <h3>Latest Process Run</h3>
+            <h3>最新处理任务 Latest Process Run</h3>
             <p>
               <strong>{lastRun.run_id}</strong> · {lastRun.status} ·{" "}
-              {lastRun.total_frames_processed} frames · {lastRun.total_detections} detections ·{" "}
-              {lastRun.total_tracks ?? 0} tracks
+              {lastRun.total_frames_processed} 帧 frames · {lastRun.total_detections} 检测 detections ·{" "}
+              {lastRun.total_tracks ?? 0} 轨迹 tracks
               {lastRun.total_trajectory_points !== undefined &&
               lastRun.total_trajectory_points !== null
-                ? ` · ${lastRun.total_trajectory_points} trajectory points`
+                ? ` · ${lastRun.total_trajectory_points} 轨迹点 trajectory points`
                 : ""}
               {lastRun.avg_track_length !== undefined && lastRun.avg_track_length !== null
-                ? ` · avg length ${lastRun.avg_track_length}`
+                ? ` · 平均长度 avg length ${lastRun.avg_track_length}`
                 : ""}
               {lastRun.max_track_length !== undefined && lastRun.max_track_length !== null
-                ? ` · max length ${lastRun.max_track_length}`
+                ? ` · 最大长度 max length ${lastRun.max_track_length}`
                 : ""}
             </p>
           </div>
         ) : null}
         <div className="toolbar">
           <label>
-            Mode
+            模式 Mode
             <select
               value={processMode}
               onChange={(event) => setProcessMode(event.target.value as ProcessMode)}
             >
-              <option value="detection_only">Detection only</option>
-              <option value="detection_tracking">Detection + Tracking</option>
+              <option value="detection_only">仅检测 Detection only</option>
+              <option value="detection_tracking">检测 + 跟踪 Detection + Tracking</option>
               <option value="detection_tracking_trajectory">
-                Detection + Tracking + Trajectory
+                检测 + 跟踪 + 轨迹 Detection + Tracking + Trajectory
               </option>
             </select>
           </label>
@@ -160,7 +160,7 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
               type="checkbox"
               onChange={(event) => setDetectorDryRun(event.target.checked)}
             />
-            Detector dry-run
+            检测 dry-run Detector dry-run
           </label>
           <label className="inline-control">
             <input
@@ -168,10 +168,10 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
               type="checkbox"
               onChange={(event) => setTrackerDryRun(event.target.checked)}
             />
-            Tracker dry-run
+            跟踪 dry-run Tracker dry-run
           </label>
           <label>
-            Stride
+            抽帧步长 Stride
             <input
               min={1}
               type="number"
@@ -180,7 +180,7 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
             />
           </label>
           <label>
-            Max frames
+            最大帧数 Max frames
             <input
               min={1}
               type="number"
@@ -192,7 +192,7 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
         {processMode === "detection_tracking_trajectory" ? (
           <div className="toolbar">
             <label>
-              Direction window
+              方向窗口 Direction window
               <input
                 min={2}
                 type="number"
@@ -201,7 +201,7 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
               />
             </label>
             <label>
-              Dwell speed threshold
+              停留速度阈值 Dwell speed threshold
               <input
                 min={0}
                 step={0.1}
@@ -213,7 +213,7 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
               />
             </label>
             <label>
-              Max history points
+              最大历史点 Max history points
               <input
                 min={1}
                 placeholder="unlimited"
@@ -225,16 +225,16 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
           </div>
         ) : null}
         {videos.length === 0 ? (
-          <p className="muted">暂无视频</p>
+          <p className="muted">暂无视频。请上传一个本地视频开始分析。</p>
         ) : (
           <table>
             <thead>
               <tr>
-                <th>Filename</th>
-                <th>Status</th>
+                <th>文件名 Filename</th>
+                <th>状态 Status</th>
                 <th>FPS</th>
-                <th>Frames</th>
-                <th>Action</th>
+                <th>帧数 Frames</th>
+                <th>操作 Action</th>
               </tr>
             </thead>
             <tbody>
@@ -246,7 +246,7 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
                   <td>{video.total_frames}</td>
                   <td>
                     <button disabled={loading} type="button" onClick={() => handleProcess(video.id)}>
-                      Process
+                      开始分析 Process
                     </button>
                   </td>
                 </tr>
@@ -257,25 +257,25 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
       </section>
       <section className="panel">
         <div className="section-heading-row">
-          <h3>Recent Analysis Runs</h3>
+          <h3>最近分析任务 Recent Analysis Runs</h3>
           <button disabled={runsLoading} type="button" onClick={refreshAnalysisRuns}>
-            Refresh
+            刷新 Refresh
           </button>
         </div>
-        {runsLoading ? <p className="muted">Loading analysis runs...</p> : null}
+        {runsLoading ? <p className="muted">正在加载分析任务...</p> : null}
         {runsError ? <p>{runsError}</p> : null}
         {recentRuns.length === 0 && !runsLoading ? (
-          <p className="muted">No analysis runs found.</p>
+          <p className="muted">暂无分析任务。请先在视频中心上传视频并启动分析。</p>
         ) : (
           <table>
             <thead>
               <tr>
                 <th>Run ID</th>
                 <th>Video ID</th>
-                <th>Status</th>
-                <th>Updated</th>
-                <th>Source</th>
-                {onOpenAnalysisRun ? <th>Action</th> : null}
+                <th>状态 Status</th>
+                <th>更新时间 Updated</th>
+                <th>来源 Source</th>
+                {onOpenAnalysisRun ? <th>操作 Action</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -289,7 +289,7 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
                   {onOpenAnalysisRun ? (
                     <td>
                       <button type="button" onClick={() => onOpenAnalysisRun(getRunId(run))}>
-                        Open
+                        打开 Open
                       </button>
                     </td>
                   ) : null}

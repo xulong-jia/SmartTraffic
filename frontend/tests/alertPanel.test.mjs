@@ -84,8 +84,8 @@ test("alert panel rows are display ready and preserve selection", () => {
       id: "alert-critical",
       title: "Danger zone",
       message: "Vehicle entered danger zone",
-      level: "critical",
-      status: "new",
+      level: "严重 critical",
+      status: "新告警 new",
       eventId: "event-1",
       runId: "run-1",
       trackId: "42",
@@ -99,8 +99,8 @@ test("alert panel rows are display ready and preserve selection", () => {
       id: "alert-info",
       title: "flow_counting",
       message: "Count update",
-      level: "info",
-      status: "resolved",
+      level: "信息 info",
+      status: "已解决 resolved",
       eventId: "event-2",
       runId: "run-2",
       trackId: "-",
@@ -118,8 +118,8 @@ test("alert action payload and empty labels are stable", () => {
     alertId: "alert-1",
     action: "acknowledge"
   });
-  assert.equal(alertPanel.alertPanelEmptyLabel(false, "", []), "No alerts match the current filters.");
-  assert.equal(alertPanel.alertPanelEmptyLabel(true, "", []), "Loading alerts");
+  assert.equal(alertPanel.alertPanelEmptyLabel(false, "", []), "暂无告警。事件触发后会在这里显示。");
+  assert.equal(alertPanel.alertPanelEmptyLabel(true, "", []), "正在加载告警...");
   assert.equal(alertPanel.alertPanelEmptyLabel(false, "Request failed", []), "Request failed");
   assert.equal(alertPanel.alertPanelEmptyLabel(false, "", alerts), "");
 });

@@ -203,11 +203,11 @@ export default function EvaluationCenterPage() {
     <>
       <header className="page-header">
         <div>
-          <h2>Evaluation Center</h2>
-          <p>Artifact-backed Stage 8EFG MVP</p>
+          <h2>评测中心 Evaluation Center</h2>
+          <p>查看检测、跟踪、轨迹、事件和流量统计的本地评测结果。</p>
         </div>
         <button type="button" onClick={() => loadEvaluationState()} disabled={loading}>
-          Refresh
+          刷新 Refresh
         </button>
       </header>
 
@@ -222,9 +222,9 @@ export default function EvaluationCenterPage() {
             />
           </label>
           <label>
-            Dataset
+            数据集 Dataset
             <select value={datasetId} onChange={(event) => setDatasetId(event.target.value)}>
-              <option value="">None</option>
+              <option value="">无 None</option>
               {(datasets?.datasets ?? []).map((dataset) => (
                 <option key={dataset.dataset_id} value={dataset.dataset_id}>
                   {dataset.dataset_id}
@@ -233,7 +233,7 @@ export default function EvaluationCenterPage() {
             </select>
           </label>
           <label>
-            Type
+            类型 Type
             <select
               value={evaluationType}
               onChange={(event) => setEvaluationType(event.target.value)}
@@ -246,25 +246,25 @@ export default function EvaluationCenterPage() {
             </select>
           </label>
           <button type="button" onClick={submitRun} disabled={submitting === "run"}>
-            Run
+            运行评测 Run Evaluation
           </button>
           <button type="button" onClick={() => loadEvaluationState()} disabled={loading}>
-            Apply
+            应用 Apply
           </button>
         </div>
-        {loading ? <p className="muted">Loading evaluations</p> : null}
+        {loading ? <p className="muted">正在加载评测...</p> : null}
         {error ? <p className="status-pill status-error">{error}</p> : null}
         {successMessage ? (
           <p className="status-pill status-available">{successMessage}</p>
         ) : null}
         <div className="metric-row">
-          <MetricCard label="Results" value={String(results?.total ?? 0)} />
-          <MetricCard label="Available" value={String(statusCounts.available)} />
-          <MetricCard label="Insufficient" value={String(statusCounts.insufficient_data)} />
-          <MetricCard label="Failed Cases" value={String(failedCases?.total ?? 0)} />
+          <MetricCard label="结果 Results" value={String(results?.total ?? 0)} />
+          <MetricCard label="可用 Available" value={String(statusCounts.available)} />
+          <MetricCard label="数据不足 Insufficient" value={String(statusCounts.insufficient_data)} />
+          <MetricCard label="失败用例 Failed Cases" value={String(failedCases?.total ?? 0)} />
         </div>
         <div className="summary-strip">
-          <h3>Evaluation Boundaries</h3>
+          <h3>评测边界 Evaluation Boundaries</h3>
           <ul className="compact-list">
             {EVALUATION_BOUNDARY_NOTICES.map((notice) => (
               <li key={notice.key}>
@@ -290,7 +290,7 @@ export default function EvaluationCenterPage() {
       <div className="grid two">
         <section className="panel">
           <div className="section-heading-row">
-            <h3>Datasets</h3>
+            <h3>数据集 Datasets</h3>
           </div>
           <div className="toolbar">
             <label>
@@ -303,7 +303,7 @@ export default function EvaluationCenterPage() {
               />
             </label>
             <label>
-              Name
+              名称 Name
               <input
                 value={datasetForm.name}
                 onChange={(event) =>
@@ -312,7 +312,7 @@ export default function EvaluationCenterPage() {
               />
             </label>
             <label>
-              Type
+              类型 Type
               <select
                 value={datasetForm.dataset_type}
                 onChange={(event) =>
@@ -329,7 +329,7 @@ export default function EvaluationCenterPage() {
           </div>
           <div className="toolbar">
             <label>
-              Expected Events
+              期望事件 Expected Events
               <input
                 placeholder="expected/events.json"
                 value={datasetForm.expected_events_path}
@@ -342,7 +342,7 @@ export default function EvaluationCenterPage() {
               />
             </label>
             <label>
-              Expected Counts
+              期望计数 Expected Counts
               <input
                 placeholder="expected/counts.json"
                 value={datasetForm.expected_counts_path}
@@ -369,7 +369,7 @@ export default function EvaluationCenterPage() {
               onClick={submitDataset}
               disabled={submitting === "dataset"}
             >
-              Register
+              注册 Register
             </button>
           </div>
           <DatasetTable data={datasets} />
@@ -377,7 +377,7 @@ export default function EvaluationCenterPage() {
 
         <section className="panel">
           <div className="section-heading-row">
-            <h3>Runs</h3>
+            <h3>评测任务 Runs</h3>
           </div>
           <RunsTable data={runs} />
         </section>
@@ -385,7 +385,7 @@ export default function EvaluationCenterPage() {
 
       <section className="panel">
         <div className="section-heading-row">
-          <h3>Results</h3>
+          <h3>评测结果 Results</h3>
         </div>
         <ResultsTable data={results} />
       </section>
@@ -393,7 +393,7 @@ export default function EvaluationCenterPage() {
       <div className="grid two">
         <section className="panel">
           <div className="section-heading-row">
-            <h3>Failed Cases</h3>
+            <h3>失败用例 Failed Cases</h3>
           </div>
           <FailedCasesTable
             data={failedCases}
@@ -404,7 +404,7 @@ export default function EvaluationCenterPage() {
 
         <section className="panel">
           <div className="section-heading-row">
-            <h3>Summary</h3>
+            <h3>摘要 Summary</h3>
           </div>
           {summary ? (
             <>
@@ -421,7 +421,7 @@ export default function EvaluationCenterPage() {
               <pre className="json-panel">{JSON.stringify(summary.summary, null, 2)}</pre>
             </>
           ) : (
-            <p className="muted">Select a run to load summary.</p>
+            <p className="muted">请选择 run_id 加载评测摘要。</p>
           )}
         </section>
       </div>
@@ -432,17 +432,17 @@ export default function EvaluationCenterPage() {
 function DatasetTable({ data }: { data: EvaluationDatasetListResponse | null }) {
   const rows = data?.datasets ?? [];
   if (rows.length === 0) {
-    return <p className="muted">No evaluation datasets.</p>;
+    return <p className="muted">暂无评测数据集。</p>;
   }
   return (
     <table>
       <thead>
         <tr>
           <th>ID</th>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Source</th>
-          <th>Created</th>
+          <th>名称 Name</th>
+          <th>类型 Type</th>
+          <th>来源 Source</th>
+          <th>创建时间 Created</th>
         </tr>
       </thead>
       <tbody>
@@ -463,17 +463,17 @@ function DatasetTable({ data }: { data: EvaluationDatasetListResponse | null }) 
 function RunsTable({ data }: { data: EvaluationRunListResponse | null }) {
   const rows = data?.items ?? [];
   if (rows.length === 0) {
-    return <p className="muted">No evaluation runs.</p>;
+    return <p className="muted">暂无评测任务。</p>;
   }
   return (
     <table>
       <thead>
         <tr>
-          <th>Evaluation Run</th>
+          <th>评测任务 Evaluation Run</th>
           <th>Run</th>
-          <th>Dataset</th>
-          <th>Type</th>
-          <th>Status</th>
+          <th>数据集 Dataset</th>
+          <th>类型 Type</th>
+          <th>状态 Status</th>
         </tr>
       </thead>
       <tbody>
@@ -496,21 +496,21 @@ function RunsTable({ data }: { data: EvaluationRunListResponse | null }) {
 function ResultsTable({ data }: { data: EvaluationResultListResponse | null }) {
   const rows = data?.items ?? [];
   if (rows.length === 0) {
-    return <p className="muted">No evaluation results.</p>;
+    return <p className="muted">暂无评测结果。请先运行本地 demo validation 或评测任务。</p>;
   }
   return (
     <table>
       <thead>
         <tr>
-          <th>Evaluation Run</th>
+          <th>评测任务 Evaluation Run</th>
           <th>Run</th>
-          <th>Dataset</th>
-          <th>Type</th>
-          <th>Metric</th>
-          <th>Value</th>
-              <th>Status</th>
-              <th>Reason</th>
-              <th>Details</th>
+          <th>数据集 Dataset</th>
+          <th>类型 Type</th>
+          <th>指标 Metric</th>
+          <th>数值 Value</th>
+              <th>状态 Status</th>
+              <th>原因 Reason</th>
+              <th>详情 Details</th>
             </tr>
           </thead>
           <tbody>
@@ -554,7 +554,7 @@ function FailedCasesTable({
 }) {
   const rows = buildFailedCaseRows(data?.items ?? []);
   if (rows.length === 0) {
-    return <p className="muted">No failed cases.</p>;
+    return <p className="muted">暂无失败用例。</p>;
   }
   return (
     <table>
@@ -562,11 +562,11 @@ function FailedCasesTable({
         <tr>
           <th>ID</th>
           <th>Run</th>
-          <th>Type</th>
-          <th>Module</th>
-          <th>Suggested</th>
-          <th>Created</th>
-          <th>Action</th>
+          <th>类型 Type</th>
+          <th>模块 Module</th>
+          <th>建议类型 Suggested</th>
+          <th>创建时间 Created</th>
+          <th>操作 Action</th>
         </tr>
       </thead>
       <tbody>
@@ -584,7 +584,7 @@ function FailedCasesTable({
                 onClick={() => onConvert(failedCase.failedCaseId)}
                 disabled={convertingFailedCaseId === failedCase.failedCaseId}
               >
-                Create Bad Case
+                创建坏例 Create Bad Case
               </button>
             </td>
           </tr>
@@ -602,10 +602,10 @@ function RegressionSummary({ summary }: { summary: unknown }) {
   return (
     <div className="summary-strip">
       <div className="metric-row review-metric-row">
-        <MetricCard label="Regression total" value={display.totalCases} />
-        <MetricCard label="Open" value={display.openCases} />
-        <MetricCard label="Fixed" value={display.fixedCases} />
-        <MetricCard label="Pass rate" value={display.regressionPassRate} />
+        <MetricCard label="回归总数 Regression total" value={display.totalCases} />
+        <MetricCard label="未处理 Open" value={display.openCases} />
+        <MetricCard label="已修复 Fixed" value={display.fixedCases} />
+        <MetricCard label="通过率 Pass rate" value={display.regressionPassRate} />
       </div>
       <p className="muted">
         Status {display.statusLabel} | verified {display.verifiedCases} | ignored{" "}

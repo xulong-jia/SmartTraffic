@@ -37,14 +37,14 @@ export default function EventTimeline({
   return (
     <section className="panel event-timeline">
       <div className="section-heading-row">
-        <h3>Event Timeline</h3>
-        <span className="status-pill">{visibleEvents.length} events</span>
+        <h3>事件时间线 Event Timeline</h3>
+        <span className="status-pill">{visibleEvents.length} 个事件 events</span>
       </div>
       <div className="toolbar compact">
         <label>
-          Type
+          类型 Type
           <select value={eventTypeFilter} onChange={(event) => setEventTypeFilter(event.target.value)}>
-            <option value="">all</option>
+            <option value="">全部 all</option>
             {uniqueEventValues(events, "event_type").map((value) => (
               <option key={value} value={value}>
                 {value}
@@ -53,9 +53,9 @@ export default function EventTimeline({
           </select>
         </label>
         <label>
-          Severity
+          严重程度 Severity
           <select value={severityFilter} onChange={(event) => setSeverityFilter(event.target.value)}>
-            <option value="">all</option>
+            <option value="">全部 all</option>
             {uniqueEventValues(events, "severity").map((value) => (
               <option key={value} value={value}>
                 {value}
@@ -64,9 +64,9 @@ export default function EventTimeline({
           </select>
         </label>
         <label>
-          Status
+          状态 Status
           <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-            <option value="">all</option>
+            <option value="">全部 all</option>
             {uniqueEventValues(events, "status").map((value) => (
               <option key={value} value={value}>
                 {value}
@@ -75,9 +75,9 @@ export default function EventTimeline({
           </select>
         </label>
       </div>
-      {loading ? <p className="muted">Loading events...</p> : null}
+      {loading ? <p className="muted">正在加载事件...</p> : null}
       {error ? <p>{error}</p> : null}
-      {visibleEvents.length === 0 && !loading ? <p className="muted">No events available.</p> : null}
+      {visibleEvents.length === 0 && !loading ? <p className="muted">暂无事件。请先运行一次视频分析。</p> : null}
       {visibleEvents.length > 0 ? (
         <div className="timeline-list">
           {visibleEvents.map((event, index) => {

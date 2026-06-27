@@ -24,16 +24,16 @@ type PageKey =
   | "reports";
 
 const pages: Array<{ key: PageKey; label: string }> = [
-  { key: "dashboard", label: "Dashboard" },
-  { key: "cameras", label: "Camera Center" },
-  { key: "videos", label: "Video Center" },
-  { key: "analysis", label: "Analysis Detail" },
-  { key: "zones", label: "Zone & Rules" },
-  { key: "alerts", label: "Alert Center" },
-  { key: "review", label: "Review Center" },
-  { key: "badCases", label: "Bad Case Center" },
-  { key: "evaluation", label: "Evaluation Center" },
-  { key: "reports", label: "Report Center" }
+  { key: "dashboard", label: "总览 Dashboard" },
+  { key: "cameras", label: "摄像头中心 Camera" },
+  { key: "videos", label: "视频中心 Video" },
+  { key: "analysis", label: "分析详情 Analysis" },
+  { key: "zones", label: "区域与规则 Zone & Rules" },
+  { key: "alerts", label: "告警中心 Alert" },
+  { key: "review", label: "复核中心 Review" },
+  { key: "badCases", label: "坏例中心 Bad Case" },
+  { key: "evaluation", label: "评测中心 Evaluation" },
+  { key: "reports", label: "报告中心 Report" }
 ];
 
 const pagePaths: Record<PageKey, string> = {
@@ -91,7 +91,7 @@ export default function App() {
     <div className="app-shell">
       <aside className="sidebar">
         <div>
-          <p className="eyebrow">SmartTraffic</p>
+          <p className="eyebrow">SMARTTRAFFIC</p>
           <h1>智慧交通事件检测系统</h1>
         </div>
         <nav aria-label="Main navigation">

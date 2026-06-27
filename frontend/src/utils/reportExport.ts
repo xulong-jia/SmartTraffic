@@ -8,38 +8,38 @@ import type {
 } from "../types";
 
 export const REPORT_NOT_FOR_ENFORCEMENT_WARNING =
-  "SmartTraffic reports are for analysis and review only; not for traffic enforcement.";
+  "SmartTraffic 报告仅用于分析和复核，不作为正式交通执法依据。";
 
 export const REPORT_EXPORT_SECTIONS: Array<{
   key: ReportExportSection;
   label: string;
   description: string;
 }> = [
-  { key: "events", label: "Events", description: "Detected traffic events" },
-  { key: "alerts", label: "Alerts", description: "Alert Center records" },
-  { key: "flow_counts", label: "Flow counts", description: "Counting-line records" },
+  { key: "events", label: "事件 Events", description: "检测到的交通事件" },
+  { key: "alerts", label: "告警 Alerts", description: "告警中心记录" },
+  { key: "flow_counts", label: "流量统计 Flow counts", description: "计数线记录" },
   {
     key: "zone_statistics",
-    label: "Zone statistics",
-    description: "Zone-level occupancy and metric windows"
+    label: "区域统计 Zone statistics",
+    description: "区域占用和指标窗口"
   },
-  { key: "bad_cases", label: "Bad cases", description: "Review and evaluation cases" },
+  { key: "bad_cases", label: "坏例 Bad cases", description: "复核和评测坏例" },
   {
     key: "evaluation_results",
-    label: "Evaluation results",
-    description: "Evaluation metric records"
+    label: "评测结果 Evaluation results",
+    description: "评测指标记录"
   }
 ];
 
 export function buildReportSummaryCards(summary: ReportSummaryResponse | null) {
   const counts = summary?.counts;
   return [
-    { label: "Events", value: counts?.events_count ?? 0 },
-    { label: "Alerts", value: counts?.alerts_count ?? 0 },
-    { label: "Flow records", value: counts?.flow_count_records ?? 0 },
-    { label: "Zone windows", value: counts?.zone_statistics_records ?? 0 },
-    { label: "Bad cases", value: counts?.bad_cases_count ?? 0 },
-    { label: "Evaluation results", value: counts?.evaluation_results_count ?? 0 }
+    { label: "事件 Events", value: counts?.events_count ?? 0 },
+    { label: "告警 Alerts", value: counts?.alerts_count ?? 0 },
+    { label: "流量记录 Flow records", value: counts?.flow_count_records ?? 0 },
+    { label: "区域窗口 Zone windows", value: counts?.zone_statistics_records ?? 0 },
+    { label: "坏例 Bad cases", value: counts?.bad_cases_count ?? 0 },
+    { label: "评测结果 Evaluation results", value: counts?.evaluation_results_count ?? 0 }
   ];
 }
 
@@ -93,17 +93,17 @@ export function resolveDownloadFilename(
 
 export function buildEmptyReportState(summary: ReportSummaryResponse | null): string {
   if (!summary) {
-    return "Select an analysis run to prepare report exports.";
+    return "请选择一个分析任务，准备报告导出。";
   }
   const total = Object.values(summary.counts).reduce((sum, value) => sum + value, 0);
   return total > 0
-    ? "Report sections are ready for export."
-    : "This run has no reportable rows yet.";
+    ? "报告区块已可导出。"
+    : "当前任务暂无可导出的报告行。";
 }
 
 export function buildBundleSectionLabel(bundle: ReportBundleResponse | null): string {
   if (!bundle) {
-    return "No bundle metadata loaded.";
+    return "暂无 bundle metadata。";
   }
   return `${bundle.included_sections.length} sections: ${bundle.included_sections.join(", ")}`;
 }
@@ -113,7 +113,7 @@ export function buildArtifactReferenceRows(bundle: ReportBundleResponse | null) 
     key: item.key,
     type: item.artifact_type,
     path: item.path || "-",
-    status: item.exists ? "Available" : "Unavailable",
+    status: item.exists ? "可用 Available" : "不可用 Unavailable",
     note: item.note
   }));
 }
@@ -130,12 +130,12 @@ export function buildKeyframeSummaryRows(summary: ReportKeyframeSummary | null) 
 
 export function buildAnnotatedVideoLabel(summary: ReportAnnotatedVideoSummary | null): string {
   if (!summary) {
-    return "Annotated video metadata is not loaded.";
+    return "标注视频 metadata 尚未加载。";
   }
   if (summary.available) {
-    return `Available: ${summary.annotated_video_reference || "annotated_video.mp4"}`;
+    return `可用 Available: ${summary.annotated_video_reference || "annotated_video.mp4"}`;
   }
-  return `Unavailable (${summary.status}): ${summary.notes}`;
+  return `不可用 Unavailable (${summary.status}): ${summary.notes}`;
 }
 
 function safeName(value: string): string {

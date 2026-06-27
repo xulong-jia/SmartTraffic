@@ -84,9 +84,9 @@ test("buildEvaluationMetricCards produces display cards from result rows", () =>
   assert.deepEqual(evaluationDisplay.buildEvaluationMetricCards([result]), [
     {
       key: "result_1",
-      label: "Detection · Detection map",
+      label: "检测 detection · Detection map",
       value: "0.750",
-      status: "Available",
+      status: "可用 available",
       detail: "ok"
     }
   ]);

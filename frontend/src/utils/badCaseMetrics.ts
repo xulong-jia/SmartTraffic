@@ -82,19 +82,53 @@ export function normalizeBadCaseTags(value: string[] | string | null | undefined
 export function formatBadCaseStatusLabel(
   status: BadCaseStatus | string | null | undefined
 ): string {
-  return formatBadCaseLabel(status);
+  const normalized = normalizeText(status, "unknown");
+  const labels: Record<string, string> = {
+    open: "未处理 open",
+    triaged: "已分诊 triaged",
+    fixed: "已修复 fixed",
+    verified: "已验证 verified",
+    wont_fix: "暂不修复 wont_fix",
+    unknown: "未知 unknown"
+  };
+  return labels[normalized] ?? normalized;
 }
 
 export function formatBadCaseTypeLabel(
   caseType: BadCaseType | string | null | undefined
 ): string {
-  return formatBadCaseLabel(caseType);
+  const normalized = normalizeText(caseType, "unknown");
+  const labels: Record<string, string> = {
+    false_positive: "误报 false_positive",
+    false_negative: "漏报 false_negative",
+    detection_miss: "检测漏检 detection_miss",
+    detection_false_positive: "检测误检 detection_false_positive",
+    tracking_fragmentation: "跟踪断裂 tracking_fragmentation",
+    id_switch: "ID 切换 id_switch",
+    trajectory_error: "轨迹错误 trajectory_error",
+    event_rule_error: "规则错误 event_rule_error",
+    annotation_error: "标注错误 annotation_error",
+    other: "其他 other",
+    unknown: "未知 unknown"
+  };
+  return labels[normalized] ?? normalized;
 }
 
 export function formatBadCaseModuleLabel(
   module: BadCaseModule | string | null | undefined
 ): string {
-  return formatBadCaseLabel(module);
+  const normalized = normalizeText(module, "unknown");
+  const labels: Record<string, string> = {
+    detector: "检测器 detector",
+    tracker: "跟踪器 tracker",
+    trajectory: "轨迹 trajectory",
+    event_engine: "事件引擎 event_engine",
+    review_center: "复核中心 review_center",
+    visualization: "可视化 visualization",
+    other: "其他 other",
+    unknown: "未知 unknown"
+  };
+  return labels[normalized] ?? normalized;
 }
 
 export function buildBadCaseDisplaySummary(
@@ -188,14 +222,6 @@ function toModuleCountKey(module: string | null | undefined): BadCaseModuleCount
   return "unknown";
 }
 
-function formatBadCaseLabel(value: string | null | undefined): string {
-  return normalizeText(value, "unknown")
-    .split("_")
-    .filter(Boolean)
-    .map((part, index) => (index === 0 ? capitalize(part) : part))
-    .join(" ");
-}
-
 function normalizeValue(value: string | number | null | undefined): string {
   if (value === null || value === undefined || value === "") {
     return "-";
@@ -206,8 +232,4 @@ function normalizeValue(value: string | number | null | undefined): string {
 function normalizeText(value: string | null | undefined, fallback = "-"): string {
   const trimmed = value?.trim();
   return trimmed ? trimmed : fallback;
-}
-
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
 }

@@ -87,7 +87,7 @@ test("event table rows normalize nullable fields and selection", () => {
       id: "event-early",
       eventType: "danger_zone_intrusion",
       severity: "critical",
-      status: "confirmed",
+      status: "已确认 confirmed",
       trackId: "-",
       zoneId: "-",
       startTimeMs: "1000",
@@ -98,7 +98,7 @@ test("event table rows normalize nullable fields and selection", () => {
       id: "event-late",
       eventType: "wrong_way_driving",
       severity: "warning",
-      status: "pending",
+      status: "待处理 pending",
       trackId: "9",
       zoneId: "zone-b",
       startTimeMs: "2000",
@@ -109,8 +109,8 @@ test("event table rows normalize nullable fields and selection", () => {
 });
 
 test("event table empty labels expose loading error and empty states", () => {
-  assert.equal(eventTable.eventTableEmptyLabel(true, "", []), "Loading events");
+  assert.equal(eventTable.eventTableEmptyLabel(true, "", []), "正在加载事件...");
   assert.equal(eventTable.eventTableEmptyLabel(false, "Request failed", []), "Request failed");
-  assert.equal(eventTable.eventTableEmptyLabel(false, "", []), "No events match the current filters.");
+  assert.equal(eventTable.eventTableEmptyLabel(false, "", []), "暂无事件。请先运行一次视频分析。");
   assert.equal(eventTable.eventTableEmptyLabel(false, "", events), "");
 });

@@ -33,23 +33,23 @@ export default function ReviewDrawer({
   return (
     <section className="panel review-drawer" aria-label="Review drawer">
       <div className="section-heading-row">
-        <h3>Review Drawer</h3>
-        {loading ? <span className="muted">Loading</span> : null}
+        <h3>复核详情 Review Drawer</h3>
+        {loading ? <span className="muted">加载中 Loading</span> : null}
       </div>
       {error ? <p className="status-pill status-error">{error}</p> : null}
       {!detail && !loading ? (
         <p className="muted">
-          Select an event to inspect review state, comments, alerts, and artifact references.
+          请选择事件，查看复核状态、评论、告警和产物引用。
         </p>
       ) : null}
       {detail ? (
         <>
           <ReviewEventDetailPanel detail={detail} openedAlertId={openedAlertId} />
           <section className="summary-strip">
-            <h3>Review Actions</h3>
+            <h3>复核操作 Review Actions</h3>
             <div className="toolbar compact">
               <label>
-                Reviewer
+                复核人 Reviewer
                 <input
                   value={reviewer}
                   onChange={(event) => onReviewerChange(event.target.value)}
@@ -57,7 +57,7 @@ export default function ReviewDrawer({
               </label>
             </div>
             <label className="stacked-control">
-              Comment
+              评论 Comment
               <textarea
                 rows={4}
                 value={comment}
@@ -77,7 +77,7 @@ export default function ReviewDrawer({
                 </button>
               ))}
             </div>
-            {submitting ? <p className="muted">Submitting {submitting}</p> : null}
+            {submitting ? <p className="muted">正在提交 Submitting {submitting}</p> : null}
           </section>
           <CommentsList detail={detail} />
         </>
@@ -96,36 +96,36 @@ function ReviewEventDetailPanel({
   const event = detail.event;
   return (
     <>
-      {openedAlertId ? <p className="muted">Opened from alert: {openedAlertId}</p> : null}
+      {openedAlertId ? <p className="muted">来自告警 Opened from alert: {openedAlertId}</p> : null}
       <dl className="detail-grid">
         <DetailItem label="Event ID" value={event.event_id} />
         <DetailItem label="Run ID" value={detail.run_id} />
-        <DetailItem label="Event type" value={event.event_type} />
-        <DetailItem label="Review status" value={formatReviewStatusLabel(event.review_status)} />
-        <DetailItem label="Original status" value={event.original_status} />
-        <DetailItem label="Severity" value={event.severity} />
+        <DetailItem label="事件类型 Event type" value={event.event_type} />
+        <DetailItem label="复核状态 Review status" value={formatReviewStatusLabel(event.review_status)} />
+        <DetailItem label="原状态 Original status" value={event.original_status} />
+        <DetailItem label="严重程度 Severity" value={event.severity} />
         <DetailItem label="Track" value={event.track_id} />
         <DetailItem label="Zone" value={event.zone_id} />
-        <DetailItem label="Start frame" value={event.start_frame} />
-        <DetailItem label="End frame" value={event.end_frame} />
-        <DetailItem label="Start ms" value={event.start_time_ms} />
-        <DetailItem label="End ms" value={event.end_time_ms} />
-        <DetailItem label="Comments" value={event.comment_count} />
-        <DetailItem label="Last action" value={event.last_action} />
+        <DetailItem label="起始帧 Start frame" value={event.start_frame} />
+        <DetailItem label="结束帧 End frame" value={event.end_frame} />
+        <DetailItem label="起始 ms Start ms" value={event.start_time_ms} />
+        <DetailItem label="结束 ms End ms" value={event.end_time_ms} />
+        <DetailItem label="评论数 Comments" value={event.comment_count} />
+        <DetailItem label="最近操作 Last action" value={event.last_action} />
       </dl>
 
       <section className="summary-strip">
-        <h3>Linked Alerts</h3>
+        <h3>关联告警 Linked Alerts</h3>
         {detail.linked_alerts.length === 0 ? (
-          <p className="muted">No linked alerts.</p>
+          <p className="muted">暂无关联告警。</p>
         ) : (
           <table>
             <thead>
               <tr>
-                <th>Alert</th>
-                <th>Status</th>
-                <th>Level</th>
-                <th>Message</th>
+                <th>告警 Alert</th>
+                <th>状态 Status</th>
+                <th>级别 Level</th>
+                <th>消息 Message</th>
               </tr>
             </thead>
             <tbody>
@@ -146,22 +146,22 @@ function ReviewEventDetailPanel({
       </section>
 
       <section className="summary-strip">
-        <h3>Visual Artifacts</h3>
+        <h3>可视化产物 Visual Artifacts</h3>
         <dl className="detail-grid">
           <DetailItem
-            label="Keyframes"
+            label="关键帧 Keyframes"
             value={artifactField(detail.visual_artifacts, "keyframes", "status")}
           />
           <DetailItem
-            label="Keyframes path"
+            label="关键帧路径 Keyframes path"
             value={artifactField(detail.visual_artifacts, "keyframes", "path")}
           />
           <DetailItem
-            label="Annotated video"
+            label="标注视频 Annotated video"
             value={artifactField(detail.visual_artifacts, "annotated_video", "status")}
           />
           <DetailItem
-            label="Video path"
+            label="视频路径 Video path"
             value={artifactField(detail.visual_artifacts, "annotated_video", "path")}
           />
         </dl>
@@ -173,18 +173,18 @@ function ReviewEventDetailPanel({
 function CommentsList({ detail }: { detail: ReviewEventDetail }) {
   return (
     <section className="summary-strip">
-      <h3>Comments</h3>
+      <h3>评论 Comments</h3>
       {detail.comments.length === 0 ? (
-        <p className="muted">No review comments.</p>
+        <p className="muted">暂无复核评论。</p>
       ) : (
         <table>
           <thead>
             <tr>
-              <th>Action</th>
-              <th>After</th>
-              <th>Reviewer</th>
-              <th>Comment</th>
-              <th>Created</th>
+              <th>操作 Action</th>
+              <th>之后状态 After</th>
+              <th>复核人 Reviewer</th>
+              <th>评论 Comment</th>
+              <th>创建时间 Created</th>
             </tr>
           </thead>
           <tbody>

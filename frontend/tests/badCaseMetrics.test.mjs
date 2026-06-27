@@ -121,9 +121,9 @@ test("normalizeBadCaseTags removes blanks and trims values", () => {
 });
 
 test("formatBadCaseStatusLabel keeps compact labels", () => {
-  assert.equal(badCaseMetrics.formatBadCaseStatusLabel("open"), "Open");
-  assert.equal(badCaseMetrics.formatBadCaseStatusLabel("wont_fix"), "Wont fix");
-  assert.equal(badCaseMetrics.formatBadCaseStatusLabel("unexpected_status"), "Unexpected status");
+  assert.equal(badCaseMetrics.formatBadCaseStatusLabel("open"), "未处理 open");
+  assert.equal(badCaseMetrics.formatBadCaseStatusLabel("wont_fix"), "暂不修复 wont_fix");
+  assert.equal(badCaseMetrics.formatBadCaseStatusLabel("unexpected_status"), "unexpected_status");
 });
 
 test("buildBadCaseDisplaySummary normalizes optional fields", () => {
@@ -145,9 +145,9 @@ test("buildBadCaseDisplaySummary normalizes optional fields", () => {
     {
       caseId: "badcase_a",
       runId: "run_a",
-      caseType: "False positive",
-      module: "Event engine",
-      statusLabel: "Open",
+      caseType: "误报 false_positive",
+      module: "事件引擎 event_engine",
+      statusLabel: "未处理 open",
       event: "-",
       track: "-",
       frame: "10",

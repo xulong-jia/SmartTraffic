@@ -98,9 +98,9 @@ test("buildEvaluationStatusCounts counts available, planned, not applicable, and
 });
 
 test("formatEvaluationStatusLabel returns compact labels", () => {
-  assert.equal(evaluationMetrics.formatEvaluationStatusLabel("not_applicable"), "Not applicable");
-  assert.equal(evaluationMetrics.formatEvaluationStatusLabel("planned"), "Planned");
-  assert.equal(evaluationMetrics.formatEvaluationStatusLabel("unexpected_status"), "Unexpected status");
+  assert.equal(evaluationMetrics.formatEvaluationStatusLabel("not_applicable"), "不适用 not_applicable");
+  assert.equal(evaluationMetrics.formatEvaluationStatusLabel("planned"), "计划中 planned");
+  assert.equal(evaluationMetrics.formatEvaluationStatusLabel("unexpected_status"), "unexpected_status");
 });
 
 test("normalizeMetricValue formats nulls and numeric values", () => {
@@ -114,10 +114,10 @@ test("buildEvaluationResultDisplaySummary normalizes table values", () => {
     evaluationRunId: "eval_1",
     runId: "run_1",
     datasetId: "dataset_1",
-    evaluationType: "Detection",
+    evaluationType: "检测 detection",
     metricName: "Detection status",
     metricValue: "-",
-    statusLabel: "Not applicable",
+    statusLabel: "不适用 not_applicable",
     reason: "missing detection annotations",
     createdAt: "2026-01-01T00:00:01+00:00"
   });
@@ -138,7 +138,7 @@ test("buildBadCaseRegressionDisplaySummary normalizes regression summary values"
       definition: "verified_cases / max(fixed_cases + verified_cases + open_cases, 1)"
     }),
     {
-      statusLabel: "Available",
+      statusLabel: "可用 available",
       totalCases: "4",
       openCases: "1",
       fixedCases: "2",

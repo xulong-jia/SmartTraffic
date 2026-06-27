@@ -36,11 +36,16 @@ export function buildReviewStatusCounts(events: ReviewEventSummary[]): ReviewSta
 
 export function formatReviewStatusLabel(status: ReviewStatus | string | null | undefined): string {
   const normalized = normalizeReviewText(status, "unknown");
-  return normalized
-    .split("_")
-    .filter(Boolean)
-    .map((part, index) => (index === 0 ? capitalize(part) : part))
-    .join(" ");
+  const labels: Record<string, string> = {
+    pending: "待复核 pending",
+    confirmed: "已确认 confirmed",
+    false_positive: "误报 false_positive",
+    false_negative: "漏报 false_negative",
+    ignored: "已忽略 ignored",
+    resolved: "已解决 resolved",
+    unknown: "未知 unknown"
+  };
+  return labels[normalized] ?? normalized;
 }
 
 export function buildReviewEventDisplaySummary(
@@ -89,8 +94,4 @@ function toReviewStatusCountKey(status: string | null | undefined): ReviewStatus
 function normalizeReviewText(value: string | null | undefined, fallback = "-"): string {
   const trimmed = value?.trim();
   return trimmed ? trimmed : fallback;
-}
-
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
 }

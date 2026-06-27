@@ -196,18 +196,18 @@ export default function ReportCenterPage() {
     <>
       <header className="page-header">
         <div>
-          <h2>Report Center</h2>
-          <p>CSV / JSON exports for completed analysis, review, bad case, and evaluation data.</p>
+          <h2>报告中心 Report Center</h2>
+          <p>导出事件、告警、流量统计、坏例和评测报告。</p>
         </div>
         <button type="button" onClick={loadRuns} disabled={loading}>
-          Refresh
+          刷新 Refresh
         </button>
       </header>
 
       <section className="panel">
         <div className="toolbar">
           <label>
-            Analysis run
+            分析任务 Analysis run
             <select
               value={selectedRunId}
               onChange={(event) => {
@@ -216,7 +216,7 @@ export default function ReportCenterPage() {
                 void loadSummary(runId);
               }}
             >
-              <option value="">Select run</option>
+              <option value="">选择任务 Select run</option>
               {runs.map((run) => (
                 <option key={run.run_id || run.id} value={run.run_id || run.id}>
                   {run.run_id || run.id}
@@ -225,10 +225,10 @@ export default function ReportCenterPage() {
             </select>
           </label>
           <button type="button" onClick={() => loadSummary()} disabled={loading || !selectedRunId}>
-            Load summary
+            加载摘要 Load summary
           </button>
           <label>
-            CSV section
+            CSV 区块 CSV section
             <select
               value={selectedSection}
               onChange={(event) => setSelectedSection(event.target.value as ReportExportSection)}
@@ -246,28 +246,28 @@ export default function ReportCenterPage() {
             onClick={exportCsv}
             disabled={!summary || exporting !== null || !selectedRunId}
           >
-            Export CSV
+            导出 CSV Export CSV
           </button>
           <button
             type="button"
             onClick={exportJson}
             disabled={!summary || exporting !== null || !selectedRunId}
           >
-            Export JSON
+            导出 JSON Export JSON
           </button>
           <button
             type="button"
             onClick={exportPdf}
             disabled={!summary || exporting !== null || !selectedRunId}
           >
-            Export PDF
+            导出 PDF Export PDF
           </button>
           <button type="button" onClick={refreshBundle} disabled={!summary || loading}>
-            Bundle
+            Bundle 元数据
           </button>
         </div>
         <p className="muted">{REPORT_NOT_FOR_ENFORCEMENT_WARNING}</p>
-        {loading ? <p className="muted">Loading report data</p> : null}
+        {loading ? <p className="muted">正在加载报告数据...</p> : null}
         {error ? <p className="status-pill status-error">{error}</p> : null}
         {successMessage ? <p className="status-pill status-available">{successMessage}</p> : null}
         <p className="muted">{buildEmptyReportState(summary)}</p>
@@ -276,8 +276,8 @@ export default function ReportCenterPage() {
       <section className="grid two">
         <div className="panel">
           <div className="section-heading-row">
-            <h3>Summary</h3>
-            <span className="status-pill">{summary?.run.status || "No run"}</span>
+            <h3>摘要 Summary</h3>
+            <span className="status-pill">{summary?.run.status || "无任务 No run"}</span>
           </div>
           <div className="metric-row">
             {summaryCards.map((card) => (
@@ -293,15 +293,15 @@ export default function ReportCenterPage() {
               <dd>{summary?.run_id || selectedRunId || "-"}</dd>
             </div>
             <div>
-              <dt>Source</dt>
+              <dt>来源 Source</dt>
               <dd>{summary?.run.source || "-"}</dd>
             </div>
             <div>
-              <dt>Video</dt>
+              <dt>视频 Video</dt>
               <dd>{summary?.run.video_id || "-"}</dd>
             </div>
             <div>
-              <dt>Result dir</dt>
+              <dt>结果目录 Result dir</dt>
               <dd>{summary?.run.result_dir || "-"}</dd>
             </div>
           </dl>
@@ -309,15 +309,15 @@ export default function ReportCenterPage() {
 
         <div className="panel">
           <div className="section-heading-row">
-            <h3>Export Sections</h3>
-            <span className="status-pill">{sectionOptions.length} sections</span>
+            <h3>导出区块 Export Sections</h3>
+            <span className="status-pill">{sectionOptions.length} 个区块 sections</span>
           </div>
           <table>
             <thead>
               <tr>
-                <th>Section</th>
-                <th>Description</th>
-                <th>Status</th>
+                <th>区块 Section</th>
+                <th>说明 Description</th>
+                <th>状态 Status</th>
               </tr>
             </thead>
             <tbody>
@@ -327,7 +327,7 @@ export default function ReportCenterPage() {
                   <td>{section.description}</td>
                   <td>
                     <span className={`status-pill ${section.available ? "status-available" : "status-empty"}`}>
-                      {section.available ? "Available" : "Unavailable"}
+                      {section.available ? "可用 Available" : "不可用 Unavailable"}
                     </span>
                   </td>
                 </tr>
@@ -339,29 +339,29 @@ export default function ReportCenterPage() {
 
       <section className="grid two">
         <div className="panel">
-          <h3>Report Metrics</h3>
+          <h3>报告指标 Report Metrics</h3>
           <dl className="detail-grid">
             <div>
-              <dt>Top events</dt>
+              <dt>主要事件 Top events</dt>
               <dd>{formatDisplayValue(summary?.top_event_types)}</dd>
             </div>
             <div>
-              <dt>Alert statuses</dt>
+              <dt>告警状态 Alert statuses</dt>
               <dd>{formatDisplayValue(summary?.alert_status_counts)}</dd>
             </div>
             <div>
-              <dt>Flow totals</dt>
+              <dt>流量总计 Flow totals</dt>
               <dd>{formatDisplayValue(summary?.flow_totals)}</dd>
             </div>
             <div>
-              <dt>Bad case statuses</dt>
+              <dt>坏例状态 Bad case statuses</dt>
               <dd>{formatDisplayValue(summary?.bad_case_status_counts)}</dd>
             </div>
           </dl>
         </div>
 
         <div className="panel">
-          <h3>JSON Preview</h3>
+          <h3>JSON 预览 JSON Preview</h3>
           {jsonMetadata.length ? (
             <dl className="detail-grid">
               {jsonMetadata.map((item) => (
@@ -372,7 +372,7 @@ export default function ReportCenterPage() {
               ))}
             </dl>
           ) : (
-            <p className="muted">Export JSON to preview the full structured report.</p>
+            <p className="muted">导出 JSON 后可预览完整结构化报告。</p>
           )}
           {jsonPreview ? <pre className="json-panel">{jsonPreview}</pre> : null}
         </div>
@@ -381,17 +381,17 @@ export default function ReportCenterPage() {
       <section className="grid two">
         <div className="panel">
           <div className="section-heading-row">
-            <h3>Report Bundle</h3>
-            <span className="status-pill">{activeBundle?.schema_version || "No bundle"}</span>
+            <h3>报告包 Report Bundle</h3>
+            <span className="status-pill">{activeBundle?.schema_version || "无 bundle No bundle"}</span>
           </div>
           <p className="muted">{buildBundleSectionLabel(activeBundle)}</p>
           <table>
             <thead>
               <tr>
-                <th>Artifact</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Path</th>
+                <th>产物 Artifact</th>
+                <th>类型 Type</th>
+                <th>状态 Status</th>
+                <th>路径 Path</th>
               </tr>
             </thead>
             <tbody>
@@ -406,7 +406,7 @@ export default function ReportCenterPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4}>No bundle metadata loaded.</td>
+                  <td colSpan={4}>暂无 bundle metadata。</td>
                 </tr>
               )}
             </tbody>
@@ -415,8 +415,8 @@ export default function ReportCenterPage() {
 
         <div className="panel">
           <div className="section-heading-row">
-            <h3>Visual Artifact Summary</h3>
-            <span className="status-pill">{summary?.keyframe_summary.status || "No run"}</span>
+            <h3>可视化产物摘要 Visual Artifact Summary</h3>
+            <span className="status-pill">{summary?.keyframe_summary.status || "无任务 No run"}</span>
           </div>
           <dl className="detail-grid">
             <div>

@@ -68,8 +68,8 @@ export default function AlertCenterPage({ onOpenReview }: AlertCenterPageProps) 
     <>
       <header className="page-header">
         <div>
-          <h2>Alert Center</h2>
-          <p>事件告警状态</p>
+          <h2>告警中心 Alert Center</h2>
+          <p>查看事件告警，并进行确认、忽略或解决。</p>
         </div>
       </header>
       <section className="panel">
@@ -83,26 +83,26 @@ export default function AlertCenterPage({ onOpenReview }: AlertCenterPageProps) 
             />
           </label>
           <label>
-            Status
+            状态 Status
             <select value={status} onChange={(event) => setStatus(event.target.value)}>
-              <option value="">All</option>
-              <option value="new">New</option>
-              <option value="acknowledged">Acknowledged</option>
-              <option value="resolved">Resolved</option>
-              <option value="ignored">Ignored</option>
+              <option value="">全部 All</option>
+              <option value="new">新告警 new</option>
+              <option value="acknowledged">已确认 acknowledged</option>
+              <option value="resolved">已解决 resolved</option>
+              <option value="ignored">已忽略 ignored</option>
             </select>
           </label>
           <label>
-            Level
+            级别 Level
             <select value={level} onChange={(event) => setLevel(event.target.value)}>
-              <option value="">All</option>
-              <option value="critical">Critical</option>
-              <option value="warning">Warning</option>
-              <option value="info">Info</option>
+              <option value="">全部 All</option>
+              <option value="critical">严重 critical</option>
+              <option value="warning">警告 warning</option>
+              <option value="info">信息 info</option>
             </select>
           </label>
           <label>
-            Operator
+            操作人 Operator
             <input
               placeholder="operator"
               value={acknowledgedBy}
@@ -110,7 +110,7 @@ export default function AlertCenterPage({ onOpenReview }: AlertCenterPageProps) 
             />
           </label>
           <button type="button" onClick={loadAlerts} disabled={loading}>
-            Refresh
+            刷新 Refresh
           </button>
         </div>
         <AlertPanel
