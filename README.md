@@ -331,18 +331,26 @@ npm run dev
 ### Docker Compose
 
 ```bash
+cp .env.example .env
 docker compose config
-docker compose up
+docker compose up --build
 ```
+
+Docker Compose is the local validation and demo delivery path. It starts the
+FastAPI backend at `http://localhost:8000`, the Vite frontend at
+`http://localhost:5173`, runs Alembic migrations at backend startup, and stores
+SQLite / artifact output in ignored local directories such as `results/`.
 
 ### Demo Data
 
 ```bash
 python3 scripts/seed_demo_data.py
+./backend/.venv/bin/python -m pytest backend/tests/test_seed_demo_data.py -q
 ```
 
 The demo seed script creates small sample config and toy expected files. It does
-not add real videos, model weights, or generated result artifacts.
+not add real videos, model weights, or generated result artifacts. The current
+toy demo contains four zones, six event rules, and six expected event examples.
 
 ## Environment Variables
 
@@ -352,6 +360,7 @@ Key local settings from [`.env.example`](.env.example):
 - `SMARTTRAFFIC_RESULTS_DIR`
 - `SMARTTRAFFIC_LOCAL_VIDEOS_DIR`
 - `SMARTTRAFFIC_LOCAL_MODELS_DIR`
+- `SMARTTRAFFIC_EVALS_DIR`
 - `SMARTTRAFFIC_AUTH_MODE`
 - `SMARTTRAFFIC_MAX_UPLOAD_MB`
 - `SMARTTRAFFIC_MAX_VIDEO_DURATION_SECONDS`
@@ -362,23 +371,31 @@ Key local settings from [`.env.example`](.env.example):
 - `YOLO_IOU_THRESHOLD`
 - `YOLO_DEVICE`
 - `DEEPSORT_DRY_RUN`
+- `VITE_API_BASE_URL`
 
 Copy `.env.example` to `.env` for local overrides. `.env` must not be committed.
 
 ## Validation
 
-Final v1.0.3 validation was completed under the execution manual scope:
+Current final delivery validation on `main`:
 
 | Check | Result |
 | --- | --- |
-| Backend pytest | `472 passed, 4 warnings` |
-| Frontend Node tests | `77 passed` |
-| Frontend build | Passed |
-| Alembic upgrade / downgrade / upgrade | Passed |
-| `docker compose config` | Passed |
+| Forbidden personal-material wording scan | No matches |
+| `git diff --check` | Passed |
+| `python3 -m compileall backend/app` | Passed |
+| `./backend/.venv/bin/python -m pytest backend/tests -q` | `477 passed, 4 warnings` |
+| `python3 -m py_compile scripts/seed_demo_data.py scripts/run_evals.py scripts/danger_check.py scripts/import_artifacts_to_db.py` | Passed |
+| `cd frontend && node --test tests/*.test.mjs` | `77 passed` |
+| `cd frontend && npm run build` | Passed |
+| `cd frontend && npm run build -- --outDir /tmp/smarttraffic-vite-build --emptyOutDir` | Passed |
+| `docker compose config` / `make docker-config` | Passed |
+| `docker compose build` | Not completed in this environment because Docker Hub metadata for `python:3.12-slim` timed out |
 | `python3 scripts/danger_check.py` | Passed |
 | `python3 scripts/run_evals.py --help` | Passed |
-| `make docker-config` / `make danger-check` | Passed |
+| `make danger-check` | Passed |
+| `./backend/.venv/bin/python -m pytest backend/tests/test_seed_demo_data.py -q` | `5 passed` |
+| Tracked forbidden-file scan | Passed |
 
 ## Milestones
 
@@ -399,7 +416,8 @@ Important preserved tags:
 
 Old tags are preserved and must not be moved. `v1.0.3-final-hardening` remains
 a preserved hardening baseline. The `main` branch may include post-baseline
-closure commits for evidence persistence, API boundaries, and local validation.
+closure commits for evidence persistence, API boundaries, local demo
+validation, and Docker local delivery.
 
 ## Safety And Data Policy
 
@@ -438,5 +456,5 @@ The preserved SmartTraffic hardening baseline is `v1.0.3-final-hardening`.
 
 The repository is in post-baseline closure state. The `main` branch may include
 targeted hardening for evidence persistence, API boundaries, and local demo
-validation. No additional feature development is planned beyond the current
-closure scope.
+validation, plus Docker local delivery cleanup. No additional feature
+development is planned beyond the current closure scope.

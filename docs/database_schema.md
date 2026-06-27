@@ -121,7 +121,8 @@ representation, not a production per-frame normalized tracking store. Full Stage
 1EF can import structured
 artifacts such as
 `metadata.json`, `detections.csv`, `tracks.csv`, `trajectory_points.csv`,
-`events.jsonl`, `alerts.jsonl`, `flow_counts.json`, `zone_statistics.json`,
+`events.jsonl`, `event_evidence.jsonl`, `rule_executions.jsonl`,
+`alerts.jsonl`, `flow_counts.json`, `zone_statistics.json`,
 `evaluation_summary.json`, and `bad_cases.jsonl` / `bad_cases.csv` into those
 tables. Full Stage 3AB stores zone/rule config snapshots inside
 `traffic_analysis_runs.summary["event_config_snapshot"]` without adding a new

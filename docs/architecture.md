@@ -38,6 +38,17 @@ AlertService, and the Stage 6F visual artifacts writer after
 stable empty event, statistics, alert, and visual artifacts rather than fake
 events.
 
+## Docker Local Delivery
+
+Docker Compose is used for local validation and demo delivery. The backend
+image runs Alembic migrations before starting FastAPI, the frontend service
+runs the Vite dev server, and both services use local SQLite plus mounted
+directories for videos, models, results, samples, and evaluation inputs.
+
+This Docker path is not a production deployment boundary. It exists to make the
+local prototype reproducible without committing videos, model weights, local
+databases, or generated result artifacts.
+
 ## Current Implemented Architecture
 
 Currently implemented architecture includes:
