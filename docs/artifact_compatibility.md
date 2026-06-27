@@ -18,6 +18,8 @@ The compatibility layer discovers and can import structured run artifacts:
 - `tracks.csv`
 - `trajectory_points.csv`
 - `events.jsonl`
+- `event_evidence.jsonl`
+- `rule_executions.jsonl`
 - `alerts.jsonl`
 - `flow_counts.json`
 - `zone_statistics.json`
@@ -40,6 +42,10 @@ other binary assets. Those remain path references or local files outside Git.
 Repeated import skips records that already exist by stable IDs. Import keeps the
 core fields needed for later migration stages and stores raw artifact payloads
 where useful for compatibility.
+
+Event imports preserve `rule_id` and `zone_id` when present. Event evidence and
+rule execution imports keep event/run/track/frame linkage in DB JSON payloads so
+Review, Bad Case, and Evaluation flows can trace why an event was emitted.
 
 ## CLI
 

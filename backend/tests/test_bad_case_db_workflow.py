@@ -13,6 +13,7 @@ from app.main import app as fastapi_app
 import app.models  # noqa: F401
 from app.repositories import (
     BadCaseRepository,
+    EventEvidenceRepository,
     EventRepository,
     ReviewCommentRepository,
     TrafficAnalysisRunRepository,
@@ -171,6 +172,8 @@ def test_bad_case_from_review_uses_db_review_audit(
     assert payload["linked_review_id"] == "review-bad-db"
     assert payload["event_id"] == "event-bad-db"
     assert payload["module"] == "review"
+    assert payload["linked_evidence_id"] == "evidence-bad-db"
+    assert payload["snapshot_path"] == "keyframes/event-bad-db.jpg"
 
 
 def _seed_run(session: Session, tmp_path: Path) -> None:
@@ -203,4 +206,12 @@ def _seed_run(session: Session, tmp_path: Path) -> None:
         frame_index=42,
         track_id="17",
         payload={},
+    )
+    EventEvidenceRepository(session).create(
+        id="evidence-bad-db",
+        event_id="event-bad-db",
+        run_id="run-bad-db",
+        evidence_type="zone_intrusion",
+        payload={"snapshot_path": "keyframes/event-bad-db.jpg"},
+        artifact_path="keyframes/event-bad-db.jpg",
     )

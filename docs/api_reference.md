@@ -252,21 +252,26 @@ Responses include `id`, `video_id`, `run_id`, `task_type`, `mode`, `status`,
 `progress`, `error_message`, `started_at`, `finished_at`, `created_at`,
 `params_json`, and `result`.
 
-## Detection / Tracking / Trajectory Resource Placeholders
+## Detection / Tracking / Trajectory Resources
 
 - `GET /api/detections`
-- `GET /api/tracks`
-- `GET /api/trajectories`
+- `GET /api/tracks?run_id=&video_id=&track_id=&limit=100`
+- `GET /api/trajectories?run_id=&video_id=&track_id=&limit=100`
 
-These are module-boundary placeholder endpoints. Current real result reads are
-the run-scoped, DB-first / artifact-fallback Analysis Runs endpoints:
+The run-scoped, DB-first / artifact-fallback Analysis Runs endpoints remain the
+primary result reads:
 
 - `GET /api/analysis-runs/{run_id}/detections`
 - `GET /api/analysis-runs/{run_id}/tracks`
 - `GET /api/analysis-runs/{run_id}/trajectory-points`
 
-The standalone placeholders do not replace the run-scoped result APIs and are
-not production aggregate search endpoints.
+Standalone `/api/tracks` and `/api/trajectories` provide DB-backed local lookup
+by `run_id`, `video_id`, `track_id`, and `limit`. Standalone `/api/detections`
+is still a contract-only module boundary; use the run-scoped detections endpoint
+for real result reads.
+
+The standalone result endpoints do not replace the run-scoped result APIs and
+are not production aggregate search endpoints.
 
 `tracks` rows in the current local prototype are run-level track records plus
 metadata / artifact-compatible rows imported from processing output. They are
@@ -555,7 +560,7 @@ fallback to run artifacts.
 
 Top-level Event APIs:
 
-- `GET /api/events?run_id=&video_id=&event_type=&status=&severity=&track_id=`
+- `GET /api/events?run_id=&video_id=&event_type=&rule_id=&status=&severity=&track_id=`
 - `GET /api/events/{event_id}?run_id=`
 - `PATCH /api/events/{event_id}/status`
 - `POST /api/events/{event_id}/bad-case`
@@ -571,6 +576,7 @@ Query parameters:
 
 - `limit`: integer from 0 to 1000, default 100.
 - `event_type`: optional string. Filters returned events by event type, such as `danger_zone_intrusion`, `pedestrian_in_vehicle_lane`, `illegal_parking`, `wrong_way_driving`, `flow_counting`, or `congestion`.
+- `rule_id`: optional string. Filters returned events and rule executions by rule id.
 - `track_id`: optional integer. Filters returned events, event evidence, and rule executions by track.
 
 Response shape:
@@ -585,6 +591,7 @@ Response shape:
   "rule_executions": [],
   "limit": 100,
   "event_type": null,
+  "rule_id": null,
   "track_id": null,
   "source": "db"
 }

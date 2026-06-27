@@ -14,10 +14,12 @@ from app.repositories import (
     DetectionRepository,
     EvaluationDatasetRepository,
     EvaluationResultRepository,
+    EventEvidenceRepository,
     EventRepository,
     FlowCountRepository,
     FrameRepository,
     ModelRunRepository,
+    RuleExecutionRepository,
     TrackRepository,
     TrafficAnalysisRunRepository,
     TrajectoryPointRepository,
@@ -34,6 +36,8 @@ ARTIFACT_DEFINITIONS = {
     "tracks_csv": "tracks.csv",
     "trajectory_points_csv": "trajectory_points.csv",
     "events_jsonl": "events.jsonl",
+    "event_evidence_jsonl": "event_evidence.jsonl",
+    "rule_executions_jsonl": "rule_executions.jsonl",
     "alerts_jsonl": "alerts.jsonl",
     "flow_counts": "flow_counts.json",
     "zone_statistics": "zone_statistics.json",
@@ -187,7 +191,18 @@ def import_run_artifacts_to_db(
     _import_detections(session, run_id, video_id, artifacts["detections"], imported, skipped)
     _import_tracks(session, run_id, video_id, artifacts["tracks"], imported, skipped)
     _import_trajectory_points(session, run_id, video_id, artifacts["trajectory_points"], imported, skipped)
-    _import_events(session, run_id, video_id, artifacts["events"], imported, skipped)
+    _import_events(
+        session,
+        run_id,
+        video_id,
+        artifacts["events"],
+        artifacts["event_evidence"],
+        artifacts["rule_executions"],
+        imported,
+        skipped,
+    )
+    _import_event_evidence(session, run_id, video_id, artifacts["event_evidence"], imported, skipped)
+    _import_rule_executions(session, run_id, artifacts["rule_executions"], imported, skipped)
     _import_alerts(session, run_id, artifacts["alerts"], imported, skipped)
     _import_flow_counts(session, run_id, artifacts["flow_counts"], imported, skipped)
     _import_zone_statistics(session, run_id, artifacts["zone_statistics"], imported, skipped)
@@ -325,6 +340,8 @@ def _alias_key(key: str) -> str:
         "tracks_csv": "tracks",
         "trajectory_points_csv": "trajectory_points",
         "events_jsonl": "events",
+        "event_evidence_jsonl": "event_evidence",
+        "rule_executions_jsonl": "rule_executions",
         "alerts_jsonl": "alerts",
     }
     return aliases.get(key, key)
@@ -339,6 +356,8 @@ def _load_supported_artifacts(
         "tracks": _read_csv_safe(discovery.paths["tracks_csv"].path, warnings),
         "trajectory_points": _read_csv_safe(discovery.paths["trajectory_points_csv"].path, warnings),
         "events": _read_jsonl_safe(discovery.paths["events_jsonl"].path, warnings),
+        "event_evidence": _read_jsonl_safe(discovery.paths["event_evidence_jsonl"].path, warnings),
+        "rule_executions": _read_jsonl_safe(discovery.paths["rule_executions_jsonl"].path, warnings),
         "alerts": _read_jsonl_safe(discovery.paths["alerts_jsonl"].path, warnings),
         "flow_counts": _read_json_safe(discovery.paths["flow_counts"].path, warnings).get("records", []),
         "zone_statistics": _read_json_safe(discovery.paths["zone_statistics"].path, warnings).get("windows", []),
@@ -362,6 +381,8 @@ def _planned_counts(artifacts: dict[str, Any]) -> dict[str, int]:
             "tracks": len(artifacts["tracks"]),
             "trajectory_points": len(artifacts["trajectory_points"]),
             "events": len(artifacts["events"]),
+            "event_evidence": len(artifacts["event_evidence"]),
+            "rule_executions": len(artifacts["rule_executions"]),
             "alerts": len(artifacts["alerts"]),
             "flow_counts": len(artifacts["flow_counts"]),
             "zone_statistics": len(artifacts["zone_statistics"]),
@@ -380,6 +401,8 @@ def _empty_counts() -> dict[str, int]:
         "tracks": 0,
         "trajectory_points": 0,
         "events": 0,
+        "event_evidence": 0,
+        "rule_executions": 0,
         "alerts": 0,
         "flow_counts": 0,
         "zone_statistics": 0,
@@ -484,30 +507,119 @@ def _import_events(
     run_id: str,
     video_id: str,
     rows: list[dict[str, Any]],
+    evidence_rows: list[dict[str, Any]],
+    rule_execution_rows: list[dict[str, Any]],
     imported: dict[str, int],
     skipped: dict[str, int],
 ) -> None:
     repo = EventRepository(session)
+    evidence_by_event_id = _first_row_by_event_id(evidence_rows)
+    execution_by_event_id = _first_row_by_event_id(rule_execution_rows)
     for index, row in enumerate(rows, start=1):
         item_id = str(row.get("event_id") or _row_id("event", run_id, row, index))
         if repo.get(item_id) is not None:
             skipped["events"] += 1
             continue
+        related_evidence = evidence_by_event_id.get(item_id, {})
+        related_execution = execution_by_event_id.get(item_id, {})
         repo.create(
             id=item_id,
             run_id=run_id,
             video_id=str(row.get("video_id") or video_id),
-            rule_id=None,
-            zone_id=None,
+            rule_id=_str_or_none(
+                row.get("rule_id")
+                or _nested(row, "evidence", "rule_id")
+                or related_evidence.get("rule_id")
+                or related_execution.get("rule_id")
+            ),
+            zone_id=_str_or_none(
+                row.get("zone_id")
+                or _nested(row, "evidence", "zone_id")
+                or related_evidence.get("zone_id")
+                or related_execution.get("zone_id")
+            ),
             type=str(row.get("event_type") or row.get("type") or "unknown"),
             status=str(row.get("status") or "new"),
             severity=_str_or_none(row.get("severity")),
-            frame_index=_int_or_none(row.get("frame_index") or row.get("start_frame")),
-            timestamp_ms=_float_or_none(row.get("timestamp_ms") or row.get("start_time_ms")),
+            frame_index=_int_or_none(_first_present(row.get("frame_index"), row.get("start_frame"))),
+            timestamp_ms=_float_or_none(_first_present(row.get("timestamp_ms"), row.get("start_time_ms"))),
             track_id=_str_or_none(row.get("track_id")),
             payload=row,
         )
         imported["events"] += 1
+
+
+def _import_event_evidence(
+    session: Session,
+    run_id: str,
+    video_id: str,
+    rows: list[dict[str, Any]],
+    imported: dict[str, int],
+    skipped: dict[str, int],
+) -> None:
+    repo = EventEvidenceRepository(session)
+    for index, row in enumerate(rows, start=1):
+        item_id = str(row.get("evidence_id") or row.get("id") or _row_id("evidence", run_id, row, index))[:64]
+        event_id = _str_or_none(row.get("event_id"))
+        if event_id is None:
+            skipped["event_evidence"] += 1
+            continue
+        if repo.get(item_id) is not None:
+            skipped["event_evidence"] += 1
+            continue
+        payload = dict(row)
+        payload.setdefault("video_id", video_id)
+        payload.setdefault("track_id", row.get("track_id"))
+        payload.setdefault("frame_index", _int_or_none(row.get("frame_index")))
+        payload.setdefault("timestamp_ms", _float_or_none(row.get("timestamp_ms")))
+        payload.setdefault("event_type", row.get("event_type") or row.get("type"))
+        payload.setdefault("zone_id", row.get("zone_id"))
+        payload.setdefault("rule_id", row.get("rule_id"))
+        payload.setdefault("evidence_json", row.get("evidence_json") or row.get("payload") or {})
+        payload.setdefault("snapshot_path", row.get("snapshot_path"))
+        repo.create(
+            id=item_id,
+            event_id=event_id,
+            run_id=str(row.get("run_id") or run_id),
+            evidence_type=str(row.get("evidence_type") or "event_evidence"),
+            payload=payload,
+            artifact_path=_str_or_none(payload.get("snapshot_path")),
+        )
+        imported["event_evidence"] += 1
+
+
+def _import_rule_executions(
+    session: Session,
+    run_id: str,
+    rows: list[dict[str, Any]],
+    imported: dict[str, int],
+    skipped: dict[str, int],
+) -> None:
+    repo = RuleExecutionRepository(session)
+    for index, row in enumerate(rows, start=1):
+        item_id = str(row.get("execution_id") or row.get("id") or _row_id("rule-exec", run_id, row, index))[:64]
+        if repo.get(item_id) is not None:
+            skipped["rule_executions"] += 1
+            continue
+        details = dict(row)
+        input_features = row.get("input_features") if isinstance(row.get("input_features"), dict) else {}
+        output_result = row.get("output_result") if isinstance(row.get("output_result"), dict) else {}
+        details.setdefault("event_id", row.get("event_id"))
+        details.setdefault("track_id", row.get("track_id"))
+        details.setdefault("frame_index", _int_or_none(row.get("frame_index")))
+        details.setdefault("input_features", input_features)
+        details.setdefault("output_result", output_result)
+        status = str(row.get("status") or "unknown")
+        repo.create(
+            id=item_id,
+            run_id=str(row.get("run_id") or run_id),
+            rule_id=_str_or_none(row.get("rule_id")),
+            status=status,
+            matched_count=_int(row.get("matched_count"), 1 if status == "matched" else 0),
+            details=details,
+            error_message=_str_or_none(row.get("error_message") or output_result.get("error")),
+        )
+        imported["rule_executions"] += 1
 
 
 def _import_alerts(
@@ -758,6 +870,31 @@ def _str_or_none(value: Any) -> str | None:
     if value in {None, ""}:
         return None
     return str(value)
+
+
+def _first_present(*values: Any) -> Any:
+    for value in values:
+        if value is not None and value != "":
+            return value
+    return None
+
+
+def _nested(row: dict[str, Any], *keys: str) -> Any:
+    value: Any = row
+    for key in keys:
+        if not isinstance(value, dict):
+            return None
+        value = value.get(key)
+    return value
+
+
+def _first_row_by_event_id(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    by_event_id: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        event_id = row.get("event_id")
+        if event_id is not None:
+            by_event_id.setdefault(str(event_id), row)
+    return by_event_id
 
 
 def _parse_json_value(value: Any, default: Any) -> Any:

@@ -67,6 +67,32 @@
       "camera_id": "demo_camera_01"
     },
     {
+      "id": "zone_no_parking_demo",
+      "name": "Demo no-parking zone",
+      "zone_type": "no_parking_zone",
+      "polygon": [
+        [
+          150,
+          160
+        ],
+        [
+          360,
+          160
+        ],
+        [
+          380,
+          320
+        ],
+        [
+          130,
+          320
+        ]
+      ],
+      "enabled": true,
+      "video_id": "demo_video_local",
+      "camera_id": "demo_camera_01"
+    },
+    {
       "id": "zone_counting_line_demo",
       "name": "Demo counting line",
       "zone_type": "counting_line",

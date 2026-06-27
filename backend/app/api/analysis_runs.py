@@ -152,6 +152,7 @@ def get_analysis_run_events(
     run_id: str,
     limit: int = Query(default=100, ge=0, le=1000),
     event_type: str | None = Query(default=None),
+    rule_id: str | None = Query(default=None),
     track_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> dict:
@@ -160,6 +161,7 @@ def get_analysis_run_events(
             run_id,
             limit=limit,
             event_type=event_type,
+            rule_id=rule_id,
             track_id=track_id,
             db=db,
         )

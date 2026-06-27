@@ -28,6 +28,32 @@
       "zone_id": "zone_counting_line_demo",
       "frame_index": 25,
       "severity": "info"
+    },
+    {
+      "event_id": "expected_illegal_parking_001",
+      "event_type": "illegal_parking",
+      "track_id": 404,
+      "zone_id": "zone_no_parking_demo",
+      "start_frame": 30,
+      "end_frame": 34,
+      "severity": "medium"
+    },
+    {
+      "event_id": "expected_pedestrian_lane_001",
+      "event_type": "pedestrian_in_vehicle_lane",
+      "track_id": 505,
+      "zone_id": "zone_vehicle_lane_demo",
+      "frame_index": 36,
+      "severity": "high"
+    },
+    {
+      "event_id": "expected_congestion_001",
+      "event_type": "congestion",
+      "track_id": null,
+      "zone_id": "zone_vehicle_lane_demo",
+      "start_frame": 40,
+      "end_frame": 40,
+      "severity": "medium"
     }
   ]
 }

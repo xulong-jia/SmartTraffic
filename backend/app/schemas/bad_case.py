@@ -83,6 +83,7 @@ class BadCaseRecord(BaseModel):
     tags: list[str] = Field(default_factory=list)
     status: BadCaseStatus = "open"
     source: BadCaseSource = "manual"
+    linked_evidence_id: str | None = None
     linked_review_id: str | None = None
     linked_failed_case_id: str | None = None
     created_at: str
@@ -109,6 +110,7 @@ class BadCaseCreateRequest(BaseModel):
     tags: list[str] = Field(default_factory=list)
     status: BadCaseStatus = "open"
     source: BadCaseSource = "manual"
+    linked_evidence_id: str | None = None
     linked_review_id: str | None = None
     linked_failed_case_id: str | None = None
 

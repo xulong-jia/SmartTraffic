@@ -285,8 +285,8 @@ Main API groups:
 - Health / readiness / config: `/health`, `/health/ready`, `/api/config`
 - Videos and processing: `/api/videos`, `/api/processing/tasks`
 - Analysis runs: `/api/analysis-runs`
-- Detection / tracking / trajectory query placeholders: `/api/detections`,
-  `/api/tracks`, `/api/trajectories`
+- Detection / tracking / trajectory endpoints: contract-only `/api/detections`,
+  DB-backed standalone `/api/tracks` and `/api/trajectories`
 - Zones and event rules: `/api/zones`, `/api/event-rules`
 - Events and alerts: `/api/events`, `/api/alerts`
 - Review: `/api/review`
@@ -397,9 +397,9 @@ Important preserved tags:
 - `v1.0.2-spec-alignment`
 - `v1.0.3-final-hardening`
 
-Old tags are preserved and must not be moved. The final implementation baseline
-is `v1.0.3-final-hardening`. The `main` branch may include documentation-only
-README polish commits after that tag.
+Old tags are preserved and must not be moved. `v1.0.3-final-hardening` remains
+a preserved hardening baseline. The `main` branch may include post-baseline
+closure commits for evidence persistence, API boundaries, and local validation.
 
 ## Safety And Data Policy
 
@@ -434,8 +434,9 @@ and placeholder `.gitkeep` files needed for reproducibility.
 
 ## Final Status
 
-The SmartTraffic implementation is frozen at `v1.0.3-final-hardening`.
+The preserved SmartTraffic hardening baseline is `v1.0.3-final-hardening`.
 
-The repository is in final delivery state. The `main` branch may include
-documentation-only README polish after the final implementation tag. No
-additional feature development is planned for the current project scope.
+The repository is in post-baseline closure state. The `main` branch may include
+targeted hardening for evidence persistence, API boundaries, and local demo
+validation. No additional feature development is planned beyond the current
+closure scope.

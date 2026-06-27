@@ -143,6 +143,8 @@ class ReviewEventDetailResponse(BaseModel):
     run_id: str
     event: dict[str, Any]
     review_state: dict[str, Any] | None = None
+    event_evidence: list[dict[str, Any]] = Field(default_factory=list)
+    rule_executions: list[dict[str, Any]] = Field(default_factory=list)
     linked_alerts: list[dict[str, Any]] = Field(default_factory=list)
     comments: list[ReviewCommentRecord] = Field(default_factory=list)
     visual_artifacts: dict[str, Any] = Field(default_factory=dict)

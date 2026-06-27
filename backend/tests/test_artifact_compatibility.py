@@ -19,8 +19,10 @@ from app.repositories import (
     AlertRepository,
     DetectionRepository,
     EvaluationResultRepository,
+    EventEvidenceRepository,
     EventRepository,
     FlowCountRepository,
+    RuleExecutionRepository,
     TrackRepository,
     TrafficAnalysisRunRepository,
     TrajectoryPointRepository,
@@ -49,6 +51,8 @@ def _write_tiny_run(tmp_path: Path, run_id: str = "run-compat") -> Path:
                     "tracks_csv": "tracks.csv",
                     "trajectory_points_csv": "trajectory_points.csv",
                     "events_jsonl": "events.jsonl",
+                    "event_evidence_jsonl": "event_evidence.jsonl",
+                    "rule_executions_jsonl": "rule_executions.jsonl",
                     "alerts_jsonl": "alerts.jsonl",
                     "flow_counts": "flow_counts.json",
                     "zone_statistics": "zone_statistics.json",
@@ -71,6 +75,8 @@ def _write_tiny_run(tmp_path: Path, run_id: str = "run-compat") -> Path:
                     "detections_csv": "detections.csv",
                     "tracks_csv": "tracks.csv",
                     "events_jsonl": "events.jsonl",
+                    "event_evidence_jsonl": "event_evidence.jsonl",
+                    "rule_executions_jsonl": "rule_executions.jsonl",
                 },
             }
         ),
@@ -144,6 +150,42 @@ def _write_tiny_run(tmp_path: Path, run_id: str = "run-compat") -> Path:
         ],
     )
     _write_jsonl(
+        run_dir / "event_evidence.jsonl",
+        [
+            {
+                "evidence_id": "evidence-1",
+                "event_id": "event-1",
+                "run_id": run_id,
+                "video_id": "video-compat",
+                "track_id": "track-1",
+                "frame_index": 1,
+                "timestamp_ms": 40,
+                "event_type": "wrong_way_driving",
+                "zone_id": "zone-a",
+                "rule_id": "rule-wrong-way",
+                "evidence_type": "trajectory_window",
+                "evidence_json": {"angle_delta": 180},
+                "snapshot_path": "keyframes/event-1.jpg",
+            }
+        ],
+    )
+    _write_jsonl(
+        run_dir / "rule_executions.jsonl",
+        [
+            {
+                "execution_id": "rule-exec-1",
+                "run_id": run_id,
+                "rule_id": "rule-wrong-way",
+                "event_id": "event-1",
+                "track_id": "track-1",
+                "frame_index": 1,
+                "status": "matched",
+                "input_features": {"direction": 180},
+                "output_result": {"event_type": "wrong_way_driving"},
+            }
+        ],
+    )
+    _write_jsonl(
         run_dir / "alerts.jsonl",
         [
             {
@@ -154,6 +196,8 @@ def _write_tiny_run(tmp_path: Path, run_id: str = "run-compat") -> Path:
                 "status": "new",
                 "severity": "high",
                 "message": "Wrong way detected",
+                "event_evidence_id": "evidence-1",
+                "snapshot_path": "keyframes/event-1.jpg",
             }
         ],
     )
@@ -245,6 +289,8 @@ def test_dry_run_import_counts_without_writing(tmp_path):
         assert summary.planned["detections"] == 1
         assert summary.planned["tracks"] == 1
         assert summary.planned["events"] == 1
+        assert summary.planned["event_evidence"] == 1
+        assert summary.planned["rule_executions"] == 1
         assert DetectionRepository(session).list(run_id="run-compat") == []
         assert TrafficAnalysisRunRepository(session).get("run-compat") is None
 
@@ -262,8 +308,20 @@ def test_import_tiny_artifacts_is_idempotent(tmp_path):
         assert len(DetectionRepository(session).list(run_id="run-compat")) == 1
         assert len(TrackRepository(session).list(run_id="run-compat")) == 1
         assert len(TrajectoryPointRepository(session).list(run_id="run-compat")) == 1
-        assert len(EventRepository(session).list(run_id="run-compat")) == 1
-        assert len(AlertRepository(session).list(run_id="run-compat")) == 1
+        events = EventRepository(session).list(run_id="run-compat")
+        assert len(events) == 1
+        assert events[0].rule_id == "rule-wrong-way"
+        assert events[0].zone_id == "zone-a"
+        evidence = EventEvidenceRepository(session).list(run_id="run-compat")
+        assert len(evidence) == 1
+        assert evidence[0].event_id == "event-1"
+        assert evidence[0].artifact_path == "keyframes/event-1.jpg"
+        executions = RuleExecutionRepository(session).list(run_id="run-compat")
+        assert len(executions) == 1
+        assert executions[0].details["event_id"] == "event-1"
+        alerts = AlertRepository(session).list(run_id="run-compat")
+        assert len(alerts) == 1
+        assert alerts[0].payload["event_evidence_id"] == "evidence-1"
         assert len(FlowCountRepository(session).list(run_id="run-compat")) == 1
         assert len(ZoneStatisticRepository(session).list(run_id="run-compat")) == 1
         assert len(EvaluationResultRepository(session).list(run_id="run-compat")) == 1

@@ -212,10 +212,21 @@ class EventLifecycleService:
             for row in self.review_comments.list(event_id=event_id)
         ]
         alerts = [_alert_from_model(row) for row in self.alerts.list(event_id=event_id)]
+        evidence = [
+            _evidence_from_model(row)
+            for row in self.event_evidence.list(event_id=event_id)
+        ]
+        rule_executions = [
+            _rule_execution_from_model(row)
+            for row in self.rule_executions.list(run_id=run_id)
+            if _rule_execution_matches_event(row, event_id)
+        ]
         return {
             "run_id": run_id,
             "event": _event_from_model(event),
             "review_state": _review_state(run_id, event_id, event.status, comments),
+            "event_evidence": evidence,
+            "rule_executions": rule_executions,
             "linked_alerts": alerts,
             "comments": comments,
             "visual_artifacts": {},
@@ -470,29 +481,65 @@ def _event_from_model(row: Any) -> dict[str, Any]:
 
 
 def _evidence_from_model(row: Any) -> dict[str, Any]:
-    return {
-        "id": row.id,
-        "event_id": row.event_id,
-        "run_id": row.run_id,
-        "evidence_type": row.evidence_type,
-        "payload": row.payload or {},
-        "artifact_path": row.artifact_path,
-        "source": "db",
-    }
+    payload = dict(row.payload or {})
+    result = dict(payload)
+    result.update(
+        {
+            "id": row.id,
+            "evidence_id": row.id,
+            "event_id": row.event_id,
+            "run_id": row.run_id,
+            "video_id": payload.get("video_id"),
+            "track_id": payload.get("track_id"),
+            "frame_index": payload.get("frame_index"),
+            "timestamp_ms": payload.get("timestamp_ms"),
+            "event_type": payload.get("event_type"),
+            "zone_id": payload.get("zone_id"),
+            "rule_id": payload.get("rule_id"),
+            "evidence_type": row.evidence_type,
+            "evidence_json": payload.get("evidence_json") or {},
+            "snapshot_path": payload.get("snapshot_path") or row.artifact_path,
+            "payload": payload,
+            "artifact_path": row.artifact_path,
+            "source": "db",
+        }
+    )
+    return result
 
 
 def _rule_execution_from_model(row: Any) -> dict[str, Any]:
-    return {
-        "id": row.id,
-        "run_id": row.run_id,
-        "rule_id": row.rule_id,
-        "status": row.status,
-        "matched_count": row.matched_count,
-        "details": row.details or {},
-        "error_message": row.error_message,
-        "created_at": _datetime_iso(row.created_at),
-        "source": "db",
-    }
+    details = dict(row.details or {})
+    result = dict(details)
+    result.update(
+        {
+            "id": row.id,
+            "execution_id": row.id,
+            "run_id": row.run_id,
+            "rule_id": row.rule_id,
+            "event_id": details.get("event_id"),
+            "track_id": details.get("track_id"),
+            "frame_index": details.get("frame_index"),
+            "status": row.status,
+            "matched_count": row.matched_count,
+            "input_features": details.get("input_features") or {},
+            "output_result": details.get("output_result") or {},
+            "details": details,
+            "error_message": row.error_message,
+            "created_at": _datetime_iso(row.created_at),
+            "source": "db",
+        }
+    )
+    return result
+
+
+def _rule_execution_matches_event(row: Any, event_id: str) -> bool:
+    details = row.details or {}
+    if details.get("event_id") is not None:
+        return str(details["event_id"]) == event_id
+    event_ids = details.get("event_ids")
+    if isinstance(event_ids, list):
+        return event_id in {str(value) for value in event_ids}
+    return False
 
 
 def _alert_from_model(row: Any) -> dict[str, Any]:

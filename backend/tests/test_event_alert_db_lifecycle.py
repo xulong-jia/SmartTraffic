@@ -13,7 +13,9 @@ import app.models  # noqa: F401
 from app.repositories import (
     AlertRepository,
     EventRepository,
+    TrackRepository,
     TrafficAnalysisRunRepository,
+    TrajectoryPointRepository,
     VideoRepository,
 )
 from app.services.event_lifecycle_service import EventLifecycleService
@@ -111,6 +113,17 @@ def test_event_evidence_rule_execution_and_analysis_runs_db_first(
     assert analysis_payload["events"][0]["event_id"] == "event-3cd-1"
     assert analysis_payload["event_evidence"][0]["id"] == "evidence-3cd-1"
     assert analysis_payload["rule_executions"][0]["rule_id"] == "rule-3cd"
+    rule_response = client.get("/api/analysis-runs/run-3cd/events?rule_id=rule-3cd")
+    assert rule_response.status_code == 200
+    assert rule_response.json()["rule_executions"][0]["rule_id"] == "rule-3cd"
+
+    review_response = client.get(
+        "/api/review/events/event-3cd-1?run_id=run-3cd"
+    )
+    assert review_response.status_code == 200
+    review_payload = review_response.json()
+    assert review_payload["event_evidence"][0]["id"] == "evidence-3cd-1"
+    assert review_payload["rule_executions"][0]["rule_id"] == "rule-3cd"
 
     patch_response = client.patch(
         "/api/events/event-3cd-1/status",
@@ -178,6 +191,55 @@ def test_alert_api_not_found_returns_404(client: TestClient) -> None:
     assert client.patch("/api/alerts/missing-alert/acknowledge").status_code == 404
     assert client.patch("/api/alerts/missing-alert/resolve").status_code == 404
     assert client.patch("/api/alerts/missing-alert/ignore").status_code == 404
+
+
+def test_standalone_track_and_trajectory_apis_read_db_results(
+    client: TestClient,
+    session_factory: sessionmaker[Session],
+) -> None:
+    with session_factory() as session:
+        _seed_run(session)
+        TrackRepository(session).create(
+            id="track-row-3cd",
+            run_id="run-3cd",
+            video_id="video-3cd",
+            track_id="9",
+            class_name="car",
+            start_frame=12,
+            end_frame=16,
+            confidence=0.93,
+            metadata_json={"state": "confirmed"},
+        )
+        TrajectoryPointRepository(session).create(
+            id="trajectory-row-3cd",
+            run_id="run-3cd",
+            video_id="video-3cd",
+            track_id="9",
+            frame_index=12,
+            timestamp_ms=480,
+            x=120.5,
+            y=80.25,
+            speed=4.5,
+            direction="90",
+            features={"source": "test"},
+        )
+        session.commit()
+
+    tracks_response = client.get("/api/tracks?run_id=run-3cd&track_id=9")
+    assert tracks_response.status_code == 200
+    tracks_payload = tracks_response.json()
+    assert tracks_payload["source"] == "db"
+    assert tracks_payload["summary"]["total_tracks"] == 1
+    assert tracks_payload["rows"][0]["track_id"] == "9"
+
+    trajectories_response = client.get(
+        "/api/trajectories?run_id=run-3cd&track_id=9"
+    )
+    assert trajectories_response.status_code == 200
+    trajectories_payload = trajectories_response.json()
+    assert trajectories_payload["source"] == "db"
+    assert trajectories_payload["summary"]["total_trajectory_points"] == 1
+    assert trajectories_payload["rows"][0]["x"] == 120.5
 
 
 def _seed_run(session: Session) -> None:

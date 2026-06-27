@@ -55,6 +55,67 @@
         "min_track_length": 1
       },
       {
+        "id": "rule_illegal_parking_demo",
+        "name": "Demo illegal parking",
+        "event_type": "illegal_parking",
+        "enabled": true,
+        "zone_id": "zone_no_parking_demo",
+        "target_classes": [
+          "car",
+          "bus",
+          "truck",
+          "motorcycle"
+        ],
+        "parameters": {
+          "stop_speed_threshold": 0.5,
+          "min_dwell_time_ms": 1000,
+          "point_type": "bottom_center"
+        },
+        "cooldown_seconds": 2.0,
+        "severity": "medium",
+        "version": 1,
+        "min_track_length": 2
+      },
+      {
+        "id": "rule_pedestrian_lane_demo",
+        "name": "Demo pedestrian in vehicle lane",
+        "event_type": "pedestrian_in_vehicle_lane",
+        "enabled": true,
+        "zone_id": "zone_vehicle_lane_demo",
+        "target_classes": [
+          "person"
+        ],
+        "parameters": {
+          "point_type": "bottom_center"
+        },
+        "cooldown_seconds": 1.0,
+        "severity": "high",
+        "version": 1,
+        "min_track_length": 1
+      },
+      {
+        "id": "rule_congestion_demo",
+        "name": "Demo congestion",
+        "event_type": "congestion",
+        "enabled": true,
+        "zone_id": "zone_vehicle_lane_demo",
+        "target_classes": [
+          "car",
+          "bus",
+          "truck",
+          "motorcycle"
+        ],
+        "parameters": {
+          "vehicle_count_threshold": 3,
+          "avg_speed_threshold": 2.0,
+          "min_congestion_frames": 1
+        },
+        "cooldown_seconds": 5.0,
+        "severity": "medium",
+        "version": 1,
+        "min_track_length": 1
+      },
+      {
         "id": "rule_flow_count_demo",
         "name": "Demo flow counting",
         "event_type": "flow_counting",
@@ -146,6 +207,32 @@
           [
             410,
             380
+          ]
+        ],
+        "enabled": true,
+        "video_id": "demo_video_local",
+        "camera_id": "demo_camera_01"
+      },
+      {
+        "id": "zone_no_parking_demo",
+        "name": "Demo no-parking zone",
+        "zone_type": "no_parking_zone",
+        "polygon": [
+          [
+            150,
+            160
+          ],
+          [
+            360,
+            160
+          ],
+          [
+            380,
+            320
+          ],
+          [
+            130,
+            320
           ]
         ],
         "enabled": true,

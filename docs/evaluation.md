@@ -111,6 +111,23 @@ results/traffic_analysis/{run_id}/evaluation_summary.json
 中的 `evaluation_summary` 状态，但不会覆盖 detection、tracking、trajectory、
 event、alert、review 或 Bad Case 原始 artifacts。
 
+## Demo Validation Samples
+
+`scripts/seed_demo_data.py` writes tiny local sample configs and expected files
+for validation smoke tests. `evals/expected/demo_expected_events.json` covers
+the six supported event types with synthetic expected events:
+
+- `wrong_way_driving`
+- `danger_zone_intrusion`
+- `flow_counting`
+- `illegal_parking`
+- `pedestrian_in_vehicle_lane`
+- `congestion`
+
+These files are toy local validation inputs. They are not a real traffic video
+benchmark and do not claim production detection, tracking, or road-level
+generalization.
+
 ## API
 
 Stage 8EFG 提供以下 endpoints；Full Stage 3EF 后这些接口对 DB run 使用

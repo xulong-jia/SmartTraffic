@@ -14,6 +14,7 @@ import app.models  # noqa: F401
 from app.repositories import (
     EventEvidenceRepository,
     EventRepository,
+    RuleExecutionRepository,
     TrafficAnalysisRunRepository,
     VideoRepository,
 )
@@ -65,6 +66,8 @@ def test_top_level_event_api_db_first_status_update_and_bad_case(
             id="event-db-1",
             run_id="run-db-1",
             video_id="video-db-1",
+            rule_id="rule-db-1",
+            zone_id="zone-db-1",
             type="danger_zone_intrusion",
             status="pending",
             severity="high",
@@ -77,13 +80,33 @@ def test_top_level_event_api_db_first_status_update_and_bad_case(
             event_id="event-db-1",
             run_id="run-db-1",
             evidence_type="zone_intrusion",
-            payload={"zone_id": "zone-db-1"},
+            payload={
+                "zone_id": "zone-db-1",
+                "track_id": "42",
+                "frame_index": 12,
+                "snapshot_path": "keyframes/event-db-1.jpg",
+            },
+            artifact_path="keyframes/event-db-1.jpg",
+        )
+        RuleExecutionRepository(session).create(
+            id="rule-exec-db-1",
+            run_id="run-db-1",
+            rule_id="rule-db-1",
+            status="matched",
+            matched_count=1,
+            details={
+                "event_id": "event-db-1",
+                "track_id": "42",
+                "frame_index": 12,
+                "input_features": {"speed": 1.2},
+                "output_result": {"matched": True},
+            },
         )
         session.commit()
 
     list_response = client.get(
-        "/api/events?run_id=run-db-1&event_type=danger_zone_intrusion&status=pending"
-        "&severity=high&track_id=42"
+        "/api/events?run_id=run-db-1&event_type=danger_zone_intrusion"
+        "&rule_id=rule-db-1&status=pending&severity=high&track_id=42"
     )
     assert list_response.status_code == 200
     list_payload = list_response.json()
@@ -96,6 +119,11 @@ def test_top_level_event_api_db_first_status_update_and_bad_case(
     detail_payload = detail_response.json()
     assert detail_payload["id"] == "event-db-1"
     assert detail_payload["event_evidence"][0]["id"] == "evidence-db-1"
+    assert detail_payload["event_evidence"][0]["snapshot_path"] == (
+        "keyframes/event-db-1.jpg"
+    )
+    assert detail_payload["rule_executions"][0]["id"] == "rule-exec-db-1"
+    assert detail_payload["rule_executions"][0]["event_id"] == "event-db-1"
 
     patch_response = client.patch(
         "/api/events/event-db-1/status",
@@ -122,6 +150,8 @@ def test_top_level_event_api_db_first_status_update_and_bad_case(
     assert bad_case["video_id"] == "video-db-1"
     assert bad_case["track_id"] == "42"
     assert bad_case["case_type"] == "false_positive"
+    assert bad_case["linked_evidence_id"] == "evidence-db-1"
+    assert bad_case["snapshot_path"] == "keyframes/event-db-1.jpg"
 
 
 def test_top_level_event_api_not_found_returns_404(client: TestClient) -> None:

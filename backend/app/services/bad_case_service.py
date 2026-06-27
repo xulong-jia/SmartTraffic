@@ -24,6 +24,7 @@ from app.core.paths import PROJECT_DIR
 from app.repositories import (
     BadCaseRepository,
     EvaluationResultRepository,
+    EventEvidenceRepository,
     EventRepository,
     ReviewCommentRepository,
     TrafficAnalysisRunRepository,
@@ -376,6 +377,7 @@ class BadCaseService:
         payload = dict(record)
         event_id = _string_or_none(payload.get("event_id"))
         event = EventRepository(self.session).get(event_id) if event_id else None  # type: ignore[arg-type]
+        evidence = _first_event_evidence(self.session, event_id) if event_id else None
         now = _utc_now_iso()
         case_id = str(payload.get("case_id") or f"badcase_{uuid4().hex[:12]}")
         payload.setdefault("case_id", case_id)
@@ -388,7 +390,11 @@ class BadCaseService:
         payload.setdefault("expected_result", "")
         payload.setdefault("actual_result", "")
         payload.setdefault("root_cause", "")
-        payload.setdefault("snapshot_path", None)
+        payload.setdefault(
+            "linked_evidence_id",
+            evidence.id if evidence is not None else None,
+        )
+        payload.setdefault("snapshot_path", _evidence_snapshot_path(evidence))
         payload.setdefault("tags", [])
         payload.setdefault("status", "open")
         payload.setdefault("source", "manual")
@@ -615,6 +621,20 @@ def _description_from_review(review: dict[str, Any]) -> str:
         return comment
     event_id = review.get("event_id")
     return f"Bad Case created from review {review['review_id']} for event {event_id}."
+
+
+def _first_event_evidence(session: Session | None, event_id: str | None) -> Any | None:
+    if session is None or event_id is None:
+        return None
+    rows = EventEvidenceRepository(session).list(event_id=event_id)
+    return rows[0] if rows else None
+
+
+def _evidence_snapshot_path(row: Any | None) -> str | None:
+    if row is None:
+        return None
+    payload = row.payload or {}
+    return row.artifact_path or payload.get("snapshot_path")
 
 
 def _expected_result_from_review(review: dict[str, Any], case_type: str) -> str:
