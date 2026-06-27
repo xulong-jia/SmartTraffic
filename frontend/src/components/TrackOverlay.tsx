@@ -3,7 +3,8 @@ import {
   filterTracksForTime,
   formatConfidence,
   groupTrajectoryPolylines,
-  isTrackHighlighted
+  isTrackHighlighted,
+  normalizeBbox
 } from "../utils/videoOverlay";
 
 interface TrackOverlayProps {
@@ -38,12 +39,21 @@ export default function TrackOverlay({
         ) : null
       )}
       {tracks.map((track) => {
-        const [x1, y1, x2, y2] = track.bbox;
+        const bbox = normalizeBbox(track.bbox ?? track.metadata ?? track);
+        if (!bbox) {
+          return null;
+        }
+        const [x1, y1, x2, y2] = bbox;
         const highlighted = isTrackHighlighted(track.track_id, selectedTrackId);
+        const trackId = track.track_id ?? "-";
+        const className = track.class_name || track.state || "track";
+        const confidence = Number.isFinite(Number(track.confidence))
+          ? Number(track.confidence)
+          : null;
         return (
           <g
             className={highlighted ? "overlay-item highlighted" : "overlay-item"}
-            key={`${track.track_id}-${track.class_name}`}
+            key={`${trackId}-${className}`}
           >
             <rect
               className="track-box"
@@ -53,7 +63,7 @@ export default function TrackOverlay({
               y={Number(y1)}
             />
             <text className="overlay-label track-label" x={Number(x1)} y={Number(y2) + 16}>
-              #{track.track_id} {track.class_name} {formatConfidence(track.confidence)}
+              #{trackId} {className} {formatConfidence(confidence)}
             </text>
           </g>
         );

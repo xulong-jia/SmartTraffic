@@ -7,7 +7,7 @@ import type {
   ZoneRecord
 } from "../types";
 import { getEventId } from "./eventTimeline";
-import { selectedTrackIdFromEvent, selectedZoneIdFromEvent } from "./videoOverlay";
+import { normalizeBbox, selectedTrackIdFromEvent, selectedZoneIdFromEvent } from "./videoOverlay";
 
 export interface OverlayDataBundle {
   detections: AnalysisRunDetections["frames"];
@@ -57,12 +57,31 @@ export function inferOverlaySize(input: {
   tracks?: AnalysisRunTracks | null;
   zones?: ZoneRecord[] | null;
 }): { width: number; height: number } {
-  const boxes = [
-    ...(input.detections?.frames.flatMap((frame) => frame.detections.map((item) => item.bbox)) ?? []),
-    ...(input.tracks?.frames.flatMap((frame) => frame.tracks.map((item) => item.bbox)) ?? []),
-    ...(input.zones?.flatMap((zone) => zone.polygon) ?? [])
-  ];
-  const maxX = Math.max(960, ...boxes.map((box) => Number(box[0] ?? 0)), ...boxes.map((box) => Number(box[2] ?? 0)));
-  const maxY = Math.max(540, ...boxes.map((box) => Number(box[1] ?? 0)), ...boxes.map((box) => Number(box[3] ?? 0)));
+  const detectionBoxes =
+    input.detections?.frames.flatMap((frame) =>
+      frame.detections
+        .map((item) => normalizeBbox(item.bbox ?? item))
+        .filter((box): box is [number, number, number, number] => box !== null)
+    ) ?? [];
+  const trackBoxes =
+    input.tracks?.frames.flatMap((frame) =>
+      frame.tracks
+        .map((item) => normalizeBbox(item.bbox ?? item.metadata ?? item))
+        .filter((box): box is [number, number, number, number] => box !== null)
+    ) ?? [];
+  const zonePoints = input.zones?.flatMap((zone) => zone.polygon) ?? [];
+  const boxes = [...detectionBoxes, ...trackBoxes];
+  const maxX = Math.max(
+    960,
+    ...boxes.map((box) => Number(box[0])),
+    ...boxes.map((box) => Number(box[2])),
+    ...zonePoints.map((point) => Number(point[0] ?? 0))
+  );
+  const maxY = Math.max(
+    540,
+    ...boxes.map((box) => Number(box[1])),
+    ...boxes.map((box) => Number(box[3])),
+    ...zonePoints.map((point) => Number(point[1] ?? 0))
+  );
   return { width: maxX, height: maxY };
 }

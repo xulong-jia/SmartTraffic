@@ -1,5 +1,10 @@
 import type { FrameDetectionResult } from "../types";
-import { filterDetectionsForTime, formatConfidence, isTrackHighlighted } from "../utils/videoOverlay";
+import {
+  filterDetectionsForTime,
+  formatConfidence,
+  isTrackHighlighted,
+  normalizeBbox
+} from "../utils/videoOverlay";
 
 interface DetectionOverlayProps {
   frames: FrameDetectionResult[];
@@ -20,8 +25,16 @@ export default function DetectionOverlay({
   return (
     <g className="detection-overlay">
       {detections.map((detection, index) => {
-        const [x1, y1, x2, y2] = detection.bbox;
+        const bbox = normalizeBbox(detection.bbox ?? detection);
+        if (!bbox) {
+          return null;
+        }
+        const [x1, y1, x2, y2] = bbox;
         const highlighted = isTrackHighlighted(index, selectedTrackId);
+        const className = detection.class_name || "object";
+        const confidence = Number.isFinite(Number(detection.confidence))
+          ? Number(detection.confidence)
+          : null;
         return (
           <g className={highlighted ? "overlay-item highlighted" : "overlay-item"} key={index}>
             <rect
@@ -32,7 +45,7 @@ export default function DetectionOverlay({
               y={Number(y1)}
             />
             <text className="overlay-label" x={Number(x1)} y={Math.max(14, Number(y1) - 6)}>
-              {detection.class_name} {formatConfidence(detection.confidence)}
+              {className} {formatConfidence(confidence)}
             </text>
           </g>
         );

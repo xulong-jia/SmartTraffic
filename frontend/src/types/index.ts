@@ -398,14 +398,26 @@ export interface DetectionSummary {
   per_class_counts?: Record<string, number>;
 }
 
+export type BboxArray = number[];
+
+export interface BboxObject {
+  x1?: number | string | null;
+  y1?: number | string | null;
+  x2?: number | string | null;
+  y2?: number | string | null;
+}
+
+export type BboxShape = BboxArray | BboxObject;
+
 export interface FrameDetectionResult {
   frame_index: number;
   timestamp_ms?: number | null;
   detections: Array<{
     class_id?: number | null;
-    class_name: string;
-    confidence: number;
-    bbox: number[];
+    class_name?: string | null;
+    confidence?: number | string | null;
+    bbox?: BboxShape;
+    metadata?: Record<string, unknown> | null;
   }>;
 }
 
@@ -430,13 +442,14 @@ export interface FrameTrackingResult {
   frame_index: number;
   timestamp_ms?: number | null;
   tracks: Array<{
-    track_id: number;
+    track_id?: number | string | null;
     class_id?: number | null;
-    class_name: string;
-    confidence: number;
-    bbox: number[];
-    center: number[];
-    state: string;
+    class_name?: string | null;
+    confidence?: number | string | null;
+    bbox?: BboxShape;
+    center?: number[];
+    state?: string;
+    metadata?: Record<string, unknown> | null;
   }>;
 }
 

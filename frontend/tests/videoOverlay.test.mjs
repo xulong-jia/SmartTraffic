@@ -53,6 +53,26 @@ test("clampBox bounds bboxes inside source video size", () => {
   assert.deepEqual(overlay.clampBox([-10, 20, 1200, 700], 960, 540), [0, 20, 960, 540]);
 });
 
+test("normalizeBbox supports array object top-level and metadata shapes", () => {
+  assert.deepEqual(overlay.normalizeBbox([1, 2, 3, 4]), [1, 2, 3, 4]);
+  assert.deepEqual(overlay.normalizeBbox({ x1: 1, y1: 2, x2: 3, y2: 4 }), [1, 2, 3, 4]);
+  assert.deepEqual(
+    overlay.normalizeBbox({ bbox: { x1: "1", y1: "2", x2: "3", y2: "4" } }),
+    [1, 2, 3, 4]
+  );
+  assert.deepEqual(
+    overlay.normalizeBbox({ metadata: { x1: "5", y1: "6", x2: "7", y2: "8" } }),
+    [5, 6, 7, 8]
+  );
+});
+
+test("normalizeBbox returns null for invalid data", () => {
+  assert.equal(overlay.normalizeBbox(null), null);
+  assert.equal(overlay.normalizeBbox([1, 2, 3]), null);
+  assert.equal(overlay.normalizeBbox({ x1: 1, y1: 2, x2: "nope", y2: 4 }), null);
+  assert.equal(overlay.normalizeBbox({ metadata: { x1: 1, y1: 2, x2: 3 } }), null);
+});
+
 test("filterDetectionsForTime and filterTracksForTime pick nearest frame", () => {
   const detections = overlay.filterDetectionsForTime(
     [
@@ -89,6 +109,11 @@ test("groupTrajectoryPolylines groups track points and highlights selected track
     { x: 1, y: 1 },
     { x: 2, y: 2 }
   ]);
+});
+
+test("selected track helpers accept numeric strings", () => {
+  assert.equal(overlay.selectedTrackIdFromEvent({ event_id: "e1", track_id: "7" }), 7);
+  assert.equal(overlay.isTrackHighlighted("7", 7), true);
 });
 
 test("zone and selected event helpers map overlay highlights", () => {

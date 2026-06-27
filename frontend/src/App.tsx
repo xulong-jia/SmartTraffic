@@ -10,6 +10,7 @@ import ReportCenterPage from "./pages/ReportCenterPage";
 import ReviewCenterPage from "./pages/ReviewCenterPage";
 import VideoCenterPage from "./pages/VideoCenterPage";
 import ZoneRuleConfigPage from "./pages/ZoneRuleConfigPage";
+import { resolveAnalysisInitialRunId } from "./utils/analysisNavigation";
 
 type PageKey =
   | "dashboard"
@@ -127,7 +128,12 @@ function renderPage(
     case "videos":
       return <VideoCenterPage onOpenAnalysisRun={openAnalysisRun} />;
     case "analysis":
-      return <AnalysisDetailPage initialRunId={selectedAnalysisRunId} onOpenReview={openReviewLink} />;
+      return (
+        <AnalysisDetailPage
+          initialRunId={resolveAnalysisInitialRunId(selectedAnalysisRunId, locationSearch)}
+          onOpenReview={openReviewLink}
+        />
+      );
     case "zones":
       return <ZoneRuleConfigPage />;
     case "alerts":

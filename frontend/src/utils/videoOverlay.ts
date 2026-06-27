@@ -19,6 +19,8 @@ export interface Box2D {
   height: number;
 }
 
+export type NormalizedBbox = [number, number, number, number];
+
 export interface AspectFit {
   scale: number;
   offsetX: number;
@@ -28,16 +30,17 @@ export interface AspectFit {
 }
 
 export interface OverlayDetection {
-  bbox: number[];
-  class_name: string;
-  confidence?: number | null;
+  bbox?: unknown;
+  class_name?: string | null;
+  confidence?: number | string | null;
 }
 
 export interface OverlayTrack {
-  track_id: number;
-  bbox: number[];
-  class_name?: string;
-  confidence?: number | null;
+  track_id?: number | string | null;
+  bbox?: unknown;
+  metadata?: Record<string, unknown> | null;
+  class_name?: string | null;
+  confidence?: number | string | null;
   state?: string;
 }
 
@@ -103,6 +106,34 @@ export function clampBox(box: number[], width: number, height: number): number[]
   ];
 }
 
+export function normalizeBbox(input: unknown): NormalizedBbox | null {
+  if (Array.isArray(input)) {
+    return normalizeBboxValues(input[0], input[1], input[2], input[3]);
+  }
+  if (!input || typeof input !== "object") {
+    return null;
+  }
+
+  const record = input as Record<string, unknown>;
+  const direct = normalizeBboxValues(record.x1, record.y1, record.x2, record.y2);
+  if (direct) {
+    return direct;
+  }
+
+  if (record.bbox !== undefined && record.bbox !== input) {
+    const nested = normalizeBbox(record.bbox);
+    if (nested) {
+      return nested;
+    }
+  }
+
+  if (record.metadata && typeof record.metadata === "object") {
+    return normalizeBbox(record.metadata);
+  }
+
+  return null;
+}
+
 export function formatConfidence(value: number | null | undefined): string {
   if (!Number.isFinite(value)) {
     return "";
@@ -156,9 +187,9 @@ export function groupTrajectoryPolylines(
     .filter((frame) => frameTimeMs(frame) <= maxTime)
     .forEach((frame) => {
       frame.trajectory_points.forEach((point) => {
-        const trackId = point.track_id;
+        const trackId = toFiniteNumber(point.track_id);
         const center = getTrajectoryPointCenter(point);
-        if (trackId === undefined || trackId === null || center === null) {
+        if (trackId === null || center === null) {
           return;
         }
         const points = grouped.get(trackId) ?? [];
@@ -180,15 +211,16 @@ export function zonePolygonPoints(zone: ZoneRecord): Point2D[] {
 }
 
 export function selectedTrackIdFromEvent(event: EventRecord | null | undefined): number | null {
-  return Number.isFinite(event?.track_id) ? Number(event?.track_id) : null;
+  return toFiniteNumber(event?.track_id);
 }
 
 export function selectedZoneIdFromEvent(event: EventRecord | null | undefined): string | null {
   return typeof event?.zone_id === "string" && event.zone_id ? event.zone_id : null;
 }
 
-export function isTrackHighlighted(trackId: number | null | undefined, selectedTrackId: number | null): boolean {
-  return selectedTrackId !== null && Number(trackId) === selectedTrackId;
+export function isTrackHighlighted(trackId: number | string | null | undefined, selectedTrackId: number | null): boolean {
+  const normalizedTrackId = toFiniteNumber(trackId);
+  return selectedTrackId !== null && normalizedTrackId === selectedTrackId;
 }
 
 export function isZoneHighlighted(zoneId: string | null | undefined, selectedZoneId: string | null): boolean {
@@ -209,6 +241,27 @@ function normalizeBox(box: number[]): number[] {
   const x2 = Number(box[2] ?? x1);
   const y2 = Number(box[3] ?? y1);
   return [Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)];
+}
+
+function normalizeBboxValues(
+  x1Value: unknown,
+  y1Value: unknown,
+  x2Value: unknown,
+  y2Value: unknown
+): NormalizedBbox | null {
+  const x1 = toFiniteNumber(x1Value);
+  const y1 = toFiniteNumber(y1Value);
+  const x2 = toFiniteNumber(x2Value);
+  const y2 = toFiniteNumber(y2Value);
+  if (x1 === null || y1 === null || x2 === null || y2 === null) {
+    return null;
+  }
+  return [x1, y1, x2, y2];
+}
+
+function toFiniteNumber(value: unknown): number | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function positiveOrDefault(value: number, fallback: number): number {
