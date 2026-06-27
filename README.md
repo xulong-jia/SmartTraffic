@@ -62,6 +62,37 @@ Core capabilities:
   and RTSP no-connect sources.
 - Keep explicit security, data, and engineering boundaries for local validation.
 
+## Development Roadmap
+
+SmartTraffic was built as a staged engineering project. The roadmap below
+summarizes how it evolved from a video-processing skeleton into a DB-backed
+traffic event analysis platform.
+
+| Stage | Goal | Main Work Completed |
+| --- | --- | --- |
+| 1. Project foundation and video management | Build the FastAPI / React skeleton and basic video workflow | Repository structure, backend / frontend bootstrapping, video upload, metadata extraction, processing task state, initial Dashboard and Video Center |
+| 2. YOLOv8 detection | Add object detection for vehicles and pedestrians | `YoloDetector`, dry-run detection, optional Ultralytics inference, detection artifacts, detection API, and frontend summary |
+| 3. DeepSORT tracking | Convert frame detections into tracked objects | `DeepSortTracker`, deterministic mock tracker, stable track IDs, tracking artifacts, track query API, and minimal frontend track display |
+| 4. Trajectory Engine | Convert tracks into motion and geometry features | Geometry utilities, pixel speed, moving angle, dwell time, zone relation, line crossing, trajectory artifacts, and query API |
+| 5. Event Engine and Alert Center | Detect traffic events from trajectories, zones, and rules | Six event rules, event evidence, rule executions, alert generation, and alert status workflow |
+| 6. Traffic Analysis Center | Organize each analysis run by `run_id` | Run manifest, artifact index, result APIs, flow counts, zone statistics, keyframe summary, and annotated-video references |
+| 7. Dashboard, Alert, and Review workflow | Make results visible, reviewable, and linkable to Bad Cases | Video overlay, event timeline, Alert Center, Review Center, review comments, false-positive / false-negative flow, and Bad Case linkage |
+| 8. Bad Case and Evaluation Center | Add measurable quality feedback | Bad Case Center, evaluation datasets/results, detection/tracking/trajectory/event/flow metrics, failed cases, and deterministic regression replay |
+| 9. Engineering delivery and hardening | Make the project reproducible and safe to publish | Docker Compose, `.env.example`, `.gitignore`, demo seed data, docs, safety checks, and final validation |
+
+### Final Hardening Milestones
+
+| Milestone | Purpose |
+| --- | --- |
+| `v0.9.1-db-foundation` | SQLAlchemy / Alembic DB foundation |
+| `v0.9.2-db-backed-core-flow` | DB-backed video, processing, detections, tracks, trajectory, flow, and zone statistics |
+| `v0.9.3-quality-db-flow` | DB-backed events, alerts, review, Bad Case, and evaluation workflow |
+| `v0.9.4-real-evaluation` | Detection / tracking metrics and deterministic regression evaluation |
+| `v0.9.5-frontend-complete` | Zone editor, overlays, timeline, review, and evaluation UI |
+| `v0.9.6-report-center` | CSV / JSON / PDF report exports and bundle metadata |
+| `v0.9.7-realtime-security-preview` | Camera / realtime preview and security / ops hardening |
+| `v1.0.3-final-hardening` | Final execution-manual alignment and validation hardening |
+
 ## Final Feature Set
 
 ### Video And Processing
