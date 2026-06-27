@@ -1,314 +1,184 @@
 # SmartTraffic: Intelligent Traffic Event Detection Platform
 
-YOLOv8 + DeepSORT + Trajectory Engine + Event Engine + FastAPI + React + Database
+A local validation platform for traffic video analysis, combining YOLOv8,
+DeepSORT, trajectory semantics, configurable event rules, review workflows, Bad
+Case tracking, evaluation, and Docker-based delivery.
 
-SmartTraffic is a local, reviewable traffic video analysis platform for the final
-SmartTraffic project scope. It connects video upload, object detection,
-multi-object tracking, trajectory features, event rules, alert handling,
-manual review, Bad Case management, evaluation, report export, and a realtime
-preview workflow.
+SmartTraffic 是一个智慧交通事件检测 local validation project，不是普通 YOLOv8
+检测框 Demo。
 
-SmartTraffic is a 智慧交通事件检测平台. It is not a traffic enforcement system.
+## Project Snapshot
 
-## Project Summary
-
-| Item | Current status |
+| Item | Status |
 | --- | --- |
-| Project type | Local intelligent traffic event detection and review platform |
-| Current final tag | `v1.0.1-spec-completion` |
-| Final baseline | SmartTraffic `v1.0.1-spec-completion`, spec-complete final local delivery baseline |
-| Backend | FastAPI, Pydantic, SQLAlchemy, Alembic |
+| Current baseline | `v1.0.1-spec-completion` |
+| Project type | Smart traffic event detection local validation platform |
+| Backend | FastAPI, SQLAlchemy, Alembic |
 | Frontend | React, TypeScript, Vite |
-| Detection | YOLOv8 wrapper with deterministic dry-run support |
-| Tracking | DeepSORT adapter with deterministic mock tracker |
-| Database | SQLite prototype through SQLAlchemy and Alembic |
-| Report export | CSV, JSON, PDF, report bundle metadata, keyframe summary, annotated video reference |
-| Realtime | Camera and realtime preview only, not production realtime monitoring |
-| Final acceptance | Passed under the execution manual's local validation scope |
-| Safety boundary | Analysis and review only; not for traffic enforcement |
+| CV stack | YOLOv8 wrapper, DeepSORT adapter |
+| Database | SQLite prototype via SQLAlchemy |
+| Delivery | Docker Compose local delivery |
+| Event coverage | 6 configurable traffic event rules |
+| Evaluation | Local / synthetic validation metrics |
+| Boundary | Not production-ready or law-enforcement-grade |
 
-## What This Project Does
+## What Problem It Solves
+
+Object detection answers "what is in the frame". SmartTraffic adds the next
+layer: track objects over time, derive trajectory semantics, apply configurable
+road-space rules, then make the result reviewable and measurable.
 
 ```text
-video upload / camera source
-  -> metadata extraction
-  -> YOLOv8 detection
-  -> DeepSORT tracking
-  -> trajectory feature extraction
-  -> event rule engine
-  -> alert generation
-  -> traffic analysis run index
-  -> dashboard / review / bad case / evaluation
-  -> report export
+video
+-> detection
+-> tracking
+-> trajectory semantics
+-> zone/rule reasoning
+-> events
+-> evidence
+-> alert/review
+-> bad case/evaluation
 ```
 
-Core capabilities:
+## Core Pipeline
 
-- Upload and validate local videos, extract metadata, and create processing
-  tasks.
-- Run YOLOv8 detection or deterministic dry-run detection.
-- Run DeepSORT tracking or deterministic mock tracking.
-- Derive trajectory features for speed, direction, dwell time, zone membership,
-  lane relation, and line crossing.
-- Configure zones and event rules with DB-backed CRUD.
-- Detect six event types through the Event Engine.
-- Generate alerts and manage alert status.
-- Review events manually, add comments, mark false positives / false negatives,
-  and request rule reruns.
-- Convert review or evaluation failures into Bad Cases.
-- Run lightweight evaluation workflows for event, flow, trajectory, detection,
-  tracking, and regression scenarios.
-- Export analysis reports as CSV, JSON, PDF, and bundle metadata.
-- Preview camera / realtime metadata for mock, local file, upload placeholder,
-  and RTSP no-connect sources.
-- Keep explicit security, data, and engineering boundaries for local validation.
+```text
+Video Upload / Camera Source
+  -> YOLOv8 Detection
+  -> DeepSORT Tracking
+  -> Trajectory Engine
+  -> Zone & Rule Config
+  -> Event Engine
+  -> Alert Center
+  -> Traffic Analysis Center
+  -> Review / Bad Case / Evaluation
+  -> Report Export / Docker Local Delivery
+```
 
-## Development Roadmap
+## Key Features
 
-SmartTraffic was built as a staged engineering project. The roadmap below
-summarizes how it evolved from a video-processing skeleton into a DB-backed
-traffic event analysis platform.
+### Video Processing
 
-| Stage | Goal | Main Work Completed |
-| --- | --- | --- |
-| 1. Project foundation and video management | Build the FastAPI / React skeleton and basic video workflow | Repository structure, backend / frontend bootstrapping, video upload, metadata extraction, processing task state, initial Dashboard and Video Center |
-| 2. YOLOv8 detection | Add object detection for vehicles and pedestrians | `YoloDetector`, dry-run detection, optional Ultralytics inference, detection artifacts, detection API, and frontend summary |
-| 3. DeepSORT tracking | Convert frame detections into tracked objects | `DeepSortTracker`, deterministic mock tracker, stable track IDs, tracking artifacts, track query API, and minimal frontend track display |
-| 4. Trajectory Engine | Convert tracks into motion and geometry features | Geometry utilities, pixel speed, moving angle, dwell time, zone relation, line crossing, trajectory artifacts, and query API |
-| 5. Event Engine and Alert Center | Detect traffic events from trajectories, zones, and rules | Six event rules, event evidence, rule executions, alert generation, and alert status workflow |
-| 6. Traffic Analysis Center | Organize each analysis run by `run_id` | Run manifest, artifact index, result APIs, flow counts, zone statistics, keyframe summary, and annotated-video references |
-| 7. Dashboard, Alert, and Review workflow | Make results visible, reviewable, and linkable to Bad Cases | Video overlay, event timeline, Alert Center, Review Center, review comments, false-positive / false-negative flow, and Bad Case linkage |
-| 8. Bad Case and Evaluation Center | Add measurable quality feedback | Bad Case Center, evaluation datasets/results, detection/tracking/trajectory/event/flow metrics, failed cases, and deterministic regression replay |
-| 9. Engineering delivery and hardening | Make the project reproducible and safe to publish | Docker Compose, `.env.example`, `.gitignore`, demo seed data, docs, safety checks, and final validation |
-
-### Final Hardening And Completion Milestones
-
-| Milestone | Purpose |
-| --- | --- |
-| `v0.9.1-db-foundation` | SQLAlchemy / Alembic DB foundation |
-| `v0.9.2-db-backed-core-flow` | DB-backed video, processing, detections, tracks, trajectory, flow, and zone statistics |
-| `v0.9.3-quality-db-flow` | DB-backed events, alerts, review, Bad Case, and evaluation workflow |
-| `v0.9.4-real-evaluation` | Detection / tracking metrics and deterministic regression evaluation |
-| `v0.9.5-frontend-complete` | Zone editor, overlays, timeline, review, and evaluation UI |
-| `v0.9.6-report-center` | CSV / JSON / PDF report exports and bundle metadata |
-| `v0.9.7-realtime-security-preview` | Camera / realtime preview and security / ops hardening |
-| `v1.0.3-final-hardening` | Final execution-manual alignment and validation hardening |
-| `v1.0.1-spec-completion` | Current spec-complete final local delivery baseline after execution-manual gap closure |
-
-## Final Feature Set
-
-### Video And Processing
-
-- Video upload, list, detail, status, and frame metadata query APIs.
-- Upload validation for extension, size, OpenCV duration metadata, and codec
-  allowlist.
-- DB-backed `processing_tasks` lifecycle with status, progress, timestamps, and
-  error details.
-- DB-backed `traffic_analysis_runs`, allowing multiple runs per video.
-- Local artifacts remain under `results/traffic_analysis/<run_id>/`.
+- Local video upload, metadata extraction, validation, and processing task
+  lifecycle.
+- Run-scoped analysis records so the same video can have multiple local
+  validation runs.
+- Local artifacts remain in ignored output directories and are not committed.
 
 ### Detection And Tracking
 
-- `YoloDetector` wrapper for YOLOv8 / Ultralytics integration.
-- `YOLO_DRY_RUN=true` deterministic detection path for local validation without
-  model weights.
-- DeepSORT adapter plus deterministic mock tracker.
-- DB-backed detections, tracks, and detector / tracker `model_runs` records.
-- Detection and tracking produce structured analysis inputs; they do not make
-  event judgments.
+- YOLOv8 detector wrapper with deterministic dry-run support for environments
+  without local model weights.
+- DeepSORT adapter with deterministic mock tracking for repeatable tests.
+- Detection and tracking produce structured inputs; event judgment is handled
+  by the trajectory and rule layers.
 
 ### Trajectory Engine
 
-- Pixel-space speed, moving angle, direction vector, direction consistency, and
-  dwell time.
-- Zone history, lane relation, track length, last-seen state, and line crossing
-  features.
-- DB-backed zones and event rules participate in the default processing
-  pipeline when configured.
-- Zone membership can use center or bottom-center point strategies.
-- Pixel speed is not real-world speed in m/s or km/h.
+- Derives pixel speed, moving angle, dwell time, track length, last-seen state,
+  and direction consistency.
+- Exposes trajectory semantics including `zone_history`, `lane_relation`, and
+  `line_crossings`.
+- DB-backed `zones` and `event_rules` enter the default processing pipeline when
+  configured.
+- Pixel speed is a local image-space signal, not calibrated real-world speed.
+
+### Zone & Rule Config
+
+- DB-backed zone and event rule CRUD for local validation.
+- Supports polygon zones, direction lines, `counting_zone`, and
+  `counting_line` semantics.
+- Event rule `severity` uses the `low` / `medium` / `high` contract.
+- Alert level is separate and uses `info` / `warning` / `critical`.
+- Processing runs keep a config snapshot for reproducibility.
 
 ### Event Engine
 
-Implemented event types:
+- Six configurable event rules: wrong-way driving, illegal parking, danger zone
+  intrusion, pedestrian in vehicle lane, congestion, and flow counting.
+- Persists `event_evidence` and `rule_executions` for review, debugging, and
+  evaluation traceability.
+- Supports `event_rules_only` rerun using existing trajectory/config data.
 
-- `wrong_way_driving`
-- `illegal_parking`
-- `danger_zone_intrusion`
-- `pedestrian_in_vehicle_lane`
-- `congestion`
-- `flow_counting`
+### Alert / Review / Bad Case
 
-Event rule `severity` is constrained to `low`, `medium`, or `high`. The Event
-Engine consumes trajectory features plus zones / rules; it does not run model
-inference directly.
-
-### Zone And Rule Configuration
-
-- DB-backed `/api/zones` and `/api/event-rules` CRUD.
-- ZoneEditor supports polygon drawing, direction line drawing, counting line
-  drawing, save / update / delete, enabled state, version display, and
-  validation.
-- Processing runs store a run-level zone / rule config snapshot for
-  reproducibility.
-- Geometry is pixel-space local validation, not calibrated road mapping.
-
-### Alert Center
-
-- Alerts can be `new`, `acknowledged`, `resolved`, or `ignored`.
-- Alert Center `level` is separate from event rule `severity`; alert level may
-  be `info`, `warning`, or `critical`.
-- Run-level alert reads are DB-first when DB rows exist and fall back to local
-  artifacts for older runs.
-
-### Review And Bad Case
-
-- Review workflows support confirm, false positive, false negative, ignore,
-  resolve, comments, Review -> Bad Case, and rule-rerun request recording.
-- Review actions append audit records for DB-backed events and preserve
-  artifact fallback for legacy runs.
-- Bad Case workflows support create, update, list, detail, summary, from-review,
-  and from-failed-case.
-- Failed evaluation cases can be converted into Bad Cases explicitly.
+- Alert Center tracks event status and operational review state.
+- Review Center supports confirmation, false positive, false negative, ignore,
+  resolve, comments, and rerun request recording.
+- Evaluation failed cases such as `id_switch` and `track_lost` can be linked
+  through failed-case -> Bad Case workflows.
 
 ### Evaluation Center
 
-- Event metrics use frame-range overlap / tolerance matching.
-- Flow counting metrics compare expected and actual counts.
-- Trajectory metrics summarize track count, trajectory point count, average
-  track length, average speed, and direction availability.
-- Detection metrics are VOC-style single-IoU AP / mAP, precision, recall, and
-  per-class AP when annotations exist.
-- Tracking metrics are lightweight deterministic IDF1 / MOTA / ID switch /
-  track-lost calculations.
-- Bad Case regression uses deterministic replay / stored rule replay. It is not
-  a full video-level rerun.
+- Local event metrics include `event_accuracy`, `false_alarm_rate`,
+  `event_recall`, `event_f1`, and per-event metrics.
+- Detection, tracking, trajectory, event, flow-counting, and regression checks
+  are scoped to local / synthetic validation data.
+- Bad Case regression uses deterministic replay or stored rule replay, not full
+  video-level retraining.
 
-### Report Center
+### Report / Realtime / Docker
 
-- Report run list and run summary.
-- CSV exports for events, alerts, flow counts, zone statistics, bad cases, and
-  evaluation results.
-- Structured JSON export.
-- Lightweight in-memory PDF export.
-- Report bundle metadata with keyframe summary and annotated video reference.
-- Report output is for analysis and review only, not for traffic enforcement.
-
-### Camera And Realtime Preview
-
-- DB-backed camera CRUD, enable, and disable.
-- Camera source types: `upload`, `rtsp`, `file`, and `mock`.
-- `stream_url` is stored for local configuration but API responses expose only
-  `masked_stream_url`.
-- Mock stream preview, local file smoke-level preview, upload placeholder
-  metadata, and RTSP no-connect preview.
-- Recent frames, events, and alerts are kept in a bounded in-memory preview
-  cache.
-- Start creates `processing_tasks.mode=realtime_process`.
-- This is realtime preview metadata, not production realtime monitoring.
-
-### Security And Ops
-
-- Minimal actor headers: `X-SmartTraffic-Actor` and `X-SmartTraffic-Role`.
-- `SMARTTRAFFIC_AUTH_MODE=permissive|strict`.
-- Preview roles: `viewer`, `operator`, `reviewer`, `admin`.
-- Actor propagation for alert, review, event, Bad Case, realtime, and rule-rerun
-  actions.
-- Standard API error shape with `error_code`, `message`, `detail`, and
-  `request_id`.
-- Request id logging and `GET /health/ready` DB readiness check.
-- RTSP / secret-like values are redacted or masked in responses and errors.
+- Report exports cover CSV, JSON, PDF, bundle metadata, keyframe summary, and
+  annotated-video references.
+- Realtime is a preview metadata workflow for mock, upload, local file, and
+  RTSP no-connect scenarios.
+- Docker Compose provides the local delivery path for backend, frontend,
+  migrations, SQLite, and ignored artifact directories.
 
 ## System Architecture
 
 ```text
 Frontend
-  React + TypeScript + Vite
-  Dashboard / Video Center / Analysis Detail / Zone & Rules
-  Alert Center / Review Center / Bad Case Center
-  Evaluation Center / Report Center / Camera Center
+  React / TypeScript / Vite
+  Dashboard, Analysis Detail, Zone Config, Alert, Review, Bad Case, Evaluation
 
 Backend
-  FastAPI routers
-  Services
-  Repositories
-  SQLAlchemy models
-  Alembic migrations
+  FastAPI
+  API Routers -> Services -> Repositories -> SQLAlchemy Models
 
-CV And Analytics
+CV & Analytics
   YOLOv8 Detector
   DeepSORT Tracker
   Trajectory Engine
   Event Engine
-  Alert Service
   Evaluation Service
 
 Storage
-  SQLite prototype
-  Local artifacts
-  Results directory
-  Local-only models and videos
+  SQLite Prototype
+  Local Artifacts
+  Docker-mounted Local Directories
 ```
 
-The backend registers routers for health, cameras, videos, processing,
-detections, tracks, trajectories, events, event rules, alerts, zones, analysis
-runs, review, bad cases, evaluation, reports, and realtime preview.
+## Event Detection Logic
 
-## Database And Artifacts
+SmartTraffic does not train a dedicated wrong-way, parking, congestion, or
+pedestrian-lane model. It detects objects, tracks them, derives trajectory
+semantics, and applies configurable rules.
 
-SmartTraffic uses a DB-first / artifact-fallback model for local validation.
-Current SQLAlchemy / Alembic tables cover videos, cameras, frames, detections,
-tracks, trajectory points, events, event evidence, alerts, event rules, zones,
-flow counts, zone statistics, processing tasks, traffic analysis runs, rule
-executions, review comments, bad cases, evaluation datasets, evaluation
-results, and model runs.
-
-Important prototype boundaries:
-
-- The default database is local SQLite via `SMARTTRAFFIC_DATABASE_URL`.
-- The `frames` table / API is a frame metadata and query contract. The pipeline
-  does not persist every frame image by default.
-- `tracks` are run-level track records plus metadata / artifact-compatible rows.
-  This is not a production per-frame normalized tracking table.
-- Local artifacts may include metadata, detections, tracks, trajectory points,
-  events, evidence, rule executions, alerts, flow counts, zone statistics,
-  review records, bad cases, evaluation summary, keyframe references, and
-  annotated video references.
-- Generated videos, keyframes, results, local DB files, model weights, and
-  uploaded videos must stay out of Git.
+| Event | Rule Basis |
+| --- | --- |
+| Wrong-way driving | Moving angle vs allowed direction |
+| Illegal parking | Low speed + dwell time + no-parking zone |
+| Danger zone intrusion | Object bottom-center inside danger zone |
+| Pedestrian in vehicle lane | Person inside `vehicle_lane` |
+| Congestion | Vehicle count + average speed + time window |
+| Flow counting | Track crossing configured counting line |
 
 ## API Overview
 
-Full endpoint details are documented in
-[`docs/api_reference.md`](docs/api_reference.md).
+Full endpoint details are documented in [`docs/api_reference.md`](docs/api_reference.md).
 
-Main API groups:
-
-- Health / readiness / config: `/health`, `/health/ready`, `/api/config`
+- Health and config: `/health`, `/health/ready`, `/api/config`
 - Videos and processing: `/api/videos`, `/api/processing/tasks`
 - Analysis runs: `/api/analysis-runs`
-- Detection / tracking / trajectory endpoints: contract-only `/api/detections`,
-  DB-backed standalone `/api/tracks` and `/api/trajectories`
-- Zones and event rules: `/api/zones`, `/api/event-rules`
+- Detection, tracking, trajectory contracts/results: `/api/detections`, `/api/tracks`,
+  `/api/trajectories`
+- Zones and rules: `/api/zones`, `/api/event-rules`
 - Events and alerts: `/api/events`, `/api/alerts`
-- Review: `/api/review`
-- Bad cases: `/api/bad-cases`
-- Evaluation: `/api/evaluation`
-- Reports: `/api/reports`
-- Cameras and realtime preview: `/api/cameras`, `/api/realtime`
-
-## Frontend Pages
-
-- Dashboard
-- Camera Center
-- Video Center
-- Analysis Detail
-- Zone & Rule Config
-- Alert Center
-- Review Center
-- Bad Case Center
-- Evaluation Center
-- Report Center
+- Review and Bad Case: `/api/review`, `/api/bad-cases`
+- Evaluation and reports: `/api/evaluation`, `/api/reports`
+- Camera and realtime preview: `/api/cameras`, `/api/realtime`
 
 ## Quick Start
 
@@ -343,85 +213,41 @@ FastAPI backend at `http://localhost:8000`, the Vite frontend at
 `http://localhost:5173`, runs Alembic migrations at backend startup, and stores
 SQLite / artifact output in ignored local directories such as `results/`.
 
-### Demo Data
+## Demo Validation
 
 ```bash
 python3 scripts/seed_demo_data.py
 ./backend/.venv/bin/python -m pytest backend/tests/test_seed_demo_data.py -q
 ```
 
-The demo seed script creates small sample config and toy expected files. It does
-not add real videos, model weights, or generated result artifacts. The current
-toy demo contains four zones, six event rules, and six expected event examples.
+The demo seed creates local toy config for 4 zones, 6 event rules, and 6
+expected event examples. It is synthetic / sample / local validation only. Real
+videos, model weights, generated reports, and runtime artifacts are not
+committed.
 
-## Environment Variables
+## Validation Status
 
-Key local settings from [`.env.example`](.env.example):
-
-- `SMARTTRAFFIC_DATABASE_URL`
-- `SMARTTRAFFIC_RESULTS_DIR`
-- `SMARTTRAFFIC_LOCAL_VIDEOS_DIR`
-- `SMARTTRAFFIC_LOCAL_MODELS_DIR`
-- `SMARTTRAFFIC_EVALS_DIR`
-- `SMARTTRAFFIC_AUTH_MODE`
-- `SMARTTRAFFIC_MAX_UPLOAD_MB`
-- `SMARTTRAFFIC_MAX_VIDEO_DURATION_SECONDS`
-- `SMARTTRAFFIC_ALLOWED_VIDEO_CODECS`
-- `YOLO_MODEL_PATH`
-- `YOLO_DRY_RUN`
-- `YOLO_CONF_THRESHOLD`
-- `YOLO_IOU_THRESHOLD`
-- `YOLO_DEVICE`
-- `DEEPSORT_DRY_RUN`
-- `VITE_API_BASE_URL`
-
-Copy `.env.example` to `.env` for local overrides. `.env` must not be committed.
-
-## Validation
-
-Current final delivery validation on `main`:
+Latest recorded validation:
 
 | Check | Result |
 | --- | --- |
-| Forbidden personal-material wording scan | No matches |
-| `git diff --check` | Passed |
-| `python3 -m compileall backend/app` | Passed |
-| `./backend/.venv/bin/python -m pytest backend/tests -q` | `477 passed, 4 warnings` |
-| `python3 -m py_compile scripts/seed_demo_data.py scripts/run_evals.py scripts/danger_check.py scripts/import_artifacts_to_db.py` | Passed |
-| `cd frontend && node --test tests/*.test.mjs` | `77 passed` |
-| `cd frontend && npm run build` | Passed |
-| `cd frontend && npm run build -- --outDir /tmp/smarttraffic-vite-build --emptyOutDir` | Passed |
-| `docker compose config` / `make docker-config` | Passed |
-| `docker compose build` | Passed; built `smarttraffic-backend:latest` during Final Readonly Acceptance |
-| `python3 scripts/danger_check.py` | Passed |
-| `python3 scripts/run_evals.py --help` | Passed |
-| `make danger-check` | Passed |
-| `./backend/.venv/bin/python -m pytest backend/tests/test_seed_demo_data.py -q` | `5 passed` |
+| Backend tests | `480 passed, 4 warnings` |
+| Frontend tests | `77 passed` |
+| Docker Compose config | Passed |
+| Docker Compose build | Passed; built `smarttraffic-backend:latest` |
+| Danger check | Passed |
+| Demo seed test | Passed |
 | Tracked forbidden-file scan | Passed |
 
 ## Milestones
 
-Important preserved tags:
+- `v1.0.0-smarttraffic-final-local-delivery`: first final local delivery
+  baseline.
+- `v1.0.1-spec-completion`: current spec-complete final local delivery
+  baseline.
 
-- `v0.9.0-final-engineering-delivery`
-- `v0.9.1-db-foundation`
-- `v0.9.2-db-backed-core-flow`
-- `v0.9.3-quality-db-flow`
-- `v0.9.4-real-evaluation`
-- `v0.9.5-frontend-complete`
-- `v0.9.6-report-center`
-- `v0.9.7-realtime-security-preview`
-- `v1.0.0-full-final-version`
-- `v1.0.1-audit-polish`
-- `v1.0.2-spec-alignment`
-- `v1.0.3-final-hardening`
-- `v1.0.1-spec-completion`
-
-Old tags are preserved and must not be moved. `v1.0.0-smarttraffic-final-local-delivery`
-and `v1.0.3-final-hardening` remain historical local delivery / hardening
-baselines. The current final baseline is SmartTraffic `v1.0.1-spec-completion`,
-the spec-complete final local delivery baseline after execution-manual gap
-closure.
+Earlier v0.9.x and v1.0.x tags are preserved as historical engineering
+milestones and are not moved.
 
 ## Safety And Data Policy
 
@@ -435,34 +261,24 @@ Do not commit:
 - local DB files such as `.db`, `.sqlite`, or `.sqlite3`
 - caches, `dist`, `node_modules`, or virtual environments
 
-The repository keeps only code, docs, tiny sample config, toy expected files,
-and placeholder `.gitkeep` files needed for reproducibility.
-
 ## Known Boundaries
 
-- SmartTraffic is not a traffic enforcement system.
-- Realtime is preview metadata, not production realtime monitoring.
-- Minimal actor identity is not production IAM.
-- Detection mAP is VOC-style single-IoU, not COCO official mAP.
-- Tracking IDF1 / MOTA are lightweight deterministic metrics, not TrackEval
-  official implementation.
+- SmartTraffic is a local validation prototype.
+- It is not a formal traffic enforcement system.
+- It is not production-ready.
+- It is not law-enforcement-grade.
+- It is not a commercial deployment.
+- It is not an official COCO, TrackEval, or real-world traffic benchmark.
+- Realtime is preview metadata only.
+- Pixel speed is not calibrated real-world speed.
 - Bad Case regression is deterministic replay / stored rule replay, not a full
   video-level rerun.
 - SQLite and Docker Compose are for local prototype reproducibility.
-- Frames and tracks use metadata / artifact-compatible local prototype
-  granularity.
-- Pixel-space speed, direction, zone, and line-crossing logic are not
-  real-world calibrated traffic engineering measurements.
 
 ## Final Status
 
 SmartTraffic `v1.0.1-spec-completion` is the current spec-complete final local
-delivery baseline.
-
-The repository is in final local validation state. No additional feature
-development is planned beyond the current closure scope.
-
-Boundary: local validation prototype only; not production-ready, not
-law-enforcement-grade, not commercial deployment, not a formal traffic
-enforcement system, and not an official COCO / TrackEval / real-world traffic
-benchmark.
+delivery baseline. The repository is closed for the current v1.0 scope. Future
+work should move to v1.1 enhancements such as real-video benchmarking,
+production deployment hardening, official metric adapters, and stronger
+realtime stream support.
