@@ -214,6 +214,12 @@ FastAPI backend at `http://localhost:8000`, the Vite frontend at
 `http://localhost:5173`, runs Alembic migrations at backend startup, and stores
 SQLite / artifact output in ignored local directories such as `results/`.
 
+### One-click Start
+
+Docker Desktop is required. On macOS, double-click
+`start_smarttraffic.command`. On Windows, double-click `start_smarttraffic.bat`.
+The full beginner guide is in [`docs/one_click_start.md`](docs/one_click_start.md).
+
 ## Demo Validation
 
 ```bash
