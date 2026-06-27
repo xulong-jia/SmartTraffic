@@ -102,7 +102,8 @@ Video Upload / Camera Source
 
 ### Alert / Review / Bad Case
 
-- Alert Center tracks event status and operational review state.
+- Alert Center manages alert status, while Review Center manages event review
+  status.
 - Review Center supports confirmation, false positive, false negative, ignore,
   resolve, comments, and rerun request recording.
 - Evaluation failed cases such as `id_switch` and `track_lost` can be linked
@@ -172,7 +173,7 @@ Full endpoint details are documented in [`docs/api_reference.md`](docs/api_refer
 - Health and config: `/health`, `/health/ready`, `/api/config`
 - Videos and processing: `/api/videos`, `/api/processing/tasks`
 - Analysis runs: `/api/analysis-runs`
-- Detection, tracking, trajectory contracts/results: `/api/detections`, `/api/tracks`,
+- Detection, tracking, and trajectory results: `/api/detections`, `/api/tracks`,
   `/api/trajectories`
 - Zones and rules: `/api/zones`, `/api/event-rules`
 - Events and alerts: `/api/events`, `/api/alerts`
@@ -231,6 +232,7 @@ Latest recorded validation:
 
 | Check | Result |
 | --- | --- |
+| Git whitespace check | Passed |
 | Backend tests | `480 passed, 4 warnings` |
 | Frontend tests | `77 passed` |
 | Docker Compose config | Passed |
