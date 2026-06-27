@@ -390,7 +390,7 @@ Current final delivery validation on `main`:
 | `cd frontend && npm run build` | Passed |
 | `cd frontend && npm run build -- --outDir /tmp/smarttraffic-vite-build --emptyOutDir` | Passed |
 | `docker compose config` / `make docker-config` | Passed |
-| `docker compose build` | Not completed in this environment because Docker Hub metadata for `python:3.12-slim` timed out |
+| `docker compose build` | Passed; built `smarttraffic-backend:latest` during Final Readonly Acceptance |
 | `python3 scripts/danger_check.py` | Passed |
 | `python3 scripts/run_evals.py --help` | Passed |
 | `make danger-check` | Passed |
