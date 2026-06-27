@@ -262,8 +262,8 @@ export default function BadCaseCenterPage() {
             应用 Apply
           </button>
         </div>
-        {error ? <p className="muted">{error}</p> : null}
-        {successMessage ? <p className="muted">{successMessage}</p> : null}
+        {error ? <p className="alert-box error">{error}</p> : null}
+        {successMessage ? <p className="alert-box success">{successMessage}</p> : null}
         {loading ? <p className="muted">正在加载坏例...</p> : null}
         {summary ? (
           <div className="metric-row review-metric-row">
@@ -281,7 +281,7 @@ export default function BadCaseCenterPage() {
           </div>
         ) : null}
         {!loading && data && cases.length === 0 ? (
-          <p className="muted">暂无坏例。复核误报、漏报或评测失败后可生成坏例。</p>
+          <p className="empty-state">暂无坏例。复核误报、漏报或评测失败后可生成坏例。</p>
         ) : null}
         {cases.length > 0 ? (
           <table>
@@ -340,13 +340,13 @@ export default function BadCaseCenterPage() {
         ) : null}
       </section>
 
-      <section className="grid two bad-case-workspace">
+      <section className="grid two content-grid bad-case-workspace">
         <div className="panel">
           <div className="section-heading-row">
             <h3>详情 Detail</h3>
             {loadingDetail ? <span className="muted">加载中 Loading</span> : null}
           </div>
-          {detailError ? <p className="muted">{detailError}</p> : null}
+          {detailError ? <p className="alert-box error">{detailError}</p> : null}
           {detail ? (
             <>
               <dl className="detail-grid">
@@ -426,7 +426,7 @@ export default function BadCaseCenterPage() {
               </div>
             </>
           ) : (
-            <p className="muted">请选择一个坏例 Bad Case。</p>
+            <p className="empty-state">请选择一个坏例 Bad Case。</p>
           )}
         </div>
 

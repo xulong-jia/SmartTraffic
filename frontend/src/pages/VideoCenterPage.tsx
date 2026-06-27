@@ -108,7 +108,7 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
           <p>上传视频、查看元数据，并创建本地分析任务。</p>
         </div>
       </header>
-      <section className="panel">
+      <section className="panel upload-panel">
         <div className="toolbar">
           <input
             type="file"
@@ -149,128 +149,135 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
             </p>
           </div>
         ) : null}
-        <div className="toolbar">
-          <label>
-            模式 Mode
-            <select
-              value={processMode}
-              onChange={(event) => setProcessMode(event.target.value as ProcessMode)}
-            >
-              <option value="detection_only">仅检测 Detection only</option>
-              <option value="detection_tracking">检测 + 跟踪 Detection + Tracking</option>
-              <option value="detection_tracking_trajectory">
-                检测 + 跟踪 + 轨迹 Detection + Tracking + Trajectory
-              </option>
-            </select>
-          </label>
-          <label className="inline-control">
-            <input
-              checked={detectorDryRun}
-              type="checkbox"
-              onChange={(event) => setDetectorDryRun(event.target.checked)}
-            />
-            检测 dry-run Detector dry-run
-          </label>
-          <label className="inline-control">
-            <input
-              checked={trackerDryRun}
-              type="checkbox"
-              onChange={(event) => setTrackerDryRun(event.target.checked)}
-            />
-            跟踪 dry-run Tracker dry-run
-          </label>
-          <label>
-            抽帧步长 Stride
-            <input
-              min={1}
-              type="number"
-              value={frameStride}
-              onChange={(event) => setFrameStride(Math.max(1, Number(event.target.value)))}
-            />
-          </label>
-          <label>
-            最大帧数 Max frames
-            <input
-              min={1}
-              type="number"
-              value={maxFrames}
-              onChange={(event) => setMaxFrames(Math.max(1, Number(event.target.value)))}
-            />
-          </label>
-        </div>
-        {processMode === "detection_tracking_trajectory" ? (
+        <div className="summary-strip process-panel">
+          <h3>处理参数 Processing Parameters</h3>
           <div className="toolbar">
             <label>
-              方向窗口 Direction window
+              模式 Mode
+              <select
+                value={processMode}
+                onChange={(event) => setProcessMode(event.target.value as ProcessMode)}
+              >
+                <option value="detection_only">仅检测 Detection only</option>
+                <option value="detection_tracking">检测 + 跟踪 Detection + Tracking</option>
+                <option value="detection_tracking_trajectory">
+                  检测 + 跟踪 + 轨迹 Detection + Tracking + Trajectory
+                </option>
+              </select>
+            </label>
+            <label className="inline-control">
               <input
-                min={2}
-                type="number"
-                value={directionWindow}
-                onChange={(event) => setDirectionWindow(Math.max(2, Number(event.target.value)))}
+                checked={detectorDryRun}
+                type="checkbox"
+                onChange={(event) => setDetectorDryRun(event.target.checked)}
               />
+              检测 dry-run Detector dry-run
+            </label>
+            <label className="inline-control">
+              <input
+                checked={trackerDryRun}
+                type="checkbox"
+                onChange={(event) => setTrackerDryRun(event.target.checked)}
+              />
+              跟踪 dry-run Tracker dry-run
             </label>
             <label>
-              停留速度阈值 Dwell speed threshold
-              <input
-                min={0}
-                step={0.1}
-                type="number"
-                value={dwellSpeedThreshold}
-                onChange={(event) =>
-                  setDwellSpeedThreshold(Math.max(0, Number(event.target.value)))
-                }
-              />
-            </label>
-            <label>
-              最大历史点 Max history points
+              抽帧步长 Stride
               <input
                 min={1}
-                placeholder="unlimited"
                 type="number"
-                value={maxHistoryPoints}
-                onChange={(event) => setMaxHistoryPoints(event.target.value)}
+                value={frameStride}
+                onChange={(event) => setFrameStride(Math.max(1, Number(event.target.value)))}
+              />
+            </label>
+            <label>
+              最大帧数 Max frames
+              <input
+                min={1}
+                type="number"
+                value={maxFrames}
+                onChange={(event) => setMaxFrames(Math.max(1, Number(event.target.value)))}
               />
             </label>
           </div>
-        ) : null}
+          {processMode === "detection_tracking_trajectory" ? (
+            <div className="toolbar compact">
+              <label>
+                方向窗口 Direction window
+                <input
+                  min={2}
+                  type="number"
+                  value={directionWindow}
+                  onChange={(event) =>
+                    setDirectionWindow(Math.max(2, Number(event.target.value)))
+                  }
+                />
+              </label>
+              <label>
+                停留速度阈值 Dwell speed threshold
+                <input
+                  min={0}
+                  step={0.1}
+                  type="number"
+                  value={dwellSpeedThreshold}
+                  onChange={(event) =>
+                    setDwellSpeedThreshold(Math.max(0, Number(event.target.value)))
+                  }
+                />
+              </label>
+              <label>
+                最大历史点 Max history points
+                <input
+                  min={1}
+                  placeholder="unlimited"
+                  type="number"
+                  value={maxHistoryPoints}
+                  onChange={(event) => setMaxHistoryPoints(event.target.value)}
+                />
+              </label>
+            </div>
+          ) : null}
+        </div>
         {videos.length === 0 ? (
-          <p className="muted">暂无视频。请上传一个本地视频开始分析。</p>
+          <p className="empty-state">暂无视频。请上传一个本地视频开始分析。</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>文件名 Filename</th>
-                <th>状态 Status</th>
-                <th>FPS</th>
-                <th>帧数 Frames</th>
-                <th>操作 Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {videos.map((video) => (
-                <tr key={video.id}>
-                  <td>{video.filename}</td>
-                  <td>
-                    <span className={`status-pill status-${statusClassName(video.status)}`}>
-                      {video.status}
-                    </span>
-                  </td>
-                  <td>{video.fps}</td>
-                  <td>{video.total_frames}</td>
-                  <td>
-                    <button
-                      className="primary-action"
-                      disabled={loading}
-                      type="button"
-                      onClick={() => handleProcess(video.id)}
-                    >
-                      开始分析 Process
-                    </button>
-                  </td>
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>文件名 Filename</th>
+                  <th>状态 Status</th>
+                  <th>FPS</th>
+                  <th>帧数 Frames</th>
+                  <th>操作 Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {videos.map((video) => (
+                  <tr key={video.id}>
+                    <td>{video.filename}</td>
+                    <td>
+                      <span className={`status-pill status-${statusClassName(video.status)}`}>
+                        {video.status}
+                      </span>
+                    </td>
+                    <td>{video.fps}</td>
+                    <td>{video.total_frames}</td>
+                    <td>
+                      <button
+                        className="primary-action"
+                        disabled={loading}
+                        type="button"
+                        onClick={() => handleProcess(video.id)}
+                      >
+                        开始分析 Process
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
       <section className="panel">
@@ -283,42 +290,44 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
         {runsLoading ? <p className="muted">正在加载分析任务...</p> : null}
         {runsError ? <p className="alert-box error">{runsError}</p> : null}
         {recentRuns.length === 0 && !runsLoading ? (
-          <p className="muted">暂无分析任务。请先在视频中心上传视频并启动分析。</p>
+          <p className="empty-state">暂无分析任务。请先在视频中心上传视频并启动分析。</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Run ID</th>
-                <th>Video ID</th>
-                <th>状态 Status</th>
-                <th>更新时间 Updated</th>
-                <th>来源 Source</th>
-                {onOpenAnalysisRun ? <th>操作 Action</th> : null}
-              </tr>
-            </thead>
-            <tbody>
-              {recentRuns.map((run) => (
-                <tr key={getRunId(run)}>
-                  <td>{getRunId(run)}</td>
-                  <td>{formatValue(run.video_id)}</td>
-                  <td>
-                    <span className={`status-pill status-${statusClassName(run.status)}`}>
-                      {formatValue(run.status)}
-                    </span>
-                  </td>
-                  <td>{formatValue(run.updated_at || run.finished_at)}</td>
-                  <td>{formatValue(run.source)}</td>
-                  {onOpenAnalysisRun ? (
-                    <td>
-                      <button type="button" onClick={() => onOpenAnalysisRun(getRunId(run))}>
-                        打开 Open
-                      </button>
-                    </td>
-                  ) : null}
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Run ID</th>
+                  <th>Video ID</th>
+                  <th>状态 Status</th>
+                  <th>更新时间 Updated</th>
+                  <th>来源 Source</th>
+                  {onOpenAnalysisRun ? <th>操作 Action</th> : null}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recentRuns.map((run) => (
+                  <tr key={getRunId(run)}>
+                    <td>{getRunId(run)}</td>
+                    <td>{formatValue(run.video_id)}</td>
+                    <td>
+                      <span className={`status-pill status-${statusClassName(run.status)}`}>
+                        {formatValue(run.status)}
+                      </span>
+                    </td>
+                    <td>{formatValue(run.updated_at || run.finished_at)}</td>
+                    <td>{formatValue(run.source)}</td>
+                    {onOpenAnalysisRun ? (
+                      <td>
+                        <button type="button" onClick={() => onOpenAnalysisRun(getRunId(run))}>
+                          打开 Open
+                        </button>
+                      </td>
+                    ) : null}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </>

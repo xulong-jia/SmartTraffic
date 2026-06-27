@@ -108,7 +108,7 @@ export default function App() {
           ))}
         </nav>
       </aside>
-      <main className="workspace">
+      <main className="workspace main-content page-shell">
         {renderPage(activePage, selectedAnalysisRunId, openAnalysisRun, openReviewLink, locationSearch)}
       </main>
     </div>

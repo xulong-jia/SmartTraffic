@@ -181,8 +181,8 @@ export default function ZoneEditor() {
   return (
     <div className="zone-editor">
       {loading ? <div className="panel muted">正在加载区域和规则配置...</div> : null}
-      {error ? <div className="panel status-error">{error}</div> : null}
-      {message ? <div className="panel status-available">{message}</div> : null}
+      {error ? <div className="alert-box error">{error}</div> : null}
+      {message ? <div className="alert-box success">{message}</div> : null}
 
       <div className="grid zone-editor-grid">
         <section className="panel zone-editor-canvas-panel">
@@ -197,7 +197,7 @@ export default function ZoneEditor() {
                     : "计数线 Counting line geometry"}
               </p>
             </div>
-            <div className="toolbar compact">
+            <div className="button-group">
               {DRAWING_MODES.map((drawingMode) => (
                 <button
                   className={mode === drawingMode ? "active-control" : ""}
@@ -368,11 +368,16 @@ export default function ZoneEditor() {
               </select>
             </label>
           </div>
-          <div className="toolbar compact">
+          <div className="button-group">
             <button disabled={savingZone} onClick={handleSaveZone} type="button">
               {savingZone ? "保存中..." : "保存区域 Save Zone"}
             </button>
-            <button disabled={!zoneState.id || savingZone} onClick={handleDeleteZone} type="button">
+            <button
+              className="button-danger"
+              disabled={!zoneState.id || savingZone}
+              onClick={handleDeleteZone}
+              type="button"
+            >
               删除区域 Delete Zone
             </button>
           </div>
@@ -386,7 +391,7 @@ export default function ZoneEditor() {
             刷新 Refresh
           </button>
         </div>
-        {zones.length === 0 && !loading ? <p className="muted">暂无已保存区域。</p> : null}
+        {zones.length === 0 && !loading ? <p className="empty-state">暂无已保存区域。</p> : null}
         {zones.length > 0 ? (
           <table>
             <thead>
@@ -557,11 +562,16 @@ export default function ZoneEditor() {
             value={ruleState.parametersText}
           />
         </label>
-        <div className="toolbar compact">
+        <div className="button-group">
           <button disabled={savingRule} onClick={handleSaveRule} type="button">
             {savingRule ? "保存中..." : "保存规则 Save Rule"}
           </button>
-          <button disabled={!ruleState.id || savingRule} onClick={handleDeleteRule} type="button">
+          <button
+            className="button-danger"
+            disabled={!ruleState.id || savingRule}
+            onClick={handleDeleteRule}
+            type="button"
+          >
             删除规则 Delete Rule
           </button>
         </div>
@@ -569,7 +579,7 @@ export default function ZoneEditor() {
 
       <section className="panel">
         <h3>事件规则 Event Rules</h3>
-        {rules.length === 0 && !loading ? <p className="muted">暂无已保存事件规则。</p> : null}
+        {rules.length === 0 && !loading ? <p className="empty-state">暂无已保存事件规则。</p> : null}
         {rules.length > 0 ? (
           <table>
             <thead>

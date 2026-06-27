@@ -253,9 +253,9 @@ export default function EvaluationCenterPage() {
           </button>
         </div>
         {loading ? <p className="muted">正在加载评测...</p> : null}
-        {error ? <p className="status-pill status-error">{error}</p> : null}
+        {error ? <p className="alert-box error">{error}</p> : null}
         {successMessage ? (
-          <p className="status-pill status-available">{successMessage}</p>
+          <p className="alert-box success">{successMessage}</p>
         ) : null}
         <div className="metric-row">
           <MetricCard label="结果 Results" value={String(results?.total ?? 0)} />
@@ -263,7 +263,7 @@ export default function EvaluationCenterPage() {
           <MetricCard label="数据不足 Insufficient" value={String(statusCounts.insufficient_data)} />
           <MetricCard label="失败用例 Failed Cases" value={String(failedCases?.total ?? 0)} />
         </div>
-        <div className="summary-strip">
+        <div className="info-callout">
           <h3>评测边界 Evaluation Boundaries</h3>
           <ul className="compact-list">
             {EVALUATION_BOUNDARY_NOTICES.map((notice) => (
@@ -287,7 +287,7 @@ export default function EvaluationCenterPage() {
         ) : null}
       </section>
 
-      <div className="grid two">
+      <div className="grid two content-grid">
         <section className="panel">
           <div className="section-heading-row">
             <h3>数据集 Datasets</h3>
@@ -390,7 +390,7 @@ export default function EvaluationCenterPage() {
         <ResultsTable data={results} />
       </section>
 
-      <div className="grid two">
+      <div className="grid two content-grid">
         <section className="panel">
           <div className="section-heading-row">
             <h3>失败用例 Failed Cases</h3>

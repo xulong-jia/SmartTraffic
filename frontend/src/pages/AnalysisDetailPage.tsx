@@ -413,7 +413,7 @@ export default function AnalysisDetailPage({
           <p>查看检测、跟踪、轨迹、事件证据和分析产物。</p>
         </div>
       </header>
-      <div className="grid two review-workspace">
+      <div className="grid two content-grid review-workspace analysis-hero-grid">
         <VideoPlayerWithOverlay
           currentTimeMs={currentTimeMs}
           detections={overlayData.detections}
@@ -444,7 +444,7 @@ export default function AnalysisDetailPage({
           <section className="panel">
             <h3>叠加数据 Overlay Data</h3>
             {zonesLoading ? <p className="muted">正在加载区域...</p> : null}
-            {zonesError ? <p>{zonesError}</p> : null}
+            {zonesError ? <p className="alert-box error">{zonesError}</p> : null}
             <p>
               {overlayData.detections.length} 检测帧 detection frames ·{" "}
               {overlayData.tracks.length} 跟踪帧 track frames ·{" "}
@@ -454,9 +454,9 @@ export default function AnalysisDetailPage({
           </section>
         </div>
       </div>
-      <div className="grid two">
-        <div className="grid">
-          <section className="panel">
+      <div className="grid two content-grid analysis-content-grid">
+        <div className="grid content-grid">
+          <section className="panel info-callout">
             <label>
               分析任务 Run ID
               <select
@@ -475,21 +475,21 @@ export default function AnalysisDetailPage({
               </select>
             </label>
             {runsLoading ? <p className="muted">正在加载任务索引...</p> : null}
-            {runsError ? <p>{runsError}</p> : null}
+            {runsError ? <p className="alert-box error">{runsError}</p> : null}
             {runs.length === 0 && !runsLoading ? (
-              <p className="muted">暂无分析任务。请先在视频中心上传视频并启动分析。</p>
+              <p className="empty-state">暂无分析任务。请先在视频中心上传视频并启动分析。</p>
             ) : null}
           </section>
           <section className="panel">
             <h3>任务摘要 Run Summary</h3>
             {runSummaryLoading ? <p className="muted">正在加载任务摘要...</p> : null}
-            {runSummaryError ? <p>{runSummaryError}</p> : null}
+            {runSummaryError ? <p className="alert-box error">{runSummaryError}</p> : null}
             {runSummary ? <RunSummaryPanel run={runSummary} /> : null}
           </section>
           <section className="panel">
             <h3>索引状态 Index Status</h3>
             {manifestLoading ? <p className="muted">正在加载 manifest...</p> : null}
-            {manifestError ? <p>{manifestError}</p> : null}
+            {manifestError ? <p className="alert-box error">{manifestError}</p> : null}
             {runSummary ? (
               <IndexStatusPanel manifestPayload={manifestPayload} run={runSummary} />
             ) : (
@@ -505,7 +505,7 @@ export default function AnalysisDetailPage({
             <VisualArtifactsPanel artifactSummary={runSummary?.artifact_summary} />
           </section>
         </div>
-        <div className="grid">
+        <div className="grid content-grid">
           <section className="panel">
             <h3>轨迹查询 Trajectory Query</h3>
             <div className="toolbar">
@@ -535,7 +535,7 @@ export default function AnalysisDetailPage({
               </button>
             </div>
             {trajectoryLoading ? <p className="muted">正在加载轨迹点...</p> : null}
-            {trajectoryError ? <p>{trajectoryError}</p> : null}
+            {trajectoryError ? <p className="alert-box error">{trajectoryError}</p> : null}
             {trajectoryData ? <TrajectoryDetail data={trajectoryData} /> : null}
           </section>
           <section className="panel">
@@ -575,7 +575,7 @@ export default function AnalysisDetailPage({
               </button>
             </div>
             {eventsLoading ? <p className="muted">正在加载事件...</p> : null}
-            {eventsError ? <p>{eventsError}</p> : null}
+            {eventsError ? <p className="alert-box error">{eventsError}</p> : null}
             {eventsData ? (
               <EventsDetail
                 data={eventsData}
@@ -635,7 +635,7 @@ export default function AnalysisDetailPage({
               </button>
             </div>
             {alertsLoading ? <p className="muted">正在加载告警...</p> : null}
-            {alertsError ? <p>{alertsError}</p> : null}
+            {alertsError ? <p className="alert-box error">{alertsError}</p> : null}
             {alertsData ? <AlertsDetail data={alertsData} /> : null}
           </section>
           <section className="panel">
@@ -650,7 +650,7 @@ export default function AnalysisDetailPage({
               </button>
             </div>
             {flowCountsLoading ? <p className="muted">正在加载 flow_counts.json...</p> : null}
-            {flowCountsError ? <p>{flowCountsError}</p> : null}
+            {flowCountsError ? <p className="alert-box error">{flowCountsError}</p> : null}
             {flowCountsData ? <FlowCountsDetail data={flowCountsData} /> : null}
           </section>
           <section className="panel">
@@ -665,13 +665,13 @@ export default function AnalysisDetailPage({
               </button>
             </div>
             {zoneStatisticsLoading ? <p className="muted">正在加载 zone_statistics.json...</p> : null}
-            {zoneStatisticsError ? <p>{zoneStatisticsError}</p> : null}
+            {zoneStatisticsError ? <p className="alert-box error">{zoneStatisticsError}</p> : null}
             {zoneStatisticsData ? <ZoneStatisticsDetail data={zoneStatisticsData} /> : null}
           </section>
           <section className="panel">
             <h3>检测摘要 Detection Summary</h3>
             {detectionsLoading ? <p className="muted">正在加载检测结果...</p> : null}
-            {detectionsError ? <p>{detectionsError}</p> : null}
+            {detectionsError ? <p className="alert-box error">{detectionsError}</p> : null}
             {detections ? (
               <>
               <p>
@@ -703,7 +703,7 @@ export default function AnalysisDetailPage({
           <section className="panel">
             <h3>跟踪摘要 Tracking Summary</h3>
             {tracksLoading ? <p className="muted">正在加载跟踪结果...</p> : null}
-            {tracksError ? <p>{tracksError}</p> : null}
+            {tracksError ? <p className="alert-box error">{tracksError}</p> : null}
             {tracks ? (
               <>
               <p>

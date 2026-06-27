@@ -72,10 +72,10 @@ export default function DashboardPage({ onOpenAnalysisRun }: DashboardPageProps)
           />
           {runs.length === 0 ? (
             <section className="panel">
-              <p className="muted">暂无分析任务。请先在视频中心上传视频并启动分析。</p>
+              <p className="empty-state">暂无分析任务。请先在视频中心上传视频并启动分析。</p>
             </section>
           ) : (
-            <div className="grid">
+            <div className="grid content-grid">
               <section className="panel">
                 <h3>产物状态汇总 Artifact Status</h3>
                 <table>

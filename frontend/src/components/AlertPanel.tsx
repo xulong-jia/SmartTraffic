@@ -49,7 +49,7 @@ export default function AlertPanel({
 
   return (
     <div>
-      {emptyLabel ? <p className="muted">{emptyLabel}</p> : null}
+      {emptyLabel ? <p className={error ? "alert-box error" : "empty-state"}>{emptyLabel}</p> : null}
       {rows.length > 0 ? (
         <table>
           <thead>
@@ -93,7 +93,7 @@ export default function AlertPanel({
                   <td>{row.createdAt}</td>
                   <td>{row.message}</td>
                   <td>
-                    <div className="toolbar compact">
+                    <div className="button-group">
                       {onAcknowledge ? (
                         <button
                           disabled={busy || !row.canAcknowledge}

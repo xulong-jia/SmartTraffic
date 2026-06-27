@@ -36,9 +36,9 @@ export default function ReviewDrawer({
         <h3>复核详情 Review Drawer</h3>
         {loading ? <span className="muted">加载中 Loading</span> : null}
       </div>
-      {error ? <p className="status-pill status-error">{error}</p> : null}
+      {error ? <p className="alert-box error">{error}</p> : null}
       {!detail && !loading ? (
-        <p className="muted">
+        <p className="empty-state">
           请选择事件，查看复核状态、评论、告警和产物引用。
         </p>
       ) : null}
@@ -64,7 +64,7 @@ export default function ReviewDrawer({
                 onChange={(event) => onCommentChange(event.target.value)}
               />
             </label>
-            <div className="review-action-grid">
+            <div className="review-action-grid button-group">
               {REVIEW_WORKFLOW_ACTIONS.map((item) => (
                 <button
                   key={item.action}

@@ -266,14 +266,14 @@ export default function ReportCenterPage() {
             Bundle 元数据
           </button>
         </div>
-        <p className="muted">{REPORT_NOT_FOR_ENFORCEMENT_WARNING}</p>
+        <p className="warning-callout">{REPORT_NOT_FOR_ENFORCEMENT_WARNING}</p>
         {loading ? <p className="muted">正在加载报告数据...</p> : null}
-        {error ? <p className="status-pill status-error">{error}</p> : null}
-        {successMessage ? <p className="status-pill status-available">{successMessage}</p> : null}
+        {error ? <p className="alert-box error">{error}</p> : null}
+        {successMessage ? <p className="alert-box success">{successMessage}</p> : null}
         <p className="muted">{buildEmptyReportState(summary)}</p>
       </section>
 
-      <section className="grid two">
+      <section className="grid two content-grid">
         <div className="panel">
           <div className="section-heading-row">
             <h3>摘要 Summary</h3>
@@ -337,7 +337,7 @@ export default function ReportCenterPage() {
         </div>
       </section>
 
-      <section className="grid two">
+      <section className="grid two content-grid">
         <div className="panel">
           <h3>报告指标 Report Metrics</h3>
           <dl className="detail-grid">
@@ -378,7 +378,7 @@ export default function ReportCenterPage() {
         </div>
       </section>
 
-      <section className="grid two">
+      <section className="grid two content-grid">
         <div className="panel">
           <div className="section-heading-row">
             <h3>报告包 Report Bundle</h3>

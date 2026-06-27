@@ -409,18 +409,18 @@ export default function ReviewCenterPage({
           <Metric label="误报 false_positive" value={counts.false_positive} />
           <Metric label="已解决 resolved" value={counts.resolved} />
         </div>
-        {successMessage ? <p className="muted">{successMessage}</p> : null}
-        {error ? <p className="muted">{error}</p> : null}
+        {successMessage ? <p className="alert-box success">{successMessage}</p> : null}
+        {error ? <p className="alert-box error">{error}</p> : null}
         {loadingEvents ? <p className="muted">正在加载复核事件...</p> : null}
         {!loadingEvents && !eventsData ? (
-          <p className="muted">请输入 run_id 并刷新，开始复核事件。</p>
+          <p className="empty-state">请输入 run_id 并刷新，开始复核事件。</p>
         ) : null}
         {!loadingEvents && eventsData && events.length === 0 ? (
-          <p className="muted">暂无匹配的复核事件。</p>
+          <p className="empty-state">暂无匹配的复核事件。</p>
         ) : null}
       </section>
 
-      <div className="grid two review-workspace">
+      <div className="grid two content-grid review-workspace">
         <section className="panel">
           <div className="section-heading-row">
             <h3>事件列表 Events</h3>
