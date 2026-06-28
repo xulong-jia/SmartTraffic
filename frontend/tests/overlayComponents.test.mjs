@@ -55,6 +55,8 @@ const DetectionOverlay = (
 const TrackOverlay = (
   await import(pathToFileURL(path.join(outDir, "components/TrackOverlay.js")).href)
 ).default;
+const React = await import("react");
+const ReactDOMServer = await import("react-dom/server");
 
 test("DetectionOverlay accepts DB-backed object bbox without throwing", () => {
   assert.doesNotThrow(() =>
@@ -97,5 +99,46 @@ test("TrackOverlay accepts DB-backed metadata bbox without throwing", () => {
       ],
       trajectoryFrames: []
     })
+  );
+});
+
+test("TrackOverlay renders duplicate track labels without duplicate key warnings", () => {
+  const originalError = console.error;
+  const messages = [];
+  console.error = (...args) => messages.push(args.join(" "));
+  try {
+    ReactDOMServer.renderToStaticMarkup(
+      React.createElement(TrackOverlay, {
+        currentTimeMs: 0,
+        frames: [
+          {
+            frame_index: 0,
+            timestamp_ms: 0,
+            tracks: [
+              {
+                track_id: "4",
+                class_name: "car",
+                confidence: "0.72",
+                bbox: { x1: 1, y1: 2, x2: 30, y2: 40 }
+              },
+              {
+                track_id: "4",
+                class_name: "car",
+                confidence: "0.68",
+                bbox: { x1: 40, y1: 12, x2: 70, y2: 48 }
+              }
+            ]
+          }
+        ],
+        trajectoryFrames: []
+      })
+    );
+  } finally {
+    console.error = originalError;
+  }
+
+  assert.equal(
+    messages.some((message) => message.includes("same key")),
+    false
   );
 });

@@ -565,7 +565,11 @@ export default function AnalysisDetailPage({
             <p className="muted">暂无告警。事件触发后会在这里显示。</p>
           ) : (
             <>
-              <RecordTable columns={alertColumns} rows={alerts.slice(0, TABLE_PREVIEW_LIMIT)} />
+              <RecordTable
+                caption="告警列表"
+                columns={alertColumns}
+                rows={alerts.slice(0, TABLE_PREVIEW_LIMIT)}
+              />
               <PreviewNotice total={alerts.length} limit={TABLE_PREVIEW_LIMIT} />
             </>
           )}
@@ -904,14 +908,15 @@ function IndexStatusPanel({
   return (
     <>
       <table>
+        <caption className="sr-only">分析任务索引状态</caption>
         <thead>
           <tr>
-            <th>Index</th>
-            <th>状态</th>
-            <th>可用</th>
-            <th>路径</th>
-            <th>Schema</th>
-            <th>错误</th>
+            <th scope="col">Index</th>
+            <th scope="col">状态</th>
+            <th scope="col">可用</th>
+            <th scope="col">路径</th>
+            <th scope="col">Schema</th>
+            <th scope="col">错误</th>
           </tr>
         </thead>
         <tbody>
@@ -942,7 +947,9 @@ function ArtifactAvailabilityRow({
         <span className={`status-pill status-${status}`}>{status}</span>
       </td>
       <td>{formatValue(value?.available)}</td>
-      <td>{formatValue(value?.path)}</td>
+      <td className="cell-path" title={formatValue(value?.path)}>
+        {formatValue(value?.path)}
+      </td>
       <td>{formatValue(value?.schema_version)}</td>
       <td>{formatValue(value?.error)}</td>
     </tr>
@@ -957,12 +964,13 @@ function ArtifactSummaryTable({ artifactSummary }: { artifactSummary?: ArtifactS
 
   return (
     <table>
+      <caption className="sr-only">完整产物摘要</caption>
       <thead>
         <tr>
-          <th>产物键</th>
-          <th>状态</th>
-          <th>路径</th>
-          <th>记录数</th>
+          <th scope="col">产物键</th>
+          <th scope="col">状态</th>
+          <th scope="col">路径</th>
+          <th scope="col">记录数</th>
         </tr>
       </thead>
       <tbody>
@@ -972,7 +980,9 @@ function ArtifactSummaryTable({ artifactSummary }: { artifactSummary?: ArtifactS
             <td>
               <span className={`status-pill status-${item.status}`}>{item.status}</span>
             </td>
-            <td>{formatValue(item.path)}</td>
+            <td className="cell-path" title={formatValue(item.path)}>
+              {formatValue(item.path)}
+            </td>
             <td>{formatValue(item.record_count)}</td>
           </tr>
         ))}
@@ -992,12 +1002,13 @@ function VisualArtifactsPanel({ artifactSummary }: { artifactSummary?: ArtifactS
 
   return (
     <table>
+      <caption className="sr-only">可视化产物明细</caption>
       <thead>
         <tr>
-          <th>产物</th>
-          <th>状态</th>
-          <th>数量</th>
-          <th>路径</th>
+          <th scope="col">产物</th>
+          <th scope="col">状态</th>
+          <th scope="col">数量</th>
+          <th scope="col">路径</th>
         </tr>
       </thead>
       <tbody>
@@ -1024,7 +1035,9 @@ function VisualArtifactRow({
         <span className={`status-pill status-${status}`}>{status}</span>
       </td>
       <td>{formatValue(value?.record_count)}</td>
-      <td>{formatValue(value?.path)}</td>
+      <td className="cell-path" title={formatValue(value?.path)}>
+        {formatValue(value?.path)}
+      </td>
     </tr>
   );
 }
@@ -1043,11 +1056,12 @@ function DetectionsDetail({ data }: { data: AnalysisRunDetections }) {
       ) : (
         <>
           <table>
+            <caption className="sr-only">检测帧结果</caption>
             <thead>
               <tr>
-                <th>帧</th>
-                <th>时间戳</th>
-                <th>检测数</th>
+                <th scope="col">帧</th>
+                <th scope="col">时间戳</th>
+                <th scope="col">检测数</th>
               </tr>
             </thead>
             <tbody>
@@ -1082,19 +1096,22 @@ function TracksDetail({ data }: { data: AnalysisRunTracks }) {
       ) : (
         <>
           <table>
+            <caption className="sr-only">跟踪结果</caption>
             <thead>
               <tr>
-                <th>帧</th>
-                <th>Track ID</th>
-                <th>类别</th>
-                <th>状态</th>
+                <th scope="col">帧</th>
+                <th scope="col">Track ID</th>
+                <th scope="col">类别</th>
+                <th scope="col">状态</th>
               </tr>
             </thead>
             <tbody>
               {rowPreview.map((track, index) => (
                 <tr key={`${track.frame_index}-${track.track_id}-${index}`}>
                   <td>{track.frame_index}</td>
-                  <td>{track.track_id}</td>
+                  <td className="cell-id" title={formatValue(track.track_id)}>
+                    {track.track_id}
+                  </td>
                   <td>{track.class_name}</td>
                   <td>{track.state}</td>
                 </tr>
@@ -1136,10 +1153,11 @@ function TrajectoryDetail({ data }: { data: TrajectoryPointsResponse }) {
       ) : (
         <>
           <table>
+            <caption className="sr-only">轨迹行</caption>
             <thead>
               <tr>
                 {trajectoryColumns.map((column) => (
-                  <th key={String(column)}>{column}</th>
+                  <th key={String(column)} scope="col">{column}</th>
                 ))}
               </tr>
             </thead>
@@ -1147,7 +1165,13 @@ function TrajectoryDetail({ data }: { data: TrajectoryPointsResponse }) {
               {rowPreview.map((row, index) => (
                 <tr key={`${row.frame_index}-${row.track_id}-${index}`}>
                   {trajectoryColumns.map((column) => (
-                    <td key={String(column)}>{formatValue(row[column])}</td>
+                    <td
+                      className={tableCellClassName(String(column))}
+                      key={String(column)}
+                      title={tableCellTitle(String(column), row[column])}
+                    >
+                      {formatValue(row[column])}
+                    </td>
                   ))}
                 </tr>
               ))}
@@ -1162,12 +1186,13 @@ function TrajectoryDetail({ data }: { data: TrajectoryPointsResponse }) {
       ) : (
         <>
           <table>
+            <caption className="sr-only">轨迹帧</caption>
             <thead>
               <tr>
-                <th>帧</th>
-                <th>时间戳</th>
-                <th>点数</th>
-                <th>Track IDs</th>
+                <th scope="col">帧</th>
+                <th scope="col">时间戳</th>
+                <th scope="col">点数</th>
+                <th scope="col">Track IDs</th>
               </tr>
             </thead>
             <tbody>
@@ -1176,7 +1201,9 @@ function TrajectoryDetail({ data }: { data: TrajectoryPointsResponse }) {
                   <td>{formatValue(frame.frame_index)}</td>
                   <td>{formatValue(frame.timestamp_ms)}</td>
                   <td>{frame.trajectory_points.length}</td>
-                  <td>{formatTrackIds(frame)}</td>
+                  <td className="cell-id" title={formatTrackIds(frame)}>
+                    {formatTrackIds(frame)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -1234,7 +1261,7 @@ function EventsDetail({
         <p className="muted">暂无 event evidence</p>
       ) : (
         <>
-          <RecordTable columns={evidenceColumns} rows={evidencePreview} />
+          <RecordTable caption="事件证据" columns={evidenceColumns} rows={evidencePreview} />
           <PreviewNotice total={data.event_evidence.length} limit={TABLE_PREVIEW_LIMIT} />
         </>
       )}
@@ -1243,7 +1270,7 @@ function EventsDetail({
         <p className="muted">暂无 rule executions</p>
       ) : (
         <>
-          <RecordTable columns={ruleExecutionColumns} rows={executionPreview} />
+          <RecordTable caption="规则执行" columns={ruleExecutionColumns} rows={executionPreview} />
           <PreviewNotice total={data.rule_executions.length} limit={TABLE_PREVIEW_LIMIT} />
         </>
       )}
@@ -1278,7 +1305,7 @@ function AlertsDetail({ data }: { data: AlertsResponse }) {
         <p className="muted">暂无告警。事件触发后会在这里显示。</p>
       ) : (
         <>
-          <RecordTable columns={alertColumns} rows={alertPreview} />
+          <RecordTable caption="告警明细" columns={alertColumns} rows={alertPreview} />
           <PreviewNotice total={data.alerts.length} limit={TABLE_PREVIEW_LIMIT} />
         </>
       )}
@@ -1307,14 +1334,15 @@ function FlowCountsDetail({ data }: { data: FlowCountsArtifact }) {
       ) : (
         <>
           <table>
+            <caption className="sr-only">流量窗口</caption>
             <thead>
               <tr>
-                <th>窗口</th>
-                <th>区域</th>
-                <th>线</th>
-                <th>类别</th>
-                <th>方向</th>
-                <th>总计</th>
+                <th scope="col">窗口</th>
+                <th scope="col">区域</th>
+                <th scope="col">线</th>
+                <th scope="col">类别</th>
+                <th scope="col">方向</th>
+                <th scope="col">总计</th>
               </tr>
             </thead>
             <tbody>
@@ -1324,8 +1352,12 @@ function FlowCountsDetail({ data }: { data: FlowCountsArtifact }) {
                     {formatValue(window.time_window_start_ms)} -{" "}
                     {formatValue(window.time_window_end_ms)}
                   </td>
-                  <td>{formatValue(window.zone_id)}</td>
-                  <td>{formatValue(window.counting_line_id)}</td>
+                  <td className="cell-id" title={formatValue(window.zone_id)}>
+                    {formatValue(window.zone_id)}
+                  </td>
+                  <td className="cell-id" title={formatValue(window.counting_line_id)}>
+                    {formatValue(window.counting_line_id)}
+                  </td>
                   <td>{formatValue(window.class_name)}</td>
                   <td>{formatValue(window.direction)}</td>
                   <td>{formatValue(window.total_count)}</td>
@@ -1342,23 +1374,32 @@ function FlowCountsDetail({ data }: { data: FlowCountsArtifact }) {
       ) : (
         <>
           <table>
+            <caption className="sr-only">流量记录</caption>
             <thead>
               <tr>
-                <th>事件</th>
-                <th>Track</th>
-                <th>区域</th>
-                <th>线</th>
-                <th>类别</th>
-                <th>方向</th>
+                <th scope="col">事件</th>
+                <th scope="col">Track</th>
+                <th scope="col">区域</th>
+                <th scope="col">线</th>
+                <th scope="col">类别</th>
+                <th scope="col">方向</th>
               </tr>
             </thead>
             <tbody>
               {records.slice(0, TABLE_PREVIEW_LIMIT).map((record, index) => (
                 <tr key={`${record.event_id}-${record.track_id}-${index}`}>
-                  <td>{formatValue(record.event_id)}</td>
-                  <td>{formatValue(record.track_id)}</td>
-                  <td>{formatValue(record.zone_id)}</td>
-                  <td>{formatValue(record.counting_line_id)}</td>
+                  <td className="cell-id" title={formatValue(record.event_id)}>
+                    {formatValue(record.event_id)}
+                  </td>
+                  <td className="cell-id" title={formatValue(record.track_id)}>
+                    {formatValue(record.track_id)}
+                  </td>
+                  <td className="cell-id" title={formatValue(record.zone_id)}>
+                    {formatValue(record.zone_id)}
+                  </td>
+                  <td className="cell-id" title={formatValue(record.counting_line_id)}>
+                    {formatValue(record.counting_line_id)}
+                  </td>
                   <td>{formatValue(record.class_name)}</td>
                   <td>{formatValue(record.direction)}</td>
                 </tr>
@@ -1393,14 +1434,15 @@ function ZoneStatisticsDetail({ data }: { data: ZoneStatisticsArtifact }) {
       ) : (
         <>
           <table>
+            <caption className="sr-only">区域窗口</caption>
             <thead>
               <tr>
-                <th>窗口</th>
-                <th>区域</th>
-                <th>车辆</th>
-                <th>行人</th>
-                <th>占用</th>
-                <th>平均速度</th>
+                <th scope="col">窗口</th>
+                <th scope="col">区域</th>
+                <th scope="col">车辆</th>
+                <th scope="col">行人</th>
+                <th scope="col">占用</th>
+                <th scope="col">平均速度</th>
               </tr>
             </thead>
             <tbody>
@@ -1410,7 +1452,9 @@ function ZoneStatisticsDetail({ data }: { data: ZoneStatisticsArtifact }) {
                     {formatValue(window.time_window_start_ms)} -{" "}
                     {formatValue(window.time_window_end_ms)}
                   </td>
-                  <td>{formatValue(window.zone_id)}</td>
+                  <td className="cell-id" title={formatValue(window.zone_id)}>
+                    {formatValue(window.zone_id)}
+                  </td>
                   <td>{formatValue(window.vehicle_count)}</td>
                   <td>{formatValue(window.person_count)}</td>
                   <td>{formatValue(window.occupancy_count)}</td>
@@ -1428,21 +1472,26 @@ function ZoneStatisticsDetail({ data }: { data: ZoneStatisticsArtifact }) {
       ) : (
         <>
           <table>
+            <caption className="sr-only">拥堵事件</caption>
             <thead>
               <tr>
-                <th>事件</th>
-                <th>区域</th>
-                <th>帧</th>
-                <th>时间戳</th>
-                <th>车辆</th>
-                <th>平均速度</th>
+                <th scope="col">事件</th>
+                <th scope="col">区域</th>
+                <th scope="col">帧</th>
+                <th scope="col">时间戳</th>
+                <th scope="col">车辆</th>
+                <th scope="col">平均速度</th>
               </tr>
             </thead>
             <tbody>
               {congestionEvents.slice(0, TABLE_PREVIEW_LIMIT).map((event, index) => (
                 <tr key={`${event.event_id}-${index}`}>
-                  <td>{formatValue(event.event_id)}</td>
-                  <td>{formatValue(event.zone_id)}</td>
+                  <td className="cell-id" title={formatValue(event.event_id)}>
+                    {formatValue(event.event_id)}
+                  </td>
+                  <td className="cell-id" title={formatValue(event.zone_id)}>
+                    {formatValue(event.zone_id)}
+                  </td>
                   <td>{formatValue(event.frame_index)}</td>
                   <td>{formatValue(event.timestamp_ms)}</td>
                   <td>{formatValue(event.vehicle_count)}</td>
@@ -1459,18 +1508,21 @@ function ZoneStatisticsDetail({ data }: { data: ZoneStatisticsArtifact }) {
 }
 
 function RecordTable({
+  caption,
   columns,
   rows
 }: {
+  caption: string;
   columns: readonly string[];
   rows: Array<AlertRecord | EventRecord | EventEvidenceRecord | RuleExecutionRecord>;
 }) {
   return (
     <table>
+      <caption className="sr-only">{caption}</caption>
       <thead>
         <tr>
           {columns.map((column) => (
-            <th key={column}>{column}</th>
+            <th key={column} scope="col">{column}</th>
           ))}
         </tr>
       </thead>
@@ -1480,13 +1532,38 @@ function RecordTable({
             key={`${formatValue(row.alert_id)}-${formatValue(row.event_id)}-${formatValue(row.rule_id)}-${index}`}
           >
             {columns.map((column) => (
-              <td key={column}>{formatValue(row[column])}</td>
+              <td
+                className={tableCellClassName(column)}
+                key={column}
+                title={tableCellTitle(column, row[column])}
+              >
+                {formatValue(row[column])}
+              </td>
             ))}
           </tr>
         ))}
       </tbody>
     </table>
   );
+}
+
+function tableCellClassName(column: string): string | undefined {
+  const normalized = column.toLowerCase();
+  if (normalized.includes("path") || normalized.includes("dir")) {
+    return "cell-path";
+  }
+  if (normalized.endsWith("id") || normalized.includes("_id")) {
+    return "cell-id";
+  }
+  return undefined;
+}
+
+function tableCellTitle(column: string, value: unknown): string | undefined {
+  if (!tableCellClassName(column)) {
+    return undefined;
+  }
+  const displayValue = formatValue(value);
+  return displayValue === "-" ? undefined : displayValue;
 }
 
 function parseTrackIdFilter(value: string): number | null {

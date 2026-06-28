@@ -218,7 +218,7 @@ export default function ZoneEditor() {
             </div>
           </div>
           <p className="muted" id="zone-canvas-help">
-            区域画布当前支持鼠标点击绘制区域。键盘用户可通过下方表单编辑区域信息，或选择已有区域配置。
+            区域画布当前支持鼠标点击绘制。键盘用户可以选择已有区域、编辑区域表单，或在高级参数中维护配置。
           </p>
           <svg
             aria-describedby="zone-canvas-help"
@@ -226,6 +226,7 @@ export default function ZoneEditor() {
             className="zone-canvas"
             onClick={handleEditorClick}
             role="img"
+            tabIndex={0}
             viewBox={`0 0 ${EDITOR_WIDTH} ${EDITOR_HEIGHT}`}
           >
             <rect height={EDITOR_HEIGHT} width={EDITOR_WIDTH} x="0" y="0" />

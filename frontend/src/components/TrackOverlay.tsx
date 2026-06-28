@@ -38,7 +38,7 @@ export default function TrackOverlay({
           />
         ) : null
       )}
-      {tracks.map((track) => {
+      {tracks.map((track, index) => {
         const bbox = normalizeBbox(track.bbox ?? track.metadata ?? track);
         if (!bbox) {
           return null;
@@ -53,7 +53,7 @@ export default function TrackOverlay({
         return (
           <g
             className={highlighted ? "overlay-item highlighted" : "overlay-item"}
-            key={`${trackId}-${className}`}
+            key={[trackId, className, ...bbox, index].join("-")}
           >
             <rect
               className="track-box"
