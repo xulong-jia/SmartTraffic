@@ -1,17 +1,22 @@
 # SmartTraffic: Intelligent Traffic Event Detection Platform
 
-A local validation platform for traffic video analysis, combining YOLOv8,
-DeepSORT, trajectory semantics, configurable event rules, review workflows, Bad
-Case tracking, evaluation, and Docker-based delivery.
+SmartTraffic is a local smart traffic event detection and analysis platform. It
+covers video upload, YOLOv8 object detection, multi-object tracking, trajectory
+analysis, zone and rule configuration, event detection, alert handling, manual
+review, Bad Case tracking, local evaluation, report export, one-click launch,
+and a Chinese-first Light SaaS Dashboard UI.
 
 SmartTraffic 是一个智慧交通事件检测 local validation project，不是普通 YOLOv8
-检测框 Demo。
+检测框 Demo。It is not a production enforcement system, not a formal traffic
+law-enforcement product, and not an official COCO / TrackEval benchmark.
+Generated reports are for analysis and review only.
 
 ## Project Snapshot
 
 | Item | Status |
 | --- | --- |
-| Current baseline | `v1.0.1-spec-completion` |
+| Final UI showcase tag | `v1.0.3-ui-showcase-polish` |
+| Main branch note | `main` may contain README/documentation updates after this tag |
 | Project type | Smart traffic event detection local validation platform |
 | Backend | FastAPI, SQLAlchemy, Alembic |
 | Frontend | React, TypeScript, Vite |
@@ -21,6 +26,25 @@ SmartTraffic 是一个智慧交通事件检测 local validation project，不是
 | Event coverage | 6 configurable traffic event rules |
 | Evaluation | Local / synthetic validation metrics |
 | Boundary | Not production-ready or law-enforcement-grade |
+
+## Final UI Showcase Tag
+
+Final UI showcase tag: `v1.0.3-ui-showcase-polish`
+
+This annotated tag contains:
+
+- Chinese-first main UI
+- Light SaaS Dashboard UI
+- UI Expert Review fixes
+- Mobile smoke checks
+- Browser print layout support
+- One-click launch
+- End-to-end manual validation
+- Final showcase report
+- Final manual test report
+- Final UI screenshot checklist
+
+`main` may contain README/documentation updates after this tag.
 
 ## What Problem It Solves
 
@@ -221,6 +245,8 @@ For real local YOLOv8 detection, place `yolov8n.pt` in `local_models/` and set
 
 Docker Desktop is required. On macOS, double-click
 `start_smarttraffic.command`. On Windows, double-click `start_smarttraffic.bat`.
+Use `stop_smarttraffic.command` on macOS or `stop_smarttraffic.bat` on Windows
+to stop the local stack.
 The full beginner guide is in [`docs/one_click_start.md`](docs/one_click_start.md).
 
 ## Demo Validation
@@ -235,6 +261,54 @@ expected event examples. It is synthetic / sample / local validation only. Real
 videos, model weights, generated reports, and runtime artifacts are not
 committed.
 
+## Final Showcase Validation
+
+The final local showcase was manually validated with:
+
+- Run ID: `run_50007c86fd60`
+- Event type: `danger_zone_intrusion`
+- Events: 14
+- Alerts: 14
+- Bad cases: 1
+- Evaluation results: 5 event metrics
+- Keyframes: 28
+- Annotated video: available
+
+This run validates:
+
+- Real YOLO detection
+- Tracking output
+- Trajectory output
+- Zone configuration
+- Event rule configuration
+- Alert generation
+- Review confirmation
+- Bad Case creation
+- Evaluation output
+- Report export
+
+## UI Showcase
+
+The frontend uses a Chinese-first Light SaaS Dashboard interface.
+
+Validated pages:
+
+- Dashboard
+- Camera Center
+- Video Center
+- Analysis Detail
+- Zone & Rules
+- Alert Center
+- Review Center
+- Bad Case Center
+- Evaluation Center
+- Report Center
+
+Advanced technical details are folded by default. Evaluation and Report pages
+hide raw JSON/path artifacts under advanced sections. Status badges use
+higher-contrast colors. Mobile smoke checks passed for `390x844` and
+`430x932`. Browser print layout support is included.
+
 ## Validation Status
 
 Latest recorded validation:
@@ -243,9 +317,12 @@ Latest recorded validation:
 | --- | --- |
 | Git whitespace check | Passed |
 | Backend tests | `480 passed, 4 warnings` |
-| Frontend tests | `77 passed` |
+| Frontend tests | `85 passed` |
+| Frontend build | Passed |
+| Mobile smoke check | `390x844` and `430x932` passed |
+| Browser console check | No React duplicate key warning |
 | Docker Compose config | Passed |
-| Docker Compose build | Passed; built `smarttraffic-backend:latest` |
+| Docker Compose build | Passed in final local delivery validation |
 | Danger check | Passed |
 | Demo seed test | Passed |
 | Tracked forbidden-file scan | Passed |
@@ -254,16 +331,19 @@ Latest recorded validation:
 
 See:
 
-- [`docs/final_showcase_report.md`](docs/final_showcase_report.md)
-- [`docs/final_manual_test_report.md`](docs/final_manual_test_report.md)
-- [`docs/final_ui_showcase_checklist.md`](docs/final_ui_showcase_checklist.md)
+- [Final Showcase Report](docs/final_showcase_report.md)
+- [Final Manual Test Report](docs/final_manual_test_report.md)
+- [Final UI Showcase Checklist](docs/final_ui_showcase_checklist.md)
 
 ## Milestones
 
 - `v1.0.0-smarttraffic-final-local-delivery`: first final local delivery
   baseline.
-- `v1.0.1-spec-completion`: current spec-complete final local delivery
+- `v1.0.1-spec-completion`: spec-complete final local delivery
   baseline.
+- `v1.0.3-ui-showcase-polish`: final UI showcase polish tag with Chinese
+  Light SaaS Dashboard UI, mobile smoke checks, browser print layout support,
+  and final showcase evidence.
 
 Earlier v0.9.x and v1.0.x tags are preserved as historical engineering
 milestones and are not moved.
@@ -288,6 +368,7 @@ Do not commit:
 - It is not law-enforcement-grade.
 - It is not a commercial deployment.
 - It is not an official COCO, TrackEval, or real-world traffic benchmark.
+- Reports are for analysis and review only, not enforcement decisions.
 - Realtime is preview metadata only.
 - Pixel speed is not calibrated real-world speed.
 - Bad Case regression is deterministic replay / stored rule replay, not a full
@@ -296,8 +377,11 @@ Do not commit:
 
 ## Final Status
 
-SmartTraffic `v1.0.1-spec-completion` is the current spec-complete final local
-delivery baseline. The repository is closed for the current v1.0 scope. Future
-work should move to v1.1 enhancements such as real-video benchmarking,
-production deployment hardening, official metric adapters, and stronger
-realtime stream support.
+SmartTraffic `v1.0.3-ui-showcase-polish` is the final UI showcase polish tag for the completed frontend showcase baseline.
+It captures the completed local traffic analysis workflow, Chinese Light SaaS
+Dashboard UI, final manual validation, and final showcase evidence.
+
+`main` may contain README/documentation updates after this tag. Earlier tags are
+preserved and should not be moved. Future work should move to separate
+enhancements such as real-video benchmarking, production deployment hardening,
+official metric adapters, and stronger realtime stream support.
