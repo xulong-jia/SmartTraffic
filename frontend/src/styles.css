@@ -1630,7 +1630,7 @@ tbody tr:hover td {
 
 @page {
   size: A4 landscape;
-  margin: 10mm;
+  margin: 8mm;
 }
 
 @media print {
@@ -1644,8 +1644,8 @@ tbody tr:hover td {
   html,
   body,
   #root {
-    width: 100%;
-    min-width: 1200px;
+    width: 100% !important;
+    min-width: 0 !important;
     background: #eef6ff !important;
   }
 
@@ -1656,25 +1656,26 @@ tbody tr:hover td {
 
   .app-shell {
     display: grid !important;
-    grid-template-columns: 220px minmax(0, 1fr) !important;
-    min-width: 1200px;
+    grid-template-columns: 170px minmax(0, 1fr) !important;
+    width: 100% !important;
+    min-width: 0 !important;
     min-height: auto;
   }
 
   .sidebar {
     position: static !important;
-    width: 220px !important;
-    min-width: 220px !important;
+    width: 170px !important;
+    min-width: 170px !important;
     height: auto !important;
     min-height: auto;
-    gap: 14px;
+    gap: 10px;
     page-break-inside: avoid;
     break-inside: avoid;
-    padding: 16px 10px !important;
+    padding: 10px 8px !important;
   }
 
   .sidebar > div:first-child {
-    padding: 12px !important;
+    padding: 9px !important;
   }
 
   nav {
@@ -1684,9 +1685,9 @@ tbody tr:hover td {
   }
 
   nav button {
-    min-height: 32px !important;
-    padding: 7px 10px !important;
-    font-size: 11px !important;
+    min-height: 28px !important;
+    padding: 5px 8px !important;
+    font-size: 10px !important;
   }
 
   .workspace,
@@ -1697,15 +1698,23 @@ tbody tr:hover td {
     min-width: 0 !important;
     margin: 0 !important;
     overflow: visible !important;
-    padding: 14px 16px !important;
+    padding: 0 10px 8px !important;
   }
 
   .page-header {
     align-items: center !important;
     flex-direction: row !important;
-    gap: 18px !important;
-    margin-bottom: 14px !important;
-    padding: 16px 18px !important;
+    gap: 10px !important;
+    margin: 0 0 8px !important;
+    padding: 10px 12px !important;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .page-header p,
+  .page-description {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
   }
 
   h1 {
@@ -1718,6 +1727,11 @@ tbody tr:hover td {
 
   h3 {
     font-size: 15px !important;
+  }
+
+  .grid,
+  .content-grid {
+    gap: 8px !important;
   }
 
   h1,
@@ -1733,22 +1747,28 @@ tbody tr:hover td {
   .analysis-content-grid,
   .zone-editor-grid {
     display: grid !important;
-    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr) !important;
-    gap: 14px !important;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.85fr) !important;
+    gap: 10px !important;
+    align-items: start !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
   }
 
   .analysis-hero-grid {
     display: grid !important;
-    grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr) !important;
-    gap: 14px !important;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr) !important;
+    gap: 10px !important;
+    align-items: start !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
   }
 
   .metric-row,
   .metric-grid {
     display: grid !important;
-    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-    gap: 10px !important;
-    margin-bottom: 12px !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin-bottom: 8px !important;
   }
 
   .panel,
@@ -1764,13 +1784,14 @@ tbody tr:hover td {
     border: 1px solid rgba(148, 163, 184, 0.28) !important;
     background: rgba(255, 255, 255, 0.96) !important;
     box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08) !important;
-    page-break-inside: avoid;
-    break-inside: avoid;
+    page-break-inside: auto;
+    break-inside: auto;
   }
 
   .panel,
   .card {
-    padding: 14px !important;
+    margin-bottom: 8px !important;
+    padding: 10px !important;
   }
 
   .metric-card,
@@ -1791,15 +1812,20 @@ tbody tr:hover td {
 
   .page-header,
   .metric-card,
-  .card,
-  .table-shell,
-  .summary-strip,
   .info-callout,
-  .warning-callout,
-  .video-overlay-panel,
-  .event-timeline {
+  .warning-callout {
     page-break-inside: avoid;
     break-inside: avoid;
+  }
+
+  .card,
+  .panel,
+  .table-shell,
+  .summary-strip,
+  .video-overlay-panel,
+  .event-timeline {
+    page-break-inside: auto;
+    break-inside: auto;
   }
 
   .table-scroll {
@@ -1813,7 +1839,7 @@ tbody tr:hover td {
     min-width: 0 !important;
     table-layout: auto !important;
     border-spacing: 0 4px !important;
-    font-size: 10px !important;
+    font-size: 9px !important;
   }
 
   .data-table th,
@@ -1859,6 +1885,14 @@ tbody tr:hover td {
     box-shadow: none !important;
   }
 
+  input,
+  select,
+  textarea {
+    min-height: 26px !important;
+    padding: 4px 6px !important;
+    font-size: 10px !important;
+  }
+
   td button,
   .toolbar button,
   .section-heading-row button {
@@ -1871,6 +1905,28 @@ tbody tr:hover td {
   .button-group,
   .overlay-data-grid {
     gap: 7px !important;
+  }
+
+  .toolbar label,
+  .inline-control,
+  .stacked-control,
+  .form-grid label {
+    font-size: 10px !important;
+    gap: 4px !important;
+  }
+
+  .timeline-list {
+    gap: 5px !important;
+  }
+
+  .timeline-item {
+    min-height: 46px !important;
+    padding: 5px 7px !important;
+  }
+
+  .timeline-time,
+  .timeline-meta {
+    font-size: 10px !important;
   }
 
   .json-panel,
