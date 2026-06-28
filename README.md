@@ -250,6 +250,14 @@ Latest recorded validation:
 | Demo seed test | Passed |
 | Tracked forbidden-file scan | Passed |
 
+## Final Showcase Evidence
+
+See:
+
+- [`docs/final_showcase_report.md`](docs/final_showcase_report.md)
+- [`docs/final_manual_test_report.md`](docs/final_manual_test_report.md)
+- [`docs/final_ui_showcase_checklist.md`](docs/final_ui_showcase_checklist.md)
+
 ## Milestones
 
 - `v1.0.0-smarttraffic-final-local-delivery`: first final local delivery
