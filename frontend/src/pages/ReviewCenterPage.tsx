@@ -427,36 +427,39 @@ export default function ReviewCenterPage({
             {eventsData ? <span className="muted">{eventsData.total} 条</span> : null}
           </div>
           {events.length > 0 ? (
-            <table>
-              <thead>
-                <tr>
-                  <th>事件</th>
-                  <th>状态</th>
-                  <th>原状态</th>
-                  <th>类型</th>
-                  <th>严重程度</th>
-                  <th>Track</th>
-                  <th>区域</th>
-                  <th>帧</th>
-                  <th>告警</th>
-                  <th>评论</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {events.map((event) => (
-                  <ReviewEventRow
-                    key={event.event_id}
-                    event={event}
-                    selected={selectedEventId === event.event_id}
-                    onOpen={() => {
-                      setSelectedEventId(event.event_id);
-                      loadEventDetail(event.event_id);
-                    }}
-                  />
-                ))}
-              </tbody>
-            </table>
+            <div className="table-scroll">
+              <table className="data-table">
+                <caption className="sr-only">复核事件列表</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">事件</th>
+                    <th scope="col">状态</th>
+                    <th scope="col">原状态</th>
+                    <th scope="col">类型</th>
+                    <th scope="col">严重程度</th>
+                    <th scope="col">Track</th>
+                    <th scope="col">区域</th>
+                    <th scope="col">帧</th>
+                    <th scope="col">告警</th>
+                    <th scope="col">评论</th>
+                    <th scope="col">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.map((event) => (
+                    <ReviewEventRow
+                      key={event.event_id}
+                      event={event}
+                      selected={selectedEventId === event.event_id}
+                      onOpen={() => {
+                        setSelectedEventId(event.event_id);
+                        loadEventDetail(event.event_id);
+                      }}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <p className="muted">暂无事件列表。请先运行一次视频分析。</p>
           )}
@@ -585,7 +588,7 @@ function ReviewEventRow({
   const summary = buildReviewEventDisplaySummary(event);
   return (
     <tr className={selected ? "selected-row" : ""}>
-      <td>{summary.eventId}</td>
+      <td className="cell-id">{summary.eventId}</td>
       <td>
         <span className={`status-pill status-${event.review_status}`}>
           {summary.statusLabel}
@@ -595,7 +598,7 @@ function ReviewEventRow({
       <td>{summary.eventType}</td>
       <td>{normalizeReviewValue(event.severity)}</td>
       <td>{summary.track}</td>
-      <td>{summary.zone}</td>
+      <td className="cell-id">{summary.zone}</td>
       <td>{summary.frameRange}</td>
       <td>{summary.linkedAlertCount}</td>
       <td>{summary.commentCount}</td>

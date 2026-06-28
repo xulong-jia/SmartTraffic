@@ -80,16 +80,17 @@ export default function DashboardPage({ onOpenAnalysisRun }: DashboardPageProps)
                 <h3>产物状态汇总</h3>
                 <div className="table-scroll">
                   <table className="data-table dashboard-table">
+                    <caption className="sr-only">分析产物状态汇总</caption>
                     <thead>
                       <tr>
-                        <th>产物</th>
-                        <th>可用</th>
-                        <th>缺失</th>
-                        <th>计划中</th>
-                        <th>为空</th>
-                        <th>缺少源视频</th>
-                        <th>错误</th>
-                        <th>其他</th>
+                        <th scope="col">产物</th>
+                        <th scope="col">可用</th>
+                        <th scope="col">缺失</th>
+                        <th scope="col">计划中</th>
+                        <th scope="col">为空</th>
+                        <th scope="col">缺少源视频</th>
+                        <th scope="col">错误</th>
+                        <th scope="col">其他</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -113,17 +114,18 @@ export default function DashboardPage({ onOpenAnalysisRun }: DashboardPageProps)
                 <h3>最近分析任务</h3>
                 <div className="table-scroll">
                   <table className="data-table dashboard-table">
+                    <caption className="sr-only">最近分析任务</caption>
                     <thead>
                       <tr>
-                        <th>任务</th>
-                        <th>视频</th>
-                        <th>状态</th>
-                        <th>更新时间</th>
-                        <th>来源</th>
+                        <th scope="col">任务</th>
+                        <th scope="col">视频</th>
+                        <th scope="col">状态</th>
+                        <th scope="col">更新时间</th>
+                        <th scope="col">来源</th>
                         {DASHBOARD_ARTIFACT_KEYS.map((artifactKey) => (
-                          <th key={artifactKey}>{artifactLabel(artifactKey)}</th>
+                          <th key={artifactKey} scope="col">{artifactLabel(artifactKey)}</th>
                         ))}
-                        {onOpenAnalysisRun ? <th>操作</th> : null}
+                        {onOpenAnalysisRun ? <th scope="col">操作</th> : null}
                       </tr>
                     </thead>
                     <tbody>

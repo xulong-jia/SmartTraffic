@@ -51,16 +51,17 @@ export default function EventTable({
       {emptyLabel ? <p className="muted">{emptyLabel}</p> : null}
       {rows.length > 0 ? (
         <table>
+          <caption className="sr-only">事件列表</caption>
           <thead>
             <tr>
-              <th>类型</th>
-              <th>严重程度</th>
-              <th>状态</th>
-              <th>Track</th>
-              <th>区域</th>
-              <th>开始</th>
-              <th>Run</th>
-              <th>复核</th>
+              <th scope="col">类型</th>
+              <th scope="col">严重程度</th>
+              <th scope="col">状态</th>
+              <th scope="col">Track</th>
+              <th scope="col">区域</th>
+              <th scope="col">开始</th>
+              <th scope="col">Run</th>
+              <th scope="col">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -72,7 +73,6 @@ export default function EventTable({
                 <tr
                   className={row.selected ? "selected-row" : ""}
                   key={row.id}
-                  onClick={() => onSelectEvent?.(eventId, event)}
                 >
                   <td>{row.eventType}</td>
                   <td>{row.severity}</td>
@@ -80,18 +80,25 @@ export default function EventTable({
                   <td>{row.trackId}</td>
                   <td>{row.zoneId}</td>
                   <td>{row.startTimeMs}</td>
-                  <td>{row.runId}</td>
+                  <td className="cell-id">{row.runId}</td>
                   <td>
-                    {href ? (
-                      <a
-                        href={href}
-                        onClick={(clickEvent) => openReviewLink(clickEvent, href, onOpenReview)}
-                      >
-                        复核
-                      </a>
-                    ) : (
-                      <span className="muted">无 event_id</span>
-                    )}
+                    <div className="button-group">
+                      {onSelectEvent ? (
+                        <button type="button" onClick={() => onSelectEvent(eventId, event)}>
+                          查看
+                        </button>
+                      ) : null}
+                      {href ? (
+                        <a
+                          href={href}
+                          onClick={(clickEvent) => openReviewLink(clickEvent, href, onOpenReview)}
+                        >
+                          复核
+                        </a>
+                      ) : (
+                        <span className="muted">无 event_id</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

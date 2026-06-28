@@ -10,6 +10,7 @@ import {
   registerEvaluationDataset,
   runEvaluation
 } from "../api/evaluation";
+import CollapsibleSection from "../components/CollapsibleSection";
 import type {
   EvaluationDatasetListResponse,
   EvaluationFailedCaseListResponse,
@@ -23,6 +24,7 @@ import {
   buildBadCaseRegressionDisplaySummary,
   buildEvaluationResultDisplaySummary,
   buildEvaluationStatusCounts,
+  extractMetricStatus,
   formatEvaluationTypeLabel,
   normalizeMetricValue
 } from "../utils/evaluationMetrics";
@@ -272,6 +274,14 @@ export default function EvaluationCenterPage() {
               </li>
             ))}
           </ul>
+          <p>
+            <strong>不适用：</strong>
+            当前评测缺少 expected labels，因此该指标不参与通过/失败判断。
+          </p>
+          <p>
+            <strong>数据不足：</strong>
+            缺少标注或回放数据，不等于模型失败。
+          </p>
           <p className="muted">{formatEvaluationBoundaryForType(String(evaluationType))}</p>
         </div>
         {metricCards.length > 0 ? (
@@ -418,7 +428,11 @@ export default function EvaluationCenterPage() {
                 ))}
               </div>
               <RegressionSummary summary={summary.summary.bad_case_regression} />
-              <pre className="json-panel evaluation-json-panel">{JSON.stringify(summary.summary, null, 2)}</pre>
+              <CollapsibleSection title="摘要 JSON" className="compact-section">
+                <pre className="json-panel evaluation-json-panel">
+                  {JSON.stringify(summary.summary, null, 2)}
+                </pre>
+              </CollapsibleSection>
             </>
           ) : (
             <p className="muted">请选择 run_id 加载评测摘要。</p>
@@ -436,19 +450,20 @@ function DatasetTable({ data }: { data: EvaluationDatasetListResponse | null }) 
   }
   return (
     <table>
+      <caption className="sr-only">评测数据集列表</caption>
       <thead>
         <tr>
-          <th>ID</th>
-          <th>名称</th>
-          <th>类型</th>
-          <th>来源</th>
-          <th>创建时间</th>
+          <th scope="col">ID</th>
+          <th scope="col">名称</th>
+          <th scope="col">类型</th>
+          <th scope="col">来源</th>
+          <th scope="col">创建时间</th>
         </tr>
       </thead>
       <tbody>
         {rows.map((dataset) => (
           <tr key={dataset.dataset_id}>
-            <td>{dataset.dataset_id}</td>
+            <td className="cell-id">{dataset.dataset_id}</td>
             <td>{dataset.name}</td>
             <td>{formatEvaluationTypeLabel(dataset.dataset_type)}</td>
             <td>{dataset.source}</td>
@@ -467,21 +482,22 @@ function RunsTable({ data }: { data: EvaluationRunListResponse | null }) {
   }
   return (
     <table>
+      <caption className="sr-only">评测任务列表</caption>
       <thead>
         <tr>
-          <th>评测任务</th>
-          <th>Run</th>
-          <th>数据集</th>
-          <th>类型</th>
-          <th>状态</th>
+          <th scope="col">评测任务</th>
+          <th scope="col">Run</th>
+          <th scope="col">数据集</th>
+          <th scope="col">类型</th>
+          <th scope="col">状态</th>
         </tr>
       </thead>
       <tbody>
         {rows.map((run) => (
           <tr key={run.evaluation_run_id}>
-            <td>{run.evaluation_run_id}</td>
-            <td>{run.run_id}</td>
-            <td>{run.dataset_id || "-"}</td>
+            <td className="cell-id">{run.evaluation_run_id}</td>
+            <td className="cell-id">{run.run_id}</td>
+            <td className="cell-id">{run.dataset_id || "-"}</td>
             <td>{formatEvaluationTypeLabel(run.evaluation_type)}</td>
             <td>
               <span className={`status-pill status-${run.status}`}>{run.status}</span>
@@ -500,40 +516,44 @@ function ResultsTable({ data }: { data: EvaluationResultListResponse | null }) {
   }
   return (
     <table>
+      <caption className="sr-only">评测结果列表</caption>
       <thead>
         <tr>
-          <th>评测任务</th>
-          <th>Run</th>
-          <th>数据集</th>
-          <th>类型</th>
-          <th>指标</th>
-          <th>数值</th>
-              <th>状态</th>
-              <th>原因</th>
-              <th>详情</th>
-            </tr>
-          </thead>
-          <tbody>
+          <th scope="col">评测任务</th>
+          <th scope="col">Run</th>
+          <th scope="col">数据集</th>
+          <th scope="col">类型</th>
+          <th scope="col">指标</th>
+          <th scope="col">数值</th>
+          <th scope="col">状态</th>
+          <th scope="col">原因</th>
+          <th scope="col">详情</th>
+        </tr>
+      </thead>
+      <tbody>
         {rows.map((result) => {
           const summary = buildEvaluationResultDisplaySummary(result);
           return (
             <tr key={result.evaluation_result_id}>
-              <td>{summary.evaluationRunId}</td>
-              <td>{summary.runId}</td>
-              <td>{summary.datasetId}</td>
+              <td className="cell-id">{summary.evaluationRunId}</td>
+              <td className="cell-id">{summary.runId}</td>
+              <td className="cell-id">{summary.datasetId}</td>
               <td>{summary.evaluationType}</td>
               <td>{summary.metricName}</td>
               <td>{summary.metricValue}</td>
               <td className="evaluation-status-cell">
-                <span className={`status-pill status-${statusClassName(summary.statusLabel)}`}>
+                <span className={`status-pill status-${statusClassName(extractMetricStatus(result))}`}>
                   {buildInsufficientDataLabel(result)}
                 </span>
               </td>
               <td>{summary.reason}</td>
               <td>
-                <pre className="json-panel compact-json">
-                  {buildEvaluationResultJson(result)}
-                </pre>
+                <details className="inline-details">
+                  <summary>查看 JSON</summary>
+                  <pre className="json-panel compact-json">
+                    {buildEvaluationResultJson(result)}
+                  </pre>
+                </details>
               </td>
             </tr>
           );
@@ -558,22 +578,23 @@ function FailedCasesTable({
   }
   return (
     <table>
+      <caption className="sr-only">评测失败用例列表</caption>
       <thead>
         <tr>
-          <th>ID</th>
-          <th>Run</th>
-          <th>类型</th>
-          <th>模块</th>
-          <th>建议类型</th>
-          <th>创建时间</th>
-          <th>操作</th>
+          <th scope="col">ID</th>
+          <th scope="col">Run</th>
+          <th scope="col">类型</th>
+          <th scope="col">模块</th>
+          <th scope="col">建议类型</th>
+          <th scope="col">创建时间</th>
+          <th scope="col">操作</th>
         </tr>
       </thead>
       <tbody>
         {rows.map((failedCase) => (
           <tr key={failedCase.failedCaseId}>
-            <td>{failedCase.failedCaseId}</td>
-            <td>{failedCase.runId}</td>
+            <td className="cell-id">{failedCase.failedCaseId}</td>
+            <td className="cell-id">{failedCase.runId}</td>
             <td>{failedCase.failureType}</td>
             <td>{failedCase.module}</td>
             <td>{failedCase.suggestedBadCaseType}</td>

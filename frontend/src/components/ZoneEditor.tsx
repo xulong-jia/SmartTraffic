@@ -6,6 +6,7 @@ import {
   updateEventRule
 } from "../api/eventRules";
 import { createZone, deleteZone, listZones, updateZone } from "../api/zones";
+import CollapsibleSection from "./CollapsibleSection";
 import type { EventRuleRecord, ZoneRecord } from "../types";
 import {
   clampPoint,
@@ -216,7 +217,12 @@ export default function ZoneEditor() {
               </button>
             </div>
           </div>
+          <p className="muted" id="zone-canvas-help">
+            区域画布当前支持鼠标点击绘制区域。键盘用户可通过下方表单编辑区域信息，或选择已有区域配置。
+          </p>
           <svg
+            aria-describedby="zone-canvas-help"
+            aria-label={`区域画布，当前模式：${formatDrawingModeLabel(mode)}`}
             className="zone-canvas"
             onClick={handleEditorClick}
             role="img"
@@ -283,20 +289,6 @@ export default function ZoneEditor() {
                 ))}
               </select>
             </label>
-            <label className="stacked-control">
-              版本
-              <input
-                min="1"
-                onChange={(event) =>
-                  setZoneState((current) => ({
-                    ...current,
-                    version: Number(event.target.value)
-                  }))
-                }
-                type="number"
-                value={zoneState.version}
-              />
-            </label>
             <label className="inline-control">
               <input
                 checked={zoneState.enabled}
@@ -307,67 +299,85 @@ export default function ZoneEditor() {
               />
               启用
             </label>
-            <label className="stacked-control">
-              Video ID
-              <input
-                onChange={(event) =>
-                  setZoneState((current) => ({ ...current, videoId: event.target.value }))
-                }
-                value={zoneState.videoId}
-              />
-            </label>
-            <label className="stacked-control">
-              Camera ID
-              <input
-                onChange={(event) =>
-                  setZoneState((current) => ({ ...current, cameraId: event.target.value }))
-                }
-                value={zoneState.cameraId}
-              />
-            </label>
-            <label className="stacked-control">
-              允许角度
-              <input
-                onChange={(event) =>
-                  setZoneState((current) => ({
-                    ...current,
-                    allowedAngle: Number(event.target.value)
-                  }))
-                }
-                type="number"
-                value={zoneState.allowedAngle}
-              />
-            </label>
-            <label className="stacked-control">
-              逆行阈值
-              <input
-                onChange={(event) =>
-                  setZoneState((current) => ({
-                    ...current,
-                    reverseAngleThreshold: Number(event.target.value)
-                  }))
-                }
-                type="number"
-                value={zoneState.reverseAngleThreshold}
-              />
-            </label>
-            <label className="stacked-control">
-              进入方向
-              <select
-                onChange={(event) =>
-                  setZoneState((current) => ({
-                    ...current,
-                    inDirection: event.target.value as ZoneEditorState["inDirection"]
-                  }))
-                }
-                value={zoneState.inDirection}
-              >
-                <option value="any">任意</option>
-                <option value="positive">正向</option>
-                <option value="negative">反向</option>
-              </select>
-            </label>
           </div>
+          <CollapsibleSection title="高级参数" className="compact-section">
+            <div className="zone-form-grid">
+              <label className="stacked-control">
+                版本
+                <input
+                  min="1"
+                  onChange={(event) =>
+                    setZoneState((current) => ({
+                      ...current,
+                      version: Number(event.target.value)
+                    }))
+                  }
+                  type="number"
+                  value={zoneState.version}
+                />
+              </label>
+              <label className="stacked-control">
+                Video ID
+                <input
+                  onChange={(event) =>
+                    setZoneState((current) => ({ ...current, videoId: event.target.value }))
+                  }
+                  value={zoneState.videoId}
+                />
+              </label>
+              <label className="stacked-control">
+                Camera ID
+                <input
+                  onChange={(event) =>
+                    setZoneState((current) => ({ ...current, cameraId: event.target.value }))
+                  }
+                  value={zoneState.cameraId}
+                />
+              </label>
+              <label className="stacked-control">
+                允许角度
+                <input
+                  onChange={(event) =>
+                    setZoneState((current) => ({
+                      ...current,
+                      allowedAngle: Number(event.target.value)
+                    }))
+                  }
+                  type="number"
+                  value={zoneState.allowedAngle}
+                />
+              </label>
+              <label className="stacked-control">
+                逆行阈值
+                <input
+                  onChange={(event) =>
+                    setZoneState((current) => ({
+                      ...current,
+                      reverseAngleThreshold: Number(event.target.value)
+                    }))
+                  }
+                  type="number"
+                  value={zoneState.reverseAngleThreshold}
+                />
+              </label>
+              <label className="stacked-control">
+                进入方向
+                <select
+                  onChange={(event) =>
+                    setZoneState((current) => ({
+                      ...current,
+                      inDirection: event.target.value as ZoneEditorState["inDirection"]
+                    }))
+                  }
+                  value={zoneState.inDirection}
+                >
+                  <option value="any">任意</option>
+                  <option value="positive">正向</option>
+                  <option value="negative">反向</option>
+                </select>
+              </label>
+            </div>
+          </CollapsibleSection>
           <div className="button-group">
             <button disabled={savingZone} onClick={handleSaveZone} type="button">
               {savingZone ? "保存中..." : "保存区域"}
@@ -394,14 +404,15 @@ export default function ZoneEditor() {
         {zones.length === 0 && !loading ? <p className="empty-state">暂无已保存区域。</p> : null}
         {zones.length > 0 ? (
           <table>
+            <caption className="sr-only">已保存区域列表</caption>
             <thead>
               <tr>
-                <th>名称</th>
-                <th>类型</th>
-                <th>启用</th>
-                <th>版本</th>
-                <th>几何</th>
-                <th>操作</th>
+                <th scope="col">名称</th>
+                <th scope="col">类型</th>
+                <th scope="col">启用</th>
+                <th scope="col">版本</th>
+                <th scope="col">几何</th>
+                <th scope="col">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -516,31 +527,6 @@ export default function ZoneEditor() {
               value={ruleState.cooldownSeconds}
             />
           </label>
-          <label className="stacked-control">
-            版本
-            <input
-              min="1"
-              onChange={(event) =>
-                setRuleState((current) => ({ ...current, version: Number(event.target.value) }))
-              }
-              type="number"
-              value={ruleState.version}
-            />
-          </label>
-          <label className="stacked-control">
-            最小轨迹长度
-            <input
-              min="1"
-              onChange={(event) =>
-                setRuleState((current) => ({
-                  ...current,
-                  minTrackLength: Number(event.target.value)
-                }))
-              }
-              type="number"
-              value={ruleState.minTrackLength}
-            />
-          </label>
           <label className="inline-control">
             <input
               checked={ruleState.enabled}
@@ -552,16 +538,45 @@ export default function ZoneEditor() {
             启用
           </label>
         </div>
-        <label className="stacked-control">
-          参数 JSON
-          <textarea
-            onChange={(event) =>
-              setRuleState((current) => ({ ...current, parametersText: event.target.value }))
-            }
-            rows={5}
-            value={ruleState.parametersText}
-          />
-        </label>
+        <CollapsibleSection title="规则高级设置" className="compact-section">
+          <div className="rule-form-grid">
+            <label className="stacked-control">
+              版本
+              <input
+                min="1"
+                onChange={(event) =>
+                  setRuleState((current) => ({ ...current, version: Number(event.target.value) }))
+                }
+                type="number"
+                value={ruleState.version}
+              />
+            </label>
+            <label className="stacked-control">
+              最小轨迹长度
+              <input
+                min="1"
+                onChange={(event) =>
+                  setRuleState((current) => ({
+                    ...current,
+                    minTrackLength: Number(event.target.value)
+                  }))
+                }
+                type="number"
+                value={ruleState.minTrackLength}
+              />
+            </label>
+          </div>
+          <label className="stacked-control">
+            参数 JSON
+            <textarea
+              onChange={(event) =>
+                setRuleState((current) => ({ ...current, parametersText: event.target.value }))
+              }
+              rows={5}
+              value={ruleState.parametersText}
+            />
+          </label>
+        </CollapsibleSection>
         <div className="button-group">
           <button disabled={savingRule} onClick={handleSaveRule} type="button">
             {savingRule ? "保存中..." : "保存规则"}
@@ -582,15 +597,16 @@ export default function ZoneEditor() {
         {rules.length === 0 && !loading ? <p className="empty-state">暂无已保存事件规则。</p> : null}
         {rules.length > 0 ? (
           <table>
+            <caption className="sr-only">事件规则列表</caption>
             <thead>
               <tr>
-                <th>名称</th>
-                <th>类型</th>
-                <th>区域</th>
-                <th>启用</th>
-                <th>严重程度</th>
-                <th>版本</th>
-                <th>操作</th>
+                <th scope="col">名称</th>
+                <th scope="col">类型</th>
+                <th scope="col">区域</th>
+                <th scope="col">启用</th>
+                <th scope="col">严重程度</th>
+                <th scope="col">版本</th>
+                <th scope="col">操作</th>
               </tr>
             </thead>
             <tbody>

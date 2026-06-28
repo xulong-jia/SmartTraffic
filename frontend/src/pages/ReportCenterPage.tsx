@@ -8,6 +8,7 @@ import {
   getReportSummary,
   listReportRuns
 } from "../api/reports";
+import CollapsibleSection from "../components/CollapsibleSection";
 import type {
   AnalysisRunSummary,
   ReportBundleResponse,
@@ -308,10 +309,6 @@ export default function ReportCenterPage() {
               <dt>视频</dt>
               <dd>{summary?.run.video_id || "-"}</dd>
             </div>
-            <div>
-              <dt>结果目录</dt>
-              <dd>{summary?.run.result_dir || "-"}</dd>
-            </div>
           </dl>
         </div>
 
@@ -321,159 +318,170 @@ export default function ReportCenterPage() {
             <span className="status-pill">{sectionOptions.length} 个区块</span>
           </div>
           <div className="table-scroll">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>区块</th>
-                <th>说明</th>
-                <th>状态</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sectionOptions.map((section) => (
-                <tr key={section.key}>
-                  <td>{section.label}</td>
-                  <td>{section.description}</td>
-                  <td>
-                    <span className={`status-pill ${section.available ? "status-available" : "status-empty"}`}>
-                      {section.available ? "可用" : "不可用"}
-                    </span>
-                  </td>
+            <table className="data-table">
+              <caption className="sr-only">报告导出区块可用性</caption>
+              <thead>
+                <tr>
+                  <th scope="col">区块</th>
+                  <th scope="col">说明</th>
+                  <th scope="col">状态</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {sectionOptions.map((section) => (
+                  <tr key={section.key}>
+                    <td>{section.label}</td>
+                    <td>{section.description}</td>
+                    <td>
+                      <span className={`status-pill ${section.available ? "status-available" : "status-empty"}`}>
+                        {section.available ? "可用" : "不可用"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
 
-      <section className="report-metadata-stack">
-        <div className="panel report-metadata-card">
-          <h3>报告指标</h3>
-          <dl className="detail-grid">
-            <div>
-              <dt>主要事件</dt>
-              <dd>{formatDisplayValue(summary?.top_event_types)}</dd>
-            </div>
-            <div>
-              <dt>告警状态</dt>
-              <dd>{formatDisplayValue(summary?.alert_status_counts)}</dd>
-            </div>
-            <div>
-              <dt>流量总计</dt>
-              <dd>{formatDisplayValue(summary?.flow_totals)}</dd>
-            </div>
-            <div>
-              <dt>坏例状态</dt>
-              <dd>{formatDisplayValue(summary?.bad_case_status_counts)}</dd>
-            </div>
-          </dl>
-        </div>
-
-        <div className="panel report-metadata-card">
-          <h3>JSON 预览</h3>
-          {jsonMetadata.length ? (
+      <CollapsibleSection title="报告明细" className="report-detail-section">
+        <section className="report-metadata-stack">
+          <div className="panel report-metadata-card">
+            <h3>报告指标</h3>
             <dl className="detail-grid">
-              {jsonMetadata.map((item) => (
-                <div key={item.label}>
-                  <dt>{item.label}</dt>
-                  <dd>{item.value}</dd>
-                </div>
-              ))}
+              <div>
+                <dt>主要事件</dt>
+                <dd>{formatDisplayValue(summary?.top_event_types)}</dd>
+              </div>
+              <div>
+                <dt>告警状态</dt>
+                <dd>{formatDisplayValue(summary?.alert_status_counts)}</dd>
+              </div>
+              <div>
+                <dt>流量总计</dt>
+                <dd>{formatDisplayValue(summary?.flow_totals)}</dd>
+              </div>
+              <div>
+                <dt>坏例状态</dt>
+                <dd>{formatDisplayValue(summary?.bad_case_status_counts)}</dd>
+              </div>
+              <div>
+                <dt>结果目录</dt>
+                <dd className="cell-path">{summary?.run.result_dir || "-"}</dd>
+              </div>
             </dl>
-          ) : (
-            <p className="muted">导出 JSON 后可预览完整结构化报告。</p>
-          )}
-          {jsonPreview ? <pre className="json-panel">{jsonPreview}</pre> : null}
-        </div>
-      </section>
+          </div>
 
-      <section className="report-metadata-stack report-artifact-stack">
-        <div className="panel table-section table-card report-bundle-card">
-          <div className="section-heading-row">
-            <h3>报告包</h3>
-            <span className="status-pill">{activeBundle?.schema_version || "无 bundle"}</span>
+          <div className="panel report-metadata-card">
+            <h3>JSON 预览</h3>
+            {jsonMetadata.length ? (
+              <dl className="detail-grid">
+                {jsonMetadata.map((item) => (
+                  <div key={item.label}>
+                    <dt>{item.label}</dt>
+                    <dd>{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <p className="muted">导出 JSON 后可预览完整结构化报告。</p>
+            )}
+            {jsonPreview ? <pre className="json-panel">{jsonPreview}</pre> : null}
           </div>
-          <p className="muted">{buildBundleSectionLabel(activeBundle)}</p>
-          <div className="table-scroll">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>产物</th>
-                <th>类型</th>
-                <th>状态</th>
-                <th>路径</th>
-              </tr>
-            </thead>
-            <tbody>
-              {artifactRows.length ? (
-                artifactRows.map((row) => (
-                  <tr key={row.key}>
-                    <td>{row.key}</td>
-                    <td>{row.type}</td>
-                    <td>{row.status}</td>
-                    <td>{row.path}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={4}>暂无 bundle metadata。</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          </div>
-        </div>
+        </section>
+      </CollapsibleSection>
 
-        <div className="panel table-section table-card report-visual-card">
-          <div className="section-heading-row">
-            <h3>可视化产物摘要</h3>
-            <span className="status-pill">{summary?.keyframe_summary.status || "无任务"}</span>
-          </div>
-          <dl className="detail-grid">
-            <div>
-              <dt>关键帧</dt>
-              <dd>
-                {summary
-                  ? `${summary.keyframe_summary.keyframe_count} 项（${summary.keyframe_summary.status}）`
-                  : "-"}
-              </dd>
+      <CollapsibleSection title="产物引用与可视化明细" className="report-detail-section">
+        <section className="report-metadata-stack report-artifact-stack">
+          <div className="panel table-section table-card report-bundle-card">
+            <div className="section-heading-row">
+              <h3>报告包</h3>
+              <span className="status-pill">{activeBundle?.schema_version || "无 bundle"}</span>
             </div>
-            <div>
-              <dt>标注视频</dt>
-              <dd>{annotatedVideoLabel}</dd>
-            </div>
-          </dl>
-          <div className="table-scroll">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>来源</th>
-                <th>帧</th>
-                <th>状态</th>
-                <th>路径</th>
-              </tr>
-            </thead>
-            <tbody>
-              {keyframeRows.length ? (
-                keyframeRows.map((row) => (
-                  <tr key={`${row.source}-${row.frame}-${row.path}`}>
-                    <td>{row.source}</td>
-                    <td>{row.frame}</td>
-                    <td>{row.status}</td>
-                    <td>{row.path}</td>
+            <p className="muted">{buildBundleSectionLabel(activeBundle)}</p>
+            <div className="table-scroll">
+              <table className="data-table">
+                <caption className="sr-only">报告包产物引用</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">产物</th>
+                    <th scope="col">类型</th>
+                    <th scope="col">状态</th>
+                    <th scope="col">路径</th>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={4}>暂无关键帧引用。</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {artifactRows.length ? (
+                    artifactRows.map((row) => (
+                      <tr key={row.key}>
+                        <td>{row.key}</td>
+                        <td>{row.type}</td>
+                        <td>{row.status}</td>
+                        <td className="cell-path">{row.path}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4}>暂无 bundle metadata。</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      </section>
+
+          <div className="panel table-section table-card report-visual-card">
+            <div className="section-heading-row">
+              <h3>可视化产物摘要</h3>
+              <span className="status-pill">{summary?.keyframe_summary.status || "无任务"}</span>
+            </div>
+            <dl className="detail-grid">
+              <div>
+                <dt>关键帧</dt>
+                <dd>
+                  {summary
+                    ? `${summary.keyframe_summary.keyframe_count} 项（${summary.keyframe_summary.status}）`
+                    : "-"}
+                </dd>
+              </div>
+              <div>
+                <dt>标注视频</dt>
+                <dd className="cell-path">{annotatedVideoLabel}</dd>
+              </div>
+            </dl>
+            <div className="table-scroll">
+              <table className="data-table">
+                <caption className="sr-only">关键帧产物引用</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">来源</th>
+                    <th scope="col">帧</th>
+                    <th scope="col">状态</th>
+                    <th scope="col">路径</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {keyframeRows.length ? (
+                    keyframeRows.map((row) => (
+                      <tr key={`${row.source}-${row.frame}-${row.path}`}>
+                        <td>{row.source}</td>
+                        <td>{row.frame}</td>
+                        <td>{row.status}</td>
+                        <td className="cell-path">{row.path}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4}>暂无关键帧引用。</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </CollapsibleSection>
     </>
   );
 }

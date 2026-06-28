@@ -290,59 +290,60 @@ export default function BadCaseCenterPage() {
         ) : null}
         {cases.length > 0 ? (
           <div className="table-scroll">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>坏例</th>
-                <th>Run</th>
-                <th>类型</th>
-                <th>模块</th>
-                <th>状态</th>
-                <th>事件</th>
-                <th>Track</th>
-                <th>帧</th>
-                <th>标签</th>
-                <th>来源</th>
-                <th>失败用例</th>
-                <th>更新时间</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cases.map((badCase) => {
-                const display = buildBadCaseDisplaySummary(badCase);
-                return (
-                  <tr
-                    key={badCase.case_id}
-                    className={selectedCaseId === badCase.case_id ? "selected-row" : ""}
-                  >
-                    <td>
-                      <button
-                        type="button"
-                        onClick={() => loadDetail(badCase.case_id, badCase.run_id)}
-                      >
-                        {display.caseId}
-                      </button>
-                    </td>
-                    <td>{display.runId}</td>
-                    <td>{display.caseType}</td>
-                    <td>{display.module}</td>
-                    <td>
-                      <span className={`status-pill status-${badCase.status}`}>
-                        {display.statusLabel}
-                      </span>
-                    </td>
-                    <td>{display.event}</td>
-                    <td>{display.track}</td>
-                    <td>{display.frame}</td>
-                    <td>{renderTags(badCase.tags)}</td>
-                    <td>{display.source}</td>
-                    <td>{display.linkedFailedCaseId}</td>
-                    <td>{display.updatedAt}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+            <table className="data-table">
+              <caption className="sr-only">坏例列表</caption>
+              <thead>
+                <tr>
+                  <th scope="col">坏例</th>
+                  <th scope="col">Run</th>
+                  <th scope="col">类型</th>
+                  <th scope="col">模块</th>
+                  <th scope="col">状态</th>
+                  <th scope="col">事件</th>
+                  <th scope="col">Track</th>
+                  <th scope="col">帧</th>
+                  <th scope="col">标签</th>
+                  <th scope="col">来源</th>
+                  <th scope="col">失败用例</th>
+                  <th scope="col">更新时间</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cases.map((badCase) => {
+                  const display = buildBadCaseDisplaySummary(badCase);
+                  return (
+                    <tr
+                      key={badCase.case_id}
+                      className={selectedCaseId === badCase.case_id ? "selected-row" : ""}
+                    >
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => loadDetail(badCase.case_id, badCase.run_id)}
+                        >
+                          {display.caseId}
+                        </button>
+                      </td>
+                      <td className="cell-id">{display.runId}</td>
+                      <td>{display.caseType}</td>
+                      <td>{display.module}</td>
+                      <td>
+                        <span className={`status-pill status-${badCase.status}`}>
+                          {display.statusLabel}
+                        </span>
+                      </td>
+                      <td className="cell-id">{display.event}</td>
+                      <td>{display.track}</td>
+                      <td>{display.frame}</td>
+                      <td>{renderTags(badCase.tags)}</td>
+                      <td>{display.source}</td>
+                      <td className="cell-id">{display.linkedFailedCaseId}</td>
+                      <td>{display.updatedAt}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         ) : null}
       </section>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { listAnalysisRuns } from "../api/analysisRuns";
 import { listVideos, startVideoProcessing, uploadVideo } from "../api/videos";
+import CollapsibleSection from "../components/CollapsibleSection";
 import type {
   AnalysisRunSummary,
   DetectionProcessOptions,
@@ -165,97 +166,102 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
                 </option>
               </select>
             </label>
-            <label className="inline-control">
-              <input
-                checked={detectorDryRun}
-                type="checkbox"
-                onChange={(event) => setDetectorDryRun(event.target.checked)}
-              />
-              检测模拟模式
-            </label>
-            <label className="inline-control">
-              <input
-                checked={trackerDryRun}
-                type="checkbox"
-                onChange={(event) => setTrackerDryRun(event.target.checked)}
-              />
-              跟踪模拟模式
-            </label>
-            <label>
-              抽帧步长
-              <input
-                min={1}
-                type="number"
-                value={frameStride}
-                onChange={(event) => setFrameStride(Math.max(1, Number(event.target.value)))}
-              />
-            </label>
-            <label>
-              最大帧数
-              <input
-                min={1}
-                type="number"
-                value={maxFrames}
-                onChange={(event) => setMaxFrames(Math.max(1, Number(event.target.value)))}
-              />
-            </label>
           </div>
-          {processMode === "detection_tracking_trajectory" ? (
-            <div className="toolbar compact">
-              <label>
-                方向窗口
+          <CollapsibleSection title="检测与跟踪参数" className="compact-section">
+            <div className="toolbar">
+              <label className="inline-control">
                 <input
-                  min={2}
-                  type="number"
-                  value={directionWindow}
-                  onChange={(event) =>
-                    setDirectionWindow(Math.max(2, Number(event.target.value)))
-                  }
+                  checked={detectorDryRun}
+                  type="checkbox"
+                  onChange={(event) => setDetectorDryRun(event.target.checked)}
                 />
+                检测模拟模式
+              </label>
+              <label className="inline-control">
+                <input
+                  checked={trackerDryRun}
+                  type="checkbox"
+                  onChange={(event) => setTrackerDryRun(event.target.checked)}
+                />
+                跟踪模拟模式
               </label>
               <label>
-                停留速度阈值
-                <input
-                  min={0}
-                  step={0.1}
-                  type="number"
-                  value={dwellSpeedThreshold}
-                  onChange={(event) =>
-                    setDwellSpeedThreshold(Math.max(0, Number(event.target.value)))
-                  }
-                />
-              </label>
-              <label>
-                最大历史点
+                抽帧步长
                 <input
                   min={1}
-                  placeholder="不限制"
                   type="number"
-                  value={maxHistoryPoints}
-                  onChange={(event) => setMaxHistoryPoints(event.target.value)}
+                  value={frameStride}
+                  onChange={(event) => setFrameStride(Math.max(1, Number(event.target.value)))}
+                />
+              </label>
+              <label>
+                最大帧数
+                <input
+                  min={1}
+                  type="number"
+                  value={maxFrames}
+                  onChange={(event) => setMaxFrames(Math.max(1, Number(event.target.value)))}
                 />
               </label>
             </div>
-          ) : null}
+            {processMode === "detection_tracking_trajectory" ? (
+              <div className="toolbar compact">
+                <label>
+                  方向窗口
+                  <input
+                    min={2}
+                    type="number"
+                    value={directionWindow}
+                    onChange={(event) =>
+                      setDirectionWindow(Math.max(2, Number(event.target.value)))
+                    }
+                  />
+                </label>
+                <label>
+                  停留速度阈值
+                  <input
+                    min={0}
+                    step={0.1}
+                    type="number"
+                    value={dwellSpeedThreshold}
+                    onChange={(event) =>
+                      setDwellSpeedThreshold(Math.max(0, Number(event.target.value)))
+                    }
+                  />
+                </label>
+                <label>
+                  最大历史点
+                  <input
+                    min={1}
+                    placeholder="不限制"
+                    type="number"
+                    value={maxHistoryPoints}
+                    onChange={(event) => setMaxHistoryPoints(event.target.value)}
+                  />
+                </label>
+              </div>
+            ) : null}
+          </CollapsibleSection>
         </div>
         {videos.length === 0 ? (
           <p className="empty-state">暂无视频。请上传一个本地视频开始分析。</p>
         ) : (
           <div className="table-scroll">
             <table className="data-table">
+              <caption className="sr-only">视频列表</caption>
               <thead>
                 <tr>
-                  <th>文件名</th>
-                  <th>状态</th>
-                  <th>FPS</th>
-                  <th>帧数</th>
-                  <th>操作</th>
+                  <th scope="col">文件名</th>
+                  <th scope="col">状态</th>
+                  <th scope="col">FPS</th>
+                  <th scope="col">帧数</th>
+                  <th scope="col">操作</th>
                 </tr>
               </thead>
               <tbody>
                 {videos.map((video) => (
                   <tr key={video.id}>
-                    <td>{video.filename}</td>
+                    <td className="cell-path">{video.filename}</td>
                     <td>
                       <span className={`status-pill status-${statusClassName(video.status)}`}>
                         {video.status}
@@ -294,21 +300,22 @@ export default function VideoCenterPage({ onOpenAnalysisRun }: VideoCenterPagePr
         ) : (
           <div className="table-scroll">
             <table className="data-table">
+              <caption className="sr-only">最近分析任务</caption>
               <thead>
                 <tr>
-                  <th>Run ID</th>
-                  <th>Video ID</th>
-                  <th>状态</th>
-                  <th>更新时间</th>
-                  <th>来源</th>
-                  {onOpenAnalysisRun ? <th>操作</th> : null}
+                  <th scope="col">Run ID</th>
+                  <th scope="col">Video ID</th>
+                  <th scope="col">状态</th>
+                  <th scope="col">更新时间</th>
+                  <th scope="col">来源</th>
+                  {onOpenAnalysisRun ? <th scope="col">操作</th> : null}
                 </tr>
               </thead>
               <tbody>
                 {recentRuns.map((run) => (
                   <tr key={getRunId(run)}>
-                    <td>{getRunId(run)}</td>
-                    <td>{formatValue(run.video_id)}</td>
+                    <td className="cell-id">{getRunId(run)}</td>
+                    <td className="cell-id">{formatValue(run.video_id)}</td>
                     <td>
                       <span className={`status-pill status-${statusClassName(run.status)}`}>
                         {formatValue(run.status)}

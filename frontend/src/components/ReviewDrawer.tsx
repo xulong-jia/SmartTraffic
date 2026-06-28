@@ -119,29 +119,32 @@ function ReviewEventDetailPanel({
         {detail.linked_alerts.length === 0 ? (
           <p className="muted">暂无关联告警。</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>告警</th>
-                <th>状态</th>
-                <th>级别</th>
-                <th>消息</th>
-              </tr>
-            </thead>
-            <tbody>
-              {detail.linked_alerts.map((alert) => (
-                <tr
-                  className={isOpenedAlert(alert, openedAlertId) ? "selected-row" : ""}
-                  key={alert.alert_id || alert.id}
-                >
-                  <td>{alert.alert_id || alert.id}</td>
-                  <td>{alert.status}</td>
-                  <td>{alert.level}</td>
-                  <td>{alert.message}</td>
+          <div className="table-scroll">
+            <table className="data-table">
+              <caption className="sr-only">复核详情关联告警</caption>
+              <thead>
+                <tr>
+                  <th scope="col">告警</th>
+                  <th scope="col">状态</th>
+                  <th scope="col">级别</th>
+                  <th scope="col">消息</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {detail.linked_alerts.map((alert) => (
+                  <tr
+                    className={isOpenedAlert(alert, openedAlertId) ? "selected-row" : ""}
+                    key={alert.alert_id || alert.id}
+                  >
+                    <td className="cell-id">{alert.alert_id || alert.id}</td>
+                    <td>{alert.status}</td>
+                    <td>{alert.level}</td>
+                    <td className="wrap-cell">{alert.message}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 
@@ -177,28 +180,31 @@ function CommentsList({ detail }: { detail: ReviewEventDetail }) {
       {detail.comments.length === 0 ? (
         <p className="muted">暂无复核评论。</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>操作</th>
-              <th>之后状态</th>
-              <th>复核人</th>
-              <th>评论</th>
-              <th>创建时间</th>
-            </tr>
-          </thead>
-          <tbody>
-            {detail.comments.map((item) => (
-              <tr key={item.review_id}>
-                <td>{item.action}</td>
-                <td>{item.after_status}</td>
-                <td>{item.reviewer}</td>
-                <td>{item.comment || "-"}</td>
-                <td>{item.created_at}</td>
+        <div className="table-scroll">
+          <table className="data-table">
+            <caption className="sr-only">复核评论历史</caption>
+            <thead>
+              <tr>
+                <th scope="col">操作</th>
+                <th scope="col">之后状态</th>
+                <th scope="col">复核人</th>
+                <th scope="col">评论</th>
+                <th scope="col">创建时间</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {detail.comments.map((item) => (
+                <tr key={item.review_id}>
+                  <td>{item.action}</td>
+                  <td>{item.after_status}</td>
+                  <td>{item.reviewer}</td>
+                  <td className="wrap-cell">{item.comment || "-"}</td>
+                  <td>{item.created_at}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );

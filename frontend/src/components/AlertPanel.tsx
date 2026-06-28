@@ -53,17 +53,18 @@ export default function AlertPanel({
       {rows.length > 0 ? (
         <div className="table-scroll">
           <table className="data-table">
+            <caption className="sr-only">告警列表</caption>
             <thead>
               <tr>
-                <th>状态</th>
-                <th>级别</th>
-                <th>标题</th>
-                <th>事件</th>
-                <th>Track</th>
-                <th>Run</th>
-                <th>创建时间</th>
-                <th>消息</th>
-                <th>操作</th>
+                <th scope="col">状态</th>
+                <th scope="col">级别</th>
+                <th scope="col">标题</th>
+                <th scope="col">事件</th>
+                <th scope="col">Track</th>
+                <th scope="col">Run</th>
+                <th scope="col">创建时间</th>
+                <th scope="col">消息</th>
+                <th scope="col">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -72,11 +73,7 @@ export default function AlertPanel({
                 const href = buildReviewHref?.(alert) ?? null;
                 const busy = actionAlertId === row.id || actionAlertId === alert.id;
                 return (
-                  <tr
-                    className={row.selected ? "selected-row" : ""}
-                    key={row.id}
-                    onClick={() => onSelectAlert?.(alert)}
-                  >
+                  <tr className={row.selected ? "selected-row" : ""} key={row.id}>
                     <td>
                       <span className={`status-pill status-${statusClassName(alert.status)}`}>
                         {row.status}
@@ -95,6 +92,11 @@ export default function AlertPanel({
                     <td className="wrap-cell">{row.message}</td>
                     <td>
                       <div className="button-group">
+                        {onSelectAlert ? (
+                          <button type="button" onClick={() => onSelectAlert(alert)}>
+                            查看
+                          </button>
+                        ) : null}
                         {onAcknowledge ? (
                           <button
                             disabled={busy || !row.canAcknowledge}

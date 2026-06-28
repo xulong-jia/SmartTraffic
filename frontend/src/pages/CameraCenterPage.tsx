@@ -14,6 +14,7 @@ import {
   startRealtimePreview,
   stopRealtimePreview
 } from "../api/realtime";
+import CollapsibleSection from "../components/CollapsibleSection";
 import type {
   CameraCreatePayload,
   CameraRecord,
@@ -220,69 +221,74 @@ export default function CameraCenterPage() {
           <h3>创建摄像头</h3>
           <div className="card-fill-body">
             <div className="form-grid form-grid-balanced camera-form-grid">
-            <label>
-              名称
-              <input
-                value={form.name}
-                onChange={(event) => setForm({ ...form, name: event.target.value })}
-              />
-            </label>
-            <label>
-              来源
-              <select
-                value={form.source_type}
-                onChange={(event) =>
-                  setForm({ ...form, source_type: event.target.value as CameraSourceType })
-                }
-              >
-                <option value="mock">模拟</option>
-                <option value="file">本地文件</option>
-                <option value="rtsp">RTSP</option>
-                <option value="upload">上传</option>
-              </select>
-            </label>
-            <label>
-              位置
-              <input
-                value={form.location || ""}
-                onChange={(event) => setForm({ ...form, location: event.target.value })}
-              />
-            </label>
-            <label>
-              URL / 路径
-              <input
-                value={form.stream_url || ""}
-                onChange={(event) => setForm({ ...form, stream_url: event.target.value })}
-              />
-            </label>
-            <label>
-              宽度
-              <input
-                min="0"
-                type="number"
-                value={form.width || 0}
-                onChange={(event) => setForm({ ...form, width: Number(event.target.value) })}
-              />
-            </label>
-            <label>
-              高度
-              <input
-                min="0"
-                type="number"
-                value={form.height || 0}
-                onChange={(event) => setForm({ ...form, height: Number(event.target.value) })}
-              />
-            </label>
-            <label>
-              FPS
-              <input
-                min="0"
-                step="0.1"
-                type="number"
-                value={form.fps || 0}
-                onChange={(event) => setForm({ ...form, fps: Number(event.target.value) })}
-              />
-            </label>
+              <label>
+                名称
+                <input
+                  value={form.name}
+                  onChange={(event) => setForm({ ...form, name: event.target.value })}
+                />
+              </label>
+              <label>
+                来源
+                <select
+                  value={form.source_type}
+                  onChange={(event) =>
+                    setForm({ ...form, source_type: event.target.value as CameraSourceType })
+                  }
+                >
+                  <option value="mock">模拟</option>
+                  <option value="file">本地文件</option>
+                  <option value="rtsp">RTSP</option>
+                  <option value="upload">上传</option>
+                </select>
+              </label>
+              <label>
+                位置
+                <input
+                  value={form.location || ""}
+                  onChange={(event) => setForm({ ...form, location: event.target.value })}
+                />
+              </label>
+              <label>
+                URL / 路径
+                <input
+                  value={form.stream_url || ""}
+                  onChange={(event) => setForm({ ...form, stream_url: event.target.value })}
+                />
+              </label>
+            </div>
+            <CollapsibleSection title="高级参数" className="compact-section">
+              <div className="form-grid form-grid-balanced camera-form-grid">
+                <label>
+                  宽度
+                  <input
+                    min="0"
+                    type="number"
+                    value={form.width || 0}
+                    onChange={(event) => setForm({ ...form, width: Number(event.target.value) })}
+                  />
+                </label>
+                <label>
+                  高度
+                  <input
+                    min="0"
+                    type="number"
+                    value={form.height || 0}
+                    onChange={(event) => setForm({ ...form, height: Number(event.target.value) })}
+                  />
+                </label>
+                <label>
+                  FPS
+                  <input
+                    min="0"
+                    step="0.1"
+                    type="number"
+                    value={form.fps || 0}
+                    onChange={(event) => setForm({ ...form, fps: Number(event.target.value) })}
+                  />
+                </label>
+              </div>
+            </CollapsibleSection>
             <button
               className="camera-form-submit"
               type="button"
@@ -291,7 +297,6 @@ export default function CameraCenterPage() {
             >
               创建
             </button>
-            </div>
           </div>
         </div>
 
@@ -361,13 +366,14 @@ export default function CameraCenterPage() {
         <h3>最近帧</h3>
         <div className="table-scroll">
           <table className="data-table">
+            <caption className="sr-only">最近摄像头帧</caption>
             <thead>
               <tr>
-                <th>帧</th>
-                <th>来源</th>
-                <th>状态</th>
-                <th>时间戳</th>
-                <th>说明</th>
+                <th scope="col">帧</th>
+                <th scope="col">来源</th>
+                <th scope="col">状态</th>
+                <th scope="col">时间戳</th>
+                <th scope="col">说明</th>
               </tr>
             </thead>
             <tbody>
@@ -394,12 +400,13 @@ export default function CameraCenterPage() {
           <h3>最近事件</h3>
           <div className="table-scroll">
             <table className="data-table">
+              <caption className="sr-only">最近摄像头事件</caption>
               <thead>
                 <tr>
-                  <th>类型</th>
-                  <th>严重程度</th>
-                  <th>帧</th>
-                  <th>状态</th>
+                  <th scope="col">类型</th>
+                  <th scope="col">严重程度</th>
+                  <th scope="col">帧</th>
+                  <th scope="col">状态</th>
                 </tr>
               </thead>
               <tbody>
@@ -424,12 +431,13 @@ export default function CameraCenterPage() {
           <h3>最近告警</h3>
           <div className="table-scroll">
             <table className="data-table">
+              <caption className="sr-only">最近摄像头告警</caption>
               <thead>
                 <tr>
-                  <th>级别</th>
-                  <th>类型</th>
-                  <th>状态</th>
-                  <th>消息</th>
+                  <th scope="col">级别</th>
+                  <th scope="col">类型</th>
+                  <th scope="col">状态</th>
+                  <th scope="col">消息</th>
                 </tr>
               </thead>
               <tbody>
