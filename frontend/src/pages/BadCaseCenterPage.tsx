@@ -212,7 +212,7 @@ export default function BadCaseCenterPage() {
         </button>
       </header>
 
-      <section className="panel">
+      <section className="panel table-section">
         <div className="toolbar">
           <label>
             Run ID
@@ -267,7 +267,7 @@ export default function BadCaseCenterPage() {
         {successMessage ? <p className="alert-box success">{successMessage}</p> : null}
         {loading ? <p className="muted">正在加载坏例...</p> : null}
         {summary ? (
-          <div className="metric-row review-metric-row">
+          <div className="metric-row review-metric-row summary-grid">
             <MetricCard label="总数" value={String(summary.total)} />
             <MetricCard label="未处理" value={String(summary.by_status.open ?? 0)} />
             <MetricCard label="已修复" value={String(summary.by_status.fixed ?? 0)} />
@@ -347,7 +347,7 @@ export default function BadCaseCenterPage() {
         ) : null}
       </section>
 
-      <section className="grid two content-grid bad-case-workspace">
+      <section className="grid two content-grid bad-case-workspace balanced-grid">
         <div className="panel">
           <div className="section-heading-row">
             <h3>详情</h3>

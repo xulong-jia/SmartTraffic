@@ -257,7 +257,7 @@ export default function EvaluationCenterPage() {
         {successMessage ? (
           <p className="alert-box success">{successMessage}</p>
         ) : null}
-        <div className="metric-row">
+        <div className="metric-row summary-grid">
           <MetricCard label="结果" value={String(results?.total ?? 0)} />
           <MetricCard label="可用" value={String(statusCounts.available)} />
           <MetricCard label="数据不足" value={String(statusCounts.insufficient_data)} />
@@ -275,7 +275,7 @@ export default function EvaluationCenterPage() {
           <p className="muted">{formatEvaluationBoundaryForType(String(evaluationType))}</p>
         </div>
         {metricCards.length > 0 ? (
-          <div className="metric-row evaluation-card-grid">
+          <div className="metric-row evaluation-card-grid summary-grid">
             {metricCards.map((card) => (
               <MetricCard
                 key={card.key}
@@ -287,8 +287,8 @@ export default function EvaluationCenterPage() {
         ) : null}
       </section>
 
-      <div className="grid two content-grid">
-        <section className="panel">
+      <div className="grid two content-grid balanced-grid">
+        <section className="panel table-section">
           <div className="section-heading-row">
             <h3>数据集</h3>
           </div>
@@ -375,7 +375,7 @@ export default function EvaluationCenterPage() {
           <DatasetTable data={datasets} />
         </section>
 
-        <section className="panel">
+        <section className="panel table-section">
           <div className="section-heading-row">
             <h3>评测任务</h3>
           </div>
@@ -383,15 +383,15 @@ export default function EvaluationCenterPage() {
         </section>
       </div>
 
-      <section className="panel">
+      <section className="panel table-section">
         <div className="section-heading-row">
           <h3>评测结果</h3>
         </div>
         <ResultsTable data={results} />
       </section>
 
-      <div className="grid two content-grid">
-        <section className="panel">
+      <div className="grid two content-grid balanced-grid">
+        <section className="panel table-section">
           <div className="section-heading-row">
             <h3>失败用例</h3>
           </div>
@@ -408,7 +408,7 @@ export default function EvaluationCenterPage() {
           </div>
           {summary ? (
             <>
-              <div className="metric-row evaluation-card-grid">
+              <div className="metric-row evaluation-card-grid summary-grid">
                 {regressionCards.map((card) => (
                   <MetricCard
                     key={card.key}
