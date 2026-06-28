@@ -369,7 +369,7 @@ export default function ReviewCenterPage({
         </div>
       </header>
 
-      <section className="panel">
+      <section className="panel review-filter-card">
         <div className="form-grid">
           <label>
             Run ID
@@ -420,8 +420,8 @@ export default function ReviewCenterPage({
         ) : null}
       </section>
 
-      <div className="grid two content-grid review-workspace">
-        <section className="panel">
+      <div className="review-workspace-grid">
+        <section className="panel card-fill review-event-list-card">
           <div className="section-heading-row">
             <h3>事件列表</h3>
             {eventsData ? <span className="muted">{eventsData.total} 条</span> : null}
@@ -479,12 +479,12 @@ export default function ReviewCenterPage({
         />
       </div>
 
-      <section className="panel">
+      <section className="panel false-negative-card">
         <div className="section-heading-row">
           <h3>添加漏报</h3>
           <span className="muted">仅记录本地复核产物</span>
         </div>
-        <div className="form-grid">
+        <div className="false-negative-form-grid">
           <label>
             Run ID
             <input
@@ -555,18 +555,20 @@ export default function ReviewCenterPage({
               onChange={(event) => updateFalseNegativeField("end_time_ms", event.target.value)}
             />
           </label>
+          <label className="full-span">
+            描述
+            <textarea
+              rows={3}
+              value={falseNegativeForm.description}
+              onChange={(event) => updateFalseNegativeField("description", event.target.value)}
+            />
+          </label>
         </div>
-        <label className="stacked-control">
-          描述
-          <textarea
-            rows={3}
-            value={falseNegativeForm.description}
-            onChange={(event) => updateFalseNegativeField("description", event.target.value)}
-          />
-        </label>
-        <button type="button" disabled={submitting !== null} onClick={submitFalseNegative}>
-          添加漏报
-        </button>
+        <div className="button-group false-negative-actions">
+          <button type="button" disabled={submitting !== null} onClick={submitFalseNegative}>
+            添加漏报
+          </button>
+        </div>
       </section>
     </>
   );

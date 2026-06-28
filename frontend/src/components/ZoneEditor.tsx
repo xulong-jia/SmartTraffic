@@ -185,8 +185,8 @@ export default function ZoneEditor() {
       {error ? <div className="alert-box error">{error}</div> : null}
       {message ? <div className="alert-box success">{message}</div> : null}
 
-      <div className="grid zone-editor-grid">
-        <section className="panel zone-editor-canvas-panel">
+      <div className="zone-workspace-grid">
+        <section className="panel card-fill zone-editor-canvas-panel">
           <div className="section-heading-row">
             <div>
               <h3>区域画布</h3>
@@ -254,7 +254,7 @@ export default function ZoneEditor() {
           </div>
         </section>
 
-        <section className="panel">
+        <section className="panel zone-form-card">
           <div className="section-heading-row">
             <h3>{zoneState.id ? "编辑区域" : "新建区域"}</h3>
             <button onClick={() => setZoneState(createEmptyZoneEditorState())} type="button">

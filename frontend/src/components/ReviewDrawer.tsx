@@ -31,7 +31,7 @@ export default function ReviewDrawer({
   onAction
 }: ReviewDrawerProps) {
   return (
-    <section className="panel review-drawer" aria-label="Review drawer">
+    <section className="panel card-fill review-drawer" aria-label="Review drawer">
       <div className="section-heading-row">
         <h3>复核详情</h3>
         {loading ? <span className="muted">加载中</span> : null}
