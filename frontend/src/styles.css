@@ -1599,7 +1599,20 @@ tbody tr:hover td {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 22px;
-  align-items: start;
+  align-items: stretch;
+}
+
+.balanced-grid > .panel,
+.balanced-grid > .card,
+.balanced-grid > section,
+.balanced-grid > div {
+  height: 100%;
+}
+
+.card-fill {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
 }
 
 .summary-grid {
@@ -1653,24 +1666,72 @@ tbody tr:hover td {
   min-width: 760px;
 }
 
+.form-grid-balanced {
+  align-items: end;
+}
+
+.form-grid-balanced button {
+  align-self: end;
+  justify-self: stretch;
+  width: 100%;
+}
+
+.camera-overview-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.camera-create-panel .form-grid {
+  margin-bottom: 0;
+}
+
+.camera-preview-panel .toolbar {
+  margin-bottom: 16px;
+}
+
+.camera-preview-panel .detail-grid {
+  margin-bottom: 18px;
+}
+
+.camera-status-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: auto;
+  margin-bottom: 0;
+}
+
+.camera-status-grid .metric-card {
+  min-height: 128px;
+}
+
 .analysis-hero-grid {
   grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr);
   gap: 24px;
-  align-items: start;
+  align-items: stretch;
+}
+
+.analysis-hero-grid .video-overlay-panel,
+.analysis-hero-grid .event-timeline {
+  height: 100%;
 }
 
 .event-timeline {
+  display: flex;
+  flex-direction: column;
   max-height: 680px;
 }
 
 .bad-case-workspace {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: start;
+  align-items: stretch;
 }
 
 .evaluation-card-grid .metric-card,
 .summary-grid .metric-card {
   min-height: 120px;
+}
+
+.report-summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .report-artifact-grid {

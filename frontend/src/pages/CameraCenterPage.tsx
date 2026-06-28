@@ -215,10 +215,10 @@ export default function CameraCenterPage() {
       {error ? <p className="status-pill status-error">{error}</p> : null}
       {successMessage ? <p className="status-pill status-completed">{successMessage}</p> : null}
 
-      <section className="grid two content-grid">
-        <div className="panel">
+      <section className="grid two content-grid balanced-grid camera-overview-grid">
+        <div className="panel card-fill camera-create-panel">
           <h3>创建摄像头</h3>
-          <div className="form-grid">
+          <div className="form-grid form-grid-balanced camera-form-grid">
             <label>
               名称
               <input
@@ -282,13 +282,18 @@ export default function CameraCenterPage() {
                 onChange={(event) => setForm({ ...form, fps: Number(event.target.value) })}
               />
             </label>
+            <button
+              className="camera-form-submit"
+              type="button"
+              onClick={submitCamera}
+              disabled={loading || !form.name.trim()}
+            >
+              创建
+            </button>
           </div>
-          <button type="button" onClick={submitCamera} disabled={loading || !form.name.trim()}>
-            创建
-          </button>
         </div>
 
-        <div className="panel">
+        <div className="panel card-fill camera-preview-panel">
           <h3>实时预览</h3>
           <div className="toolbar">
             <label>
@@ -338,7 +343,7 @@ export default function CameraCenterPage() {
             </dl>
           ) : null}
 
-          <div className="metric-row">
+          <div className="metric-row camera-status-grid">
             {statusCards.map((card) => (
               <RealtimeMetricCard key={card.label} label={card.label} value={card.value} />
             ))}
@@ -378,7 +383,7 @@ export default function CameraCenterPage() {
         </div>
       </section>
 
-      <section className="grid two content-grid">
+      <section className="grid two content-grid balanced-grid camera-list-grid">
         <div className="panel">
           <h3>最近事件</h3>
           <div className="table-scroll">

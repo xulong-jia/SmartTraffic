@@ -279,7 +279,7 @@ export default function ReportCenterPage() {
             <h3>摘要</h3>
             <span className="status-pill">{summary?.run.status || "无任务"}</span>
           </div>
-          <div className="metric-row summary-grid">
+          <div className="metric-row summary-grid report-summary-grid">
             {summaryCards.map((card) => {
               const label = splitMetricLabel(card.label);
               return (
