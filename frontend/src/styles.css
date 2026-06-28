@@ -1627,3 +1627,268 @@ tbody tr:hover td {
     padding: 18px;
   }
 }
+
+@page {
+  size: A4 landscape;
+  margin: 10mm;
+}
+
+@media print {
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-width: 1200px;
+    background: #eef6ff !important;
+  }
+
+  body {
+    background:
+      linear-gradient(135deg, #eef6ff 0%, #f8fbff 45%, #edf5fc 100%) !important;
+  }
+
+  .app-shell {
+    display: grid !important;
+    grid-template-columns: 220px minmax(0, 1fr) !important;
+    min-width: 1200px;
+    min-height: auto;
+  }
+
+  .sidebar {
+    position: static !important;
+    width: 220px !important;
+    min-width: 220px !important;
+    height: auto !important;
+    min-height: auto;
+    gap: 14px;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    padding: 16px 10px !important;
+  }
+
+  .sidebar > div:first-child {
+    padding: 12px !important;
+  }
+
+  nav {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 5px !important;
+  }
+
+  nav button {
+    min-height: 32px !important;
+    padding: 7px 10px !important;
+    font-size: 11px !important;
+  }
+
+  .workspace,
+  .main-content,
+  .page-shell {
+    max-width: none !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    padding: 14px 16px !important;
+  }
+
+  .page-header {
+    align-items: center !important;
+    flex-direction: row !important;
+    gap: 18px !important;
+    margin-bottom: 14px !important;
+    padding: 16px 18px !important;
+  }
+
+  h1 {
+    font-size: 17px !important;
+  }
+
+  h2 {
+    font-size: 24px !important;
+  }
+
+  h3 {
+    font-size: 15px !important;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .grid.two,
+  .review-workspace,
+  .bad-case-workspace,
+  .analysis-content-grid,
+  .zone-editor-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr) !important;
+    gap: 14px !important;
+  }
+
+  .analysis-hero-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr) !important;
+    gap: 14px !important;
+  }
+
+  .metric-row,
+  .metric-grid {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .panel,
+  .card,
+  .metric-card,
+  .metric-row .card,
+  .table-shell,
+  .summary-strip,
+  .info-callout,
+  .warning-callout,
+  .empty-state,
+  .timeline-item {
+    border: 1px solid rgba(148, 163, 184, 0.28) !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08) !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .panel,
+  .card {
+    padding: 14px !important;
+  }
+
+  .metric-card,
+  .metric-row .card {
+    min-height: 92px !important;
+    padding: 12px !important;
+  }
+
+  .metric-value {
+    font-size: 24px !important;
+  }
+
+  .metric-label,
+  .metric-row .card strong,
+  .metric-subvalue {
+    font-size: 10px !important;
+  }
+
+  .page-header,
+  .metric-card,
+  .card,
+  .table-shell,
+  .summary-strip,
+  .info-callout,
+  .warning-callout,
+  .video-overlay-panel,
+  .event-timeline {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .table-scroll {
+    overflow: visible !important;
+    width: 100% !important;
+  }
+
+  table,
+  .data-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: auto !important;
+    border-spacing: 0 4px !important;
+    font-size: 10px !important;
+  }
+
+  .data-table th,
+  .data-table td,
+  th,
+  td {
+    padding: 5px 7px !important;
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    overflow-wrap: normal !important;
+  }
+
+  .data-table td.wrap-cell,
+  .cell-id,
+  .mono,
+  code {
+    white-space: normal !important;
+    word-break: break-all !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .cell-id,
+  .mono,
+  code {
+    font-size: 9px !important;
+  }
+
+  th {
+    position: static !important;
+    background: #eef6ff !important;
+  }
+
+  td {
+    background: rgba(255, 255, 255, 0.86) !important;
+  }
+
+  button,
+  .button,
+  .button-group a,
+  input,
+  select,
+  textarea {
+    box-shadow: none !important;
+  }
+
+  td button,
+  .toolbar button,
+  .section-heading-row button {
+    min-height: 28px !important;
+    padding: 5px 8px !important;
+    font-size: 10px !important;
+  }
+
+  .toolbar,
+  .button-group,
+  .overlay-data-grid {
+    gap: 7px !important;
+  }
+
+  .json-panel,
+  .json-preview,
+  .compact-json,
+  .timeline-list {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .video-overlay-stage,
+  .zone-canvas {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .no-print,
+  .print-hidden {
+    display: none !important;
+  }
+}
