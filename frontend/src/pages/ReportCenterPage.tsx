@@ -204,8 +204,8 @@ export default function ReportCenterPage() {
         </button>
       </header>
 
-      <section className="panel">
-        <div className="toolbar">
+      <section className="panel report-toolbar-card">
+        <div className="toolbar report-toolbar">
           <label>
             分析任务
             <select
@@ -273,8 +273,8 @@ export default function ReportCenterPage() {
         <p className="muted">{buildEmptyReportState(summary)}</p>
       </section>
 
-      <section className="grid two content-grid balanced-grid">
-        <div className="panel">
+      <section className="page-grid-2 report-summary-export-grid">
+        <div className="panel card-fill report-summary-card">
           <div className="section-heading-row">
             <h3>摘要</h3>
             <span className="status-pill">{summary?.run.status || "无任务"}</span>
@@ -315,7 +315,7 @@ export default function ReportCenterPage() {
           </dl>
         </div>
 
-        <div className="panel table-section">
+        <div className="panel table-section card-fill report-export-card">
           <div className="section-heading-row">
             <h3>导出区块</h3>
             <span className="status-pill">{sectionOptions.length} 个区块</span>
@@ -347,8 +347,8 @@ export default function ReportCenterPage() {
         </div>
       </section>
 
-      <section className="grid two content-grid balanced-grid">
-        <div className="panel">
+      <section className="report-metadata-stack">
+        <div className="panel report-metadata-card">
           <h3>报告指标</h3>
           <dl className="detail-grid">
             <div>
@@ -370,7 +370,7 @@ export default function ReportCenterPage() {
           </dl>
         </div>
 
-        <div className="panel">
+        <div className="panel report-metadata-card">
           <h3>JSON 预览</h3>
           {jsonMetadata.length ? (
             <dl className="detail-grid">
@@ -388,8 +388,8 @@ export default function ReportCenterPage() {
         </div>
       </section>
 
-      <section className="grid two content-grid report-artifact-grid">
-        <div className="panel table-section">
+      <section className="report-metadata-stack report-artifact-stack">
+        <div className="panel table-section table-card report-bundle-card">
           <div className="section-heading-row">
             <h3>报告包</h3>
             <span className="status-pill">{activeBundle?.schema_version || "无 bundle"}</span>
@@ -425,7 +425,7 @@ export default function ReportCenterPage() {
           </div>
         </div>
 
-        <div className="panel table-section">
+        <div className="panel table-section table-card report-visual-card">
           <div className="section-heading-row">
             <h3>可视化产物摘要</h3>
             <span className="status-pill">{summary?.keyframe_summary.status || "无任务"}</span>

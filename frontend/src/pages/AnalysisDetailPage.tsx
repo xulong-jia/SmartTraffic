@@ -423,7 +423,7 @@ export default function AnalysisDetailPage({
           <p>查看检测、跟踪、轨迹、事件证据和分析产物。</p>
         </div>
       </header>
-      <div className="grid two content-grid review-workspace analysis-hero-grid">
+      <div className="page-grid-2 analysis-hero-grid">
         <VideoPlayerWithOverlay
           currentTimeMs={currentTimeMs}
           detections={overlayData.detections}
@@ -439,7 +439,7 @@ export default function AnalysisDetailPage({
           width={overlaySize.width}
           zones={overlayData.zones}
         />
-        <div className="grid">
+        <div className="analysis-timeline-column card-fill">
           <EventTimeline
             displayLimit={TIMELINE_PREVIEW_LIMIT}
             error={eventsError}
@@ -454,7 +454,7 @@ export default function AnalysisDetailPage({
           />
         </div>
       </div>
-      <section className="analysis-summary-grid summary-grid">
+      <section className="summary-grid analysis-summary-grid">
         <SummaryCard title="叠加数据">
           {zonesError ? <p className="alert-box error">{zonesError}</p> : null}
           {zonesLoading ? <p className="muted">正在加载区域...</p> : null}
@@ -520,7 +520,7 @@ export default function AnalysisDetailPage({
       </section>
 
       <section className="analysis-business-results">
-        <section className="panel table-section">
+        <section className="panel table-section table-card">
           <div className="section-heading-row">
             <h3>事件列表</h3>
             <span className="status-pill">{events.length} 个事件</span>
@@ -548,7 +548,7 @@ export default function AnalysisDetailPage({
           )}
         </section>
 
-        <section className="panel table-section">
+        <section className="panel table-section table-card">
           <div className="section-heading-row">
             <h3>告警列表</h3>
             <span className="status-pill">{alerts.length} 个告警</span>

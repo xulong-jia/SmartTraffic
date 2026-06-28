@@ -215,10 +215,11 @@ export default function CameraCenterPage() {
       {error ? <p className="status-pill status-error">{error}</p> : null}
       {successMessage ? <p className="status-pill status-completed">{successMessage}</p> : null}
 
-      <section className="grid two content-grid balanced-grid camera-overview-grid">
+      <section className="page-grid-2 camera-top-grid camera-overview-grid">
         <div className="panel card-fill camera-create-panel">
           <h3>创建摄像头</h3>
-          <div className="form-grid form-grid-balanced camera-form-grid">
+          <div className="card-fill-body">
+            <div className="form-grid form-grid-balanced camera-form-grid">
             <label>
               名称
               <input
@@ -290,63 +291,68 @@ export default function CameraCenterPage() {
             >
               创建
             </button>
+            </div>
           </div>
         </div>
 
         <div className="panel card-fill camera-preview-panel">
           <h3>实时预览</h3>
-          <div className="toolbar">
-            <label>
-              摄像头
-              <select
-                value={selectedCameraId}
-                onChange={(event) => void setSelectedCamera(event.target.value)}
-              >
-                <option value="">选择摄像头</option>
-                {cameras.map((camera) => (
-                  <option key={camera.id} value={camera.id}>
-                    {camera.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              onClick={startSelectedCamera}
-              disabled={loading || Boolean(startDisabledReason)}
-              title={startDisabledReason || "启动预览"}
-            >
-              启动
-            </button>
-            <button type="button" onClick={stopSelectedCamera} disabled={loading || !selectedCamera}>
-              停止
-            </button>
-            <button type="button" onClick={toggleSelectedCamera} disabled={loading || !selectedCamera}>
-              {selectedCamera?.enabled ? "停用" : "启用"}
-            </button>
-          </div>
+          <div className="card-fill-body camera-preview-body">
+            <div className="camera-preview-controls">
+              <div className="toolbar">
+                <label>
+                  摄像头
+                  <select
+                    value={selectedCameraId}
+                    onChange={(event) => void setSelectedCamera(event.target.value)}
+                  >
+                    <option value="">选择摄像头</option>
+                    {cameras.map((camera) => (
+                      <option key={camera.id} value={camera.id}>
+                        {camera.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={startSelectedCamera}
+                  disabled={loading || Boolean(startDisabledReason)}
+                  title={startDisabledReason || "启动预览"}
+                >
+                  启动
+                </button>
+                <button type="button" onClick={stopSelectedCamera} disabled={loading || !selectedCamera}>
+                  停止
+                </button>
+                <button type="button" onClick={toggleSelectedCamera} disabled={loading || !selectedCamera}>
+                  {selectedCamera?.enabled ? "停用" : "启用"}
+                </button>
+              </div>
 
-          {selectedCamera ? (
-            <dl className="detail-grid">
-              <div>
-                <dt>来源</dt>
-                <dd>{formatCameraSourceLabel(selectedCamera.source_type)}</dd>
-              </div>
-              <div>
-                <dt>脱敏流地址</dt>
-                <dd>{buildMaskedStreamDisplay(selectedCamera)}</dd>
-              </div>
-              <div>
-                <dt>启用状态</dt>
-                <dd>{selectedCamera.enabled ? "是" : "否"}</dd>
-              </div>
-            </dl>
-          ) : null}
+              {selectedCamera ? (
+                <dl className="detail-grid camera-source-grid">
+                  <div>
+                    <dt>来源</dt>
+                    <dd>{formatCameraSourceLabel(selectedCamera.source_type)}</dd>
+                  </div>
+                  <div>
+                    <dt>脱敏流地址</dt>
+                    <dd>{buildMaskedStreamDisplay(selectedCamera)}</dd>
+                  </div>
+                  <div>
+                    <dt>启用状态</dt>
+                    <dd>{selectedCamera.enabled ? "是" : "否"}</dd>
+                  </div>
+                </dl>
+              ) : null}
+            </div>
 
-          <div className="metric-row camera-status-grid">
-            {statusCards.map((card) => (
-              <RealtimeMetricCard key={card.label} label={card.label} value={card.value} />
-            ))}
+            <div className="metric-row status-grid-2x2 camera-status-grid">
+              {statusCards.map((card) => (
+                <RealtimeMetricCard key={card.label} label={card.label} value={card.value} />
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -383,7 +389,7 @@ export default function CameraCenterPage() {
         </div>
       </section>
 
-      <section className="grid two content-grid balanced-grid camera-list-grid">
+      <section className="page-grid-2 camera-list-grid">
         <div className="panel">
           <h3>最近事件</h3>
           <div className="table-scroll">

@@ -212,7 +212,7 @@ export default function BadCaseCenterPage() {
         </button>
       </header>
 
-      <section className="panel table-section">
+      <section className="panel table-section bad-case-list-card">
         <div className="toolbar">
           <label>
             Run ID
@@ -267,7 +267,7 @@ export default function BadCaseCenterPage() {
         {successMessage ? <p className="alert-box success">{successMessage}</p> : null}
         {loading ? <p className="muted">正在加载坏例...</p> : null}
         {summary ? (
-          <div className="metric-row review-metric-row summary-grid">
+          <div className="summary-grid bad-case-summary-grid">
             <MetricCard label="总数" value={String(summary.total)} />
             <MetricCard label="未处理" value={String(summary.by_status.open ?? 0)} />
             <MetricCard label="已修复" value={String(summary.by_status.fixed ?? 0)} />
@@ -347,8 +347,8 @@ export default function BadCaseCenterPage() {
         ) : null}
       </section>
 
-      <section className="grid two content-grid bad-case-workspace balanced-grid">
-        <div className="panel">
+      <section className="page-grid-2 bad-case-workspace">
+        <div className="panel card-fill bad-case-detail-card">
           <div className="section-heading-row">
             <h3>详情</h3>
             {loadingDetail ? <span className="muted">加载中</span> : null}
@@ -356,7 +356,7 @@ export default function BadCaseCenterPage() {
           {detailError ? <p className="alert-box error">{detailError}</p> : null}
           {detail ? (
             <>
-              <dl className="detail-grid">
+              <dl className="detail-grid bad-case-detail-grid">
                 <DetailItem label="Case ID" value={detail.case_id} />
                 <DetailItem label="Run ID" value={detail.run_id} />
                 <DetailItem label="描述" value={detail.description} />
@@ -372,7 +372,7 @@ export default function BadCaseCenterPage() {
                 <DetailItem label="创建时间" value={detail.created_at} />
                 <DetailItem label="更新时间" value={detail.updated_at} />
               </dl>
-              <div className="summary-strip">
+              <div className="summary-strip bad-case-update-grid">
                 <label className="stacked-control">
                   状态
                   <select
@@ -437,9 +437,9 @@ export default function BadCaseCenterPage() {
           )}
         </div>
 
-        <div className="panel">
+        <div className="panel card-fill bad-case-create-card">
           <h3>创建坏例</h3>
-          <div className="grid two">
+          <div className="bad-case-create-grid">
             <TextInput label="Run ID" field="run_id" form={createForm} setForm={setCreateForm} />
             <label className="stacked-control">
               类型
