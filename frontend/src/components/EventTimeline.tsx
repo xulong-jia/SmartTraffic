@@ -13,6 +13,7 @@ interface EventTimelineProps {
   selectedEventId?: string | null;
   loading?: boolean;
   error?: string;
+  displayLimit?: number;
   onSelectEvent: (eventId: string, event: EventRecord) => void;
   onSeek: (timeMs: number) => void;
 }
@@ -22,6 +23,7 @@ export default function EventTimeline({
   selectedEventId = null,
   loading = false,
   error = "",
+  displayLimit,
   onSelectEvent,
   onSeek
 }: EventTimelineProps) {
@@ -33,6 +35,8 @@ export default function EventTimeline({
     severity: severityFilter || undefined,
     status: statusFilter || undefined
   });
+  const displayedEvents = displayLimit ? visibleEvents.slice(0, displayLimit) : visibleEvents;
+  const hiddenCount = Math.max(0, visibleEvents.length - displayedEvents.length);
 
   return (
     <section className="panel event-timeline">
@@ -78,9 +82,9 @@ export default function EventTimeline({
       {loading ? <p className="muted">正在加载事件...</p> : null}
       {error ? <p>{error}</p> : null}
       {visibleEvents.length === 0 && !loading ? <p className="muted">暂无事件。请先运行一次视频分析。</p> : null}
-      {visibleEvents.length > 0 ? (
+      {displayedEvents.length > 0 ? (
         <div className="timeline-list">
-          {visibleEvents.map((event, index) => {
+          {displayedEvents.map((event, index) => {
             const eventId = getEventId(event, index);
             const selected = eventId === selectedEventId;
             const seekTime = getEventSeekTimeMs(event);
@@ -104,6 +108,9 @@ export default function EventTimeline({
             );
           })}
         </div>
+      ) : null}
+      {hiddenCount > 0 ? (
+        <p className="muted">共 {visibleEvents.length} 个事件，可在下方事件列表查看全部。</p>
       ) : null}
     </section>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import {
   generateAlerts,
@@ -69,6 +69,9 @@ const alertColumns = [
   "frame_index",
   "timestamp_ms"
 ] as const;
+
+const TIMELINE_PREVIEW_LIMIT = 7;
+const TABLE_PREVIEW_LIMIT = 10;
 
 interface AnalysisDetailPageProps {
   initialRunId?: string;
@@ -404,6 +407,13 @@ export default function AnalysisDetailPage({
   });
   const overlaySize = inferOverlaySize({ detections, tracks, zones });
   const videoUrl = normalizeVideoUrl(runSummary?.artifact_paths?.annotated_video);
+  const events = eventsData?.events ?? [];
+  const alerts = alertsData?.alerts ?? [];
+  const eventEvidenceCount = eventsData?.event_evidence.length ?? 0;
+  const ruleExecutions = eventsData?.rule_executions ?? [];
+  const matchedRuleExecutions = countRowsByStatus(ruleExecutions, "matched");
+  const skippedRuleExecutions = countRowsByStatus(ruleExecutions, "skipped");
+  const artifactSummary = runSummary?.artifact_summary;
 
   return (
     <>
@@ -431,6 +441,7 @@ export default function AnalysisDetailPage({
         />
         <div className="grid">
           <EventTimeline
+            displayLimit={TIMELINE_PREVIEW_LIMIT}
             error={eventsError}
             events={overlayData.events}
             loading={eventsLoading}
@@ -443,72 +454,172 @@ export default function AnalysisDetailPage({
           />
         </div>
       </div>
-      <section className="panel overlay-data-panel">
-        <div className="section-heading-row">
-          <h3>叠加数据</h3>
-          {zonesLoading ? <span className="muted">正在加载区域...</span> : null}
-        </div>
-        {zonesError ? <p className="alert-box error">{zonesError}</p> : null}
-        <div className="overlay-data-grid">
-          <span className="status-pill">{overlayData.detections.length} 检测帧</span>
-          <span className="status-pill">{overlayData.tracks.length} 跟踪帧</span>
-          <span className="status-pill">{overlayData.trajectoryFrames.length} 轨迹帧</span>
-          <span className="status-pill">{overlayData.zones.length} 区域</span>
-        </div>
+      <section className="analysis-summary-grid summary-grid">
+        <SummaryCard title="叠加数据">
+          {zonesError ? <p className="alert-box error">{zonesError}</p> : null}
+          {zonesLoading ? <p className="muted">正在加载区域...</p> : null}
+          <SummaryMetric label="检测帧" value={overlayData.detections.length} />
+          <SummaryMetric label="跟踪帧" value={overlayData.tracks.length} />
+          <SummaryMetric label="轨迹帧" value={overlayData.trajectoryFrames.length} />
+          <SummaryMetric label="区域数" value={overlayData.zones.length} />
+        </SummaryCard>
+        <SummaryCard title="任务摘要">
+          <label className="stacked-control">
+            分析任务 ID
+            <select
+              value={selectedRunId}
+              onChange={(event) => setSelectedRunId(event.target.value)}
+            >
+              <option value="">未选择分析任务</option>
+              {selectedRunId && !runs.some((run) => getRunId(run) === selectedRunId) ? (
+                <option value={selectedRunId}>{selectedRunId}</option>
+              ) : null}
+              {runs.map((run) => (
+                <option key={getRunId(run)} value={getRunId(run)}>
+                  {getRunId(run)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {runsLoading ? <p className="muted">正在加载任务索引...</p> : null}
+          {runsError ? <p className="alert-box error">{runsError}</p> : null}
+          {runSummaryError ? <p className="alert-box error">{runSummaryError}</p> : null}
+          {runs.length === 0 && !runsLoading ? (
+            <p className="empty-state">暂无分析任务。请先在视频中心上传视频并启动分析。</p>
+          ) : null}
+          <SummaryMetric label="run_id" value={runSummary ? getRunId(runSummary) : selectedRunId || "-"} />
+          <SummaryMetric label="状态" value={runSummaryLoading ? "加载中" : runSummary?.status} />
+          <SummaryMetric label="来源" value={runSummary?.source} />
+        </SummaryCard>
+        <SummaryCard title="轨迹摘要">
+          {trajectoryLoading ? <p className="muted">正在加载轨迹...</p> : null}
+          {trajectoryError ? <p className="alert-box error">{trajectoryError}</p> : null}
+          <SummaryMetric label="帧数" value={trajectoryData?.summary.total_frames_processed} />
+          <SummaryMetric label="轨迹点" value={trajectoryData?.summary.total_trajectory_points} />
+          <SummaryMetric label="唯一 ID" value={trajectoryData?.summary.unique_track_ids} />
+        </SummaryCard>
+        <SummaryCard title="事件摘要">
+          {eventsLoading ? <p className="muted">正在加载事件...</p> : null}
+          {eventsError ? <p className="alert-box error">{eventsError}</p> : null}
+          <SummaryMetric label="事件数" value={eventsData?.summary.total_events ?? events.length} />
+          <SummaryMetric label="主要类型" value={topCountLabel(eventsData?.summary.per_event_type_counts)} />
+          <SummaryMetric label="状态" value={formatCountMap(eventsData?.summary.per_status_counts)} />
+        </SummaryCard>
+        <SummaryCard title="告警摘要">
+          {alertsLoading ? <p className="muted">正在加载告警...</p> : null}
+          {alertsError ? <p className="alert-box error">{alertsError}</p> : null}
+          <SummaryMetric label="告警数" value={alertsData?.summary.total_alerts ?? alerts.length} />
+          <SummaryMetric label="级别" value={formatCountMap(alertsData?.summary.per_level_counts)} />
+          <SummaryMetric label="状态" value={formatCountMap(alertsData?.summary.per_status_counts)} />
+        </SummaryCard>
+        <SummaryCard title="产物摘要">
+          <SummaryMetric label="标注视频" value={artifactStatus(artifactSummary, "annotated_video")} />
+          <SummaryMetric label="关键帧" value={artifactRecordCount(artifactSummary, "keyframes")} />
+          <SummaryMetric label="报告产物" value={artifactSummaryLabel(artifactSummary)} />
+        </SummaryCard>
       </section>
-      <div className="grid two content-grid analysis-content-grid">
-        <div className="grid content-grid">
-          <section className="panel info-callout">
-            <label>
-              分析任务 ID
-              <select
-                value={selectedRunId}
-                onChange={(event) => setSelectedRunId(event.target.value)}
-              >
-                <option value="">未选择分析任务</option>
-                {selectedRunId && !runs.some((run) => getRunId(run) === selectedRunId) ? (
-                  <option value={selectedRunId}>{selectedRunId}</option>
-                ) : null}
-                {runs.map((run) => (
-                  <option key={getRunId(run)} value={getRunId(run)}>
-                    {getRunId(run)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {runsLoading ? <p className="muted">正在加载任务索引...</p> : null}
-            {runsError ? <p className="alert-box error">{runsError}</p> : null}
-            {runs.length === 0 && !runsLoading ? (
-              <p className="empty-state">暂无分析任务。请先在视频中心上传视频并启动分析。</p>
-            ) : null}
-          </section>
-          <section className="panel">
-            <h3>任务摘要</h3>
-            {runSummaryLoading ? <p className="muted">正在加载任务摘要...</p> : null}
-            {runSummaryError ? <p className="alert-box error">{runSummaryError}</p> : null}
-            {runSummary ? <RunSummaryPanel run={runSummary} /> : null}
-          </section>
-          <section className="panel">
-            <h3>索引状态</h3>
-            {manifestLoading ? <p className="muted">正在加载 manifest...</p> : null}
-            {manifestError ? <p className="alert-box error">{manifestError}</p> : null}
-            {runSummary ? (
-              <IndexStatusPanel manifestPayload={manifestPayload} run={runSummary} />
-            ) : (
-              <p className="muted">请选择一个分析任务，查看 metadata、manifest 和 artifact index。</p>
-            )}
-          </section>
-          <section className="panel">
-            <h3>产物摘要</h3>
-            <ArtifactSummaryTable artifactSummary={runSummary?.artifact_summary} />
-          </section>
-          <section className="panel">
-            <h3>可视化产物</h3>
-            <VisualArtifactsPanel artifactSummary={runSummary?.artifact_summary} />
-          </section>
-        </div>
-        <div className="grid content-grid">
-          <section className="panel">
+
+      <section className="analysis-business-results">
+        <section className="panel table-section">
+          <div className="section-heading-row">
+            <h3>事件列表</h3>
+            <span className="status-pill">{events.length} 个事件</span>
+          </div>
+          {events.length === 0 ? (
+            <p className="muted">暂无事件。请先运行一次视频分析。</p>
+          ) : (
+            <>
+              <EventTable
+                buildReviewHref={(event) => {
+                  const eventId = normalizeOptionalRecordValue(event.event_id);
+                  return eventId ? buildReviewLink(eventsData?.run_id ?? selectedRunId, eventId) : null;
+                }}
+                events={events}
+                maxRows={TABLE_PREVIEW_LIMIT}
+                onOpenReview={onOpenReview}
+                onSelectEvent={(eventId, event) => {
+                  setSelectedEventId(eventId);
+                  setCurrentTimeMs(getEventSeekTimeMs(event));
+                }}
+                selectedEventId={selectedEventId}
+              />
+              <PreviewNotice total={events.length} limit={TABLE_PREVIEW_LIMIT} />
+            </>
+          )}
+        </section>
+
+        <section className="panel table-section">
+          <div className="section-heading-row">
+            <h3>告警列表</h3>
+            <span className="status-pill">{alerts.length} 个告警</span>
+          </div>
+          <div className="toolbar compact">
+            <button disabled={!selectedRunId || alertsLoading} type="button" onClick={handleGenerateAlerts}>
+              从事件生成告警
+            </button>
+            <button disabled={!selectedRunId || alertsLoading} type="button" onClick={handleAlertsRefresh}>
+              刷新告警
+            </button>
+          </div>
+          {alerts.length === 0 ? (
+            <p className="muted">暂无告警。事件触发后会在这里显示。</p>
+          ) : (
+            <>
+              <RecordTable columns={alertColumns} rows={alerts.slice(0, TABLE_PREVIEW_LIMIT)} />
+              <PreviewNotice total={alerts.length} limit={TABLE_PREVIEW_LIMIT} />
+            </>
+          )}
+        </section>
+
+        <section className="panel evidence-overview-card">
+          <div className="section-heading-row">
+            <h3>关键证据摘要</h3>
+            <span className="status-pill">{eventEvidenceCount} 条证据</span>
+          </div>
+          <div className="summary-grid">
+            <SummaryMetric label="事件证据" value={eventEvidenceCount} />
+            <SummaryMetric label="规则执行" value={ruleExecutions.length} />
+            <SummaryMetric label="matched" value={matchedRuleExecutions} />
+            <SummaryMetric label="skipped" value={skippedRuleExecutions} />
+          </div>
+        </section>
+      </section>
+
+      <section className="analysis-advanced-sections">
+        <CollapsibleSection title="高级明细">
+          <div className="analysis-advanced-grid">
+            <section className="advanced-detail-block">
+              <h3>完整任务摘要</h3>
+              {runSummary ? <RunSummaryPanel run={runSummary} /> : <p className="muted">请选择一个分析任务。</p>}
+            </section>
+            <section className="advanced-detail-block table-section">
+              <h3>索引状态</h3>
+              {manifestLoading ? <p className="muted">正在加载 manifest...</p> : null}
+              {manifestError ? <p className="alert-box error">{manifestError}</p> : null}
+              {runSummary ? (
+                <IndexStatusPanel manifestPayload={manifestPayload} run={runSummary} />
+              ) : (
+                <p className="muted">请选择一个分析任务，查看 metadata、manifest 和 artifact index。</p>
+              )}
+            </section>
+          </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection title="原始产物">
+          <div className="analysis-advanced-grid">
+            <section className="advanced-detail-block table-section">
+              <h3>完整产物摘要</h3>
+              <ArtifactSummaryTable artifactSummary={artifactSummary} />
+            </section>
+            <section className="advanced-detail-block table-section">
+              <h3>可视化产物明细</h3>
+              <VisualArtifactsPanel artifactSummary={artifactSummary} />
+            </section>
+          </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection title="轨迹明细">
+          <section className="advanced-detail-block table-section">
             <h3>轨迹查询</h3>
             <div className="toolbar">
               <label>
@@ -536,11 +647,12 @@ export default function AnalysisDetailPage({
                 应用 / 刷新
               </button>
             </div>
-            {trajectoryLoading ? <p className="muted">正在加载轨迹点...</p> : null}
-            {trajectoryError ? <p className="alert-box error">{trajectoryError}</p> : null}
             {trajectoryData ? <TrajectoryDetail data={trajectoryData} /> : null}
           </section>
-          <section className="panel">
+        </CollapsibleSection>
+
+        <CollapsibleSection title="事件证据与规则执行">
+          <section className="advanced-detail-block table-section">
             <h3>事件查询</h3>
             <div className="toolbar">
               <label>
@@ -576,8 +688,6 @@ export default function AnalysisDetailPage({
                 应用 / 刷新
               </button>
             </div>
-            {eventsLoading ? <p className="muted">正在加载事件...</p> : null}
-            {eventsError ? <p className="alert-box error">{eventsError}</p> : null}
             {eventsData ? (
               <EventsDetail
                 data={eventsData}
@@ -590,7 +700,10 @@ export default function AnalysisDetailPage({
               />
             ) : null}
           </section>
-          <section className="panel">
+        </CollapsibleSection>
+
+        <CollapsibleSection title="告警明细">
+          <section className="advanced-detail-block table-section">
             <h3>告警查询</h3>
             <div className="toolbar">
               <label>
@@ -629,117 +742,112 @@ export default function AnalysisDetailPage({
                   onChange={(event) => setAlertEventTypeFilter(event.target.value)}
                 />
               </label>
-              <button disabled={!selectedRunId || alertsLoading} type="button" onClick={handleGenerateAlerts}>
-                从事件生成告警
-              </button>
               <button disabled={!selectedRunId || alertsLoading} type="button" onClick={handleAlertsRefresh}>
                 刷新告警
               </button>
             </div>
-            {alertsLoading ? <p className="muted">正在加载告警...</p> : null}
-            {alertsError ? <p className="alert-box error">{alertsError}</p> : null}
             {alertsData ? <AlertsDetail data={alertsData} /> : null}
           </section>
-          <section className="panel">
-            <div className="section-heading-row">
-              <h3>流量统计</h3>
-              <button
-                disabled={!selectedRunId || flowCountsLoading}
-                type="button"
-                onClick={() => selectedRunId && loadFlowCounts(selectedRunId)}
-              >
-                刷新
-              </button>
-            </div>
-            {flowCountsLoading ? <p className="muted">正在加载 flow_counts.json...</p> : null}
-            {flowCountsError ? <p className="alert-box error">{flowCountsError}</p> : null}
-            {flowCountsData ? <FlowCountsDetail data={flowCountsData} /> : null}
-          </section>
-          <section className="panel">
-            <div className="section-heading-row">
-              <h3>区域统计</h3>
-              <button
-                disabled={!selectedRunId || zoneStatisticsLoading}
-                type="button"
-                onClick={() => selectedRunId && loadZoneStatistics(selectedRunId)}
-              >
-                刷新
-              </button>
-            </div>
-            {zoneStatisticsLoading ? <p className="muted">正在加载 zone_statistics.json...</p> : null}
-            {zoneStatisticsError ? <p className="alert-box error">{zoneStatisticsError}</p> : null}
-            {zoneStatisticsData ? <ZoneStatisticsDetail data={zoneStatisticsData} /> : null}
-          </section>
-          <section className="panel">
-            <h3>检测摘要</h3>
-            {detectionsLoading ? <p className="muted">正在加载检测结果...</p> : null}
-            {detectionsError ? <p className="alert-box error">{detectionsError}</p> : null}
-            {detections ? (
-              <>
-              <p>
-                {formatValue(detections.summary.total_frames_processed, "0")} 帧 ·{" "}
-                {formatValue(detections.summary.total_detections, "0")} 检测
-              </p>
-              <h3>帧结果</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th>帧</th>
-                    <th>时间戳</th>
-                    <th>检测数</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {detections.frames.map((frame) => (
-                    <tr key={frame.frame_index}>
-                      <td>{frame.frame_index}</td>
-                      <td>{frame.timestamp_ms ?? 0} ms</td>
-                      <td>{frame.detections.length}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </>
-            ) : null}
-          </section>
-          <section className="panel">
-            <h3>跟踪摘要</h3>
-            {tracksLoading ? <p className="muted">正在加载跟踪结果...</p> : null}
-            {tracksError ? <p className="alert-box error">{tracksError}</p> : null}
-            {tracks ? (
-              <>
-              <p>
-                {formatValue(tracks.summary.total_frames_processed, "0")} 帧 ·{" "}
-                {formatValue(tracks.summary.total_tracks, "0")} 跟踪行 ·{" "}
-                {formatValue(tracks.summary.unique_track_ids, "0")} 唯一 ID
-              </p>
-              <h3>跟踪结果</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th>帧</th>
-                    <th>Track ID</th>
-                    <th>类别</th>
-                    <th>状态</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tracks.rows.slice(0, 20).map((track, index) => (
-                    <tr key={`${track.frame_index}-${track.track_id}-${index}`}>
-                      <td>{track.frame_index}</td>
-                      <td>{track.track_id}</td>
-                      <td>{track.class_name}</td>
-                      <td>{track.state}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </>
-            ) : null}
-          </section>
-        </div>
-      </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection title="流量与区域统计">
+          <div className="analysis-advanced-grid">
+            <section className="advanced-detail-block table-section">
+              <div className="section-heading-row">
+                <h3>流量统计</h3>
+                <button
+                  disabled={!selectedRunId || flowCountsLoading}
+                  type="button"
+                  onClick={() => selectedRunId && loadFlowCounts(selectedRunId)}
+                >
+                  刷新
+                </button>
+              </div>
+              {flowCountsLoading ? <p className="muted">正在加载 flow_counts.json...</p> : null}
+              {flowCountsError ? <p className="alert-box error">{flowCountsError}</p> : null}
+              {flowCountsData ? <FlowCountsDetail data={flowCountsData} /> : null}
+            </section>
+            <section className="advanced-detail-block table-section">
+              <div className="section-heading-row">
+                <h3>区域统计</h3>
+                <button
+                  disabled={!selectedRunId || zoneStatisticsLoading}
+                  type="button"
+                  onClick={() => selectedRunId && loadZoneStatistics(selectedRunId)}
+                >
+                  刷新
+                </button>
+              </div>
+              {zoneStatisticsLoading ? <p className="muted">正在加载 zone_statistics.json...</p> : null}
+              {zoneStatisticsError ? <p className="alert-box error">{zoneStatisticsError}</p> : null}
+              {zoneStatisticsData ? <ZoneStatisticsDetail data={zoneStatisticsData} /> : null}
+            </section>
+          </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection title="检测与跟踪明细">
+          <div className="analysis-advanced-grid">
+            <section className="advanced-detail-block table-section">
+              <h3>检测摘要</h3>
+              {detectionsLoading ? <p className="muted">正在加载检测结果...</p> : null}
+              {detectionsError ? <p className="alert-box error">{detectionsError}</p> : null}
+              {detections ? <DetectionsDetail data={detections} /> : null}
+            </section>
+            <section className="advanced-detail-block table-section">
+              <h3>跟踪摘要</h3>
+              {tracksLoading ? <p className="muted">正在加载跟踪结果...</p> : null}
+              {tracksError ? <p className="alert-box error">{tracksError}</p> : null}
+              {tracks ? <TracksDetail data={tracks} /> : null}
+            </section>
+          </div>
+        </CollapsibleSection>
+      </section>
     </>
+  );
+}
+
+function SummaryCard({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="panel summary-card">
+      <h3>{title}</h3>
+      <div className="summary-card-body">{children}</div>
+    </section>
+  );
+}
+
+function SummaryMetric({
+  label,
+  value
+}: {
+  label: string;
+  value: string | number | null | undefined;
+}) {
+  const displayValue = formatValue(value);
+  return (
+    <div className="summary-metric" title={displayValue}>
+      <span className="summary-metric-label">{label}</span>
+      <span className="summary-metric-value">{displayValue}</span>
+    </div>
+  );
+}
+
+function CollapsibleSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <details className="collapsible-section">
+      <summary>{title}</summary>
+      <div className="collapsible-body">{children}</div>
+    </details>
+  );
+}
+
+function PreviewNotice({ total, limit }: { total: number; limit: number }) {
+  if (total <= limit) {
+    return null;
+  }
+  return (
+    <p className="muted preview-notice">
+      仅展示前 {limit} 条，完整数据请展开高级明细或查看导出文件。
+    </p>
   );
 }
 
@@ -921,9 +1029,88 @@ function VisualArtifactRow({
   );
 }
 
+function DetectionsDetail({ data }: { data: AnalysisRunDetections }) {
+  const framePreview = data.frames.slice(0, TABLE_PREVIEW_LIMIT);
+  return (
+    <>
+      <p>
+        {formatValue(data.summary.total_frames_processed, "0")} 帧 ·{" "}
+        {formatValue(data.summary.total_detections, "0")} 检测
+      </p>
+      <h3>检测帧结果</h3>
+      {framePreview.length === 0 ? (
+        <p className="muted">暂无检测帧。</p>
+      ) : (
+        <>
+          <table>
+            <thead>
+              <tr>
+                <th>帧</th>
+                <th>时间戳</th>
+                <th>检测数</th>
+              </tr>
+            </thead>
+            <tbody>
+              {framePreview.map((frame) => (
+                <tr key={frame.frame_index}>
+                  <td>{frame.frame_index}</td>
+                  <td>{frame.timestamp_ms ?? 0} ms</td>
+                  <td>{frame.detections.length}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <PreviewNotice total={data.frames.length} limit={TABLE_PREVIEW_LIMIT} />
+        </>
+      )}
+    </>
+  );
+}
+
+function TracksDetail({ data }: { data: AnalysisRunTracks }) {
+  const rowPreview = data.rows.slice(0, TABLE_PREVIEW_LIMIT);
+  return (
+    <>
+      <p>
+        {formatValue(data.summary.total_frames_processed, "0")} 帧 ·{" "}
+        {formatValue(data.summary.total_tracks, "0")} 跟踪行 ·{" "}
+        {formatValue(data.summary.unique_track_ids, "0")} 唯一 ID
+      </p>
+      <h3>跟踪结果</h3>
+      {rowPreview.length === 0 ? (
+        <p className="muted">暂无跟踪结果。</p>
+      ) : (
+        <>
+          <table>
+            <thead>
+              <tr>
+                <th>帧</th>
+                <th>Track ID</th>
+                <th>类别</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rowPreview.map((track, index) => (
+                <tr key={`${track.frame_index}-${track.track_id}-${index}`}>
+                  <td>{track.frame_index}</td>
+                  <td>{track.track_id}</td>
+                  <td>{track.class_name}</td>
+                  <td>{track.state}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <PreviewNotice total={data.rows.length} limit={TABLE_PREVIEW_LIMIT} />
+        </>
+      )}
+    </>
+  );
+}
+
 function TrajectoryDetail({ data }: { data: TrajectoryPointsResponse }) {
-  const rowPreview = data.rows.slice(0, 20);
-  const framePreview = data.frames.slice(0, 10);
+  const rowPreview = data.rows.slice(0, TABLE_PREVIEW_LIMIT);
+  const framePreview = data.frames.slice(0, TABLE_PREVIEW_LIMIT);
   const pointCount = data.frames.reduce(
     (total, frame) => total + frame.trajectory_points.length,
     0
@@ -947,49 +1134,55 @@ function TrajectoryDetail({ data }: { data: TrajectoryPointsResponse }) {
       {rowPreview.length === 0 ? (
         <p className="muted">暂无 trajectory rows</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              {trajectoryColumns.map((column) => (
-                <th key={String(column)}>{column}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rowPreview.map((row, index) => (
-              <tr key={`${row.frame_index}-${row.track_id}-${index}`}>
+        <>
+          <table>
+            <thead>
+              <tr>
                 {trajectoryColumns.map((column) => (
-                  <td key={String(column)}>{formatValue(row[column])}</td>
+                  <th key={String(column)}>{column}</th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rowPreview.map((row, index) => (
+                <tr key={`${row.frame_index}-${row.track_id}-${index}`}>
+                  {trajectoryColumns.map((column) => (
+                    <td key={String(column)}>{formatValue(row[column])}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <PreviewNotice total={data.rows.length} limit={TABLE_PREVIEW_LIMIT} />
+        </>
       )}
       <h3>轨迹帧</h3>
       {framePreview.length === 0 ? (
         <p className="muted">暂无 trajectory frames</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>帧</th>
-              <th>时间戳</th>
-              <th>点数</th>
-              <th>Track IDs</th>
-            </tr>
-          </thead>
-          <tbody>
-            {framePreview.map((frame, index) => (
-              <tr key={`${frame.frame_index}-${index}`}>
-                <td>{formatValue(frame.frame_index)}</td>
-                <td>{formatValue(frame.timestamp_ms)}</td>
-                <td>{frame.trajectory_points.length}</td>
-                <td>{formatTrackIds(frame)}</td>
+        <>
+          <table>
+            <thead>
+              <tr>
+                <th>帧</th>
+                <th>时间戳</th>
+                <th>点数</th>
+                <th>Track IDs</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {framePreview.map((frame, index) => (
+                <tr key={`${frame.frame_index}-${index}`}>
+                  <td>{formatValue(frame.frame_index)}</td>
+                  <td>{formatValue(frame.timestamp_ms)}</td>
+                  <td>{frame.trajectory_points.length}</td>
+                  <td>{formatTrackIds(frame)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <PreviewNotice total={data.frames.length} limit={TABLE_PREVIEW_LIMIT} />
+        </>
       )}
     </>
   );
@@ -1006,8 +1199,8 @@ function EventsDetail({
   onSelectEvent?: (eventId: string, event: EventRecord) => void;
   selectedEventId?: string | null;
 }) {
-  const evidencePreview = data.event_evidence.slice(0, 20);
-  const executionPreview = data.rule_executions.slice(0, 20);
+  const evidencePreview = data.event_evidence.slice(0, TABLE_PREVIEW_LIMIT);
+  const executionPreview = data.rule_executions.slice(0, TABLE_PREVIEW_LIMIT);
 
   return (
     <>
@@ -1030,22 +1223,29 @@ function EventsDetail({
           return eventId ? buildReviewLink(data.run_id, eventId) : null;
         }}
         events={data.events}
-        maxRows={20}
+        maxRows={TABLE_PREVIEW_LIMIT}
         onOpenReview={onOpenReview}
         onSelectEvent={onSelectEvent}
         selectedEventId={selectedEventId}
       />
+      <PreviewNotice total={data.events.length} limit={TABLE_PREVIEW_LIMIT} />
       <h3>事件证据</h3>
       {evidencePreview.length === 0 ? (
         <p className="muted">暂无 event evidence</p>
       ) : (
-        <RecordTable columns={evidenceColumns} rows={evidencePreview} />
+        <>
+          <RecordTable columns={evidenceColumns} rows={evidencePreview} />
+          <PreviewNotice total={data.event_evidence.length} limit={TABLE_PREVIEW_LIMIT} />
+        </>
       )}
       <h3>规则执行</h3>
       {executionPreview.length === 0 ? (
         <p className="muted">暂无 rule executions</p>
       ) : (
-        <RecordTable columns={ruleExecutionColumns} rows={executionPreview} />
+        <>
+          <RecordTable columns={ruleExecutionColumns} rows={executionPreview} />
+          <PreviewNotice total={data.rule_executions.length} limit={TABLE_PREVIEW_LIMIT} />
+        </>
       )}
     </>
   );
@@ -1056,7 +1256,7 @@ function normalizeOptionalRecordValue(value: unknown): string | null {
 }
 
 function AlertsDetail({ data }: { data: AlertsResponse }) {
-  const alertPreview = data.alerts.slice(0, 20);
+  const alertPreview = data.alerts.slice(0, TABLE_PREVIEW_LIMIT);
 
   return (
     <>
@@ -1077,7 +1277,10 @@ function AlertsDetail({ data }: { data: AlertsResponse }) {
       {alertPreview.length === 0 ? (
         <p className="muted">暂无告警。事件触发后会在这里显示。</p>
       ) : (
-        <RecordTable columns={alertColumns} rows={alertPreview} />
+        <>
+          <RecordTable columns={alertColumns} rows={alertPreview} />
+          <PreviewNotice total={data.alerts.length} limit={TABLE_PREVIEW_LIMIT} />
+        </>
       )}
     </>
   );
@@ -1102,62 +1305,68 @@ function FlowCountsDetail({ data }: { data: FlowCountsArtifact }) {
       {windows.length === 0 ? (
         <p className="muted">暂无 flow windows</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>窗口</th>
-              <th>区域</th>
-              <th>线</th>
-              <th>类别</th>
-              <th>方向</th>
-              <th>总计</th>
-            </tr>
-          </thead>
-          <tbody>
-            {windows.slice(0, 20).map((window, index) => (
-              <tr key={`${window.time_window_start_ms}-${window.zone_id}-${index}`}>
-                <td>
-                  {formatValue(window.time_window_start_ms)} -{" "}
-                  {formatValue(window.time_window_end_ms)}
-                </td>
-                <td>{formatValue(window.zone_id)}</td>
-                <td>{formatValue(window.counting_line_id)}</td>
-                <td>{formatValue(window.class_name)}</td>
-                <td>{formatValue(window.direction)}</td>
-                <td>{formatValue(window.total_count)}</td>
+        <>
+          <table>
+            <thead>
+              <tr>
+                <th>窗口</th>
+                <th>区域</th>
+                <th>线</th>
+                <th>类别</th>
+                <th>方向</th>
+                <th>总计</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {windows.slice(0, TABLE_PREVIEW_LIMIT).map((window, index) => (
+                <tr key={`${window.time_window_start_ms}-${window.zone_id}-${index}`}>
+                  <td>
+                    {formatValue(window.time_window_start_ms)} -{" "}
+                    {formatValue(window.time_window_end_ms)}
+                  </td>
+                  <td>{formatValue(window.zone_id)}</td>
+                  <td>{formatValue(window.counting_line_id)}</td>
+                  <td>{formatValue(window.class_name)}</td>
+                  <td>{formatValue(window.direction)}</td>
+                  <td>{formatValue(window.total_count)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <PreviewNotice total={windows.length} limit={TABLE_PREVIEW_LIMIT} />
+        </>
       )}
       <h3>流量记录</h3>
       {records.length === 0 ? (
         <p className="muted">暂无 flow records</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>事件</th>
-              <th>Track</th>
-              <th>区域</th>
-              <th>线</th>
-              <th>类别</th>
-              <th>方向</th>
-            </tr>
-          </thead>
-          <tbody>
-            {records.slice(0, 20).map((record, index) => (
-              <tr key={`${record.event_id}-${record.track_id}-${index}`}>
-                <td>{formatValue(record.event_id)}</td>
-                <td>{formatValue(record.track_id)}</td>
-                <td>{formatValue(record.zone_id)}</td>
-                <td>{formatValue(record.counting_line_id)}</td>
-                <td>{formatValue(record.class_name)}</td>
-                <td>{formatValue(record.direction)}</td>
+        <>
+          <table>
+            <thead>
+              <tr>
+                <th>事件</th>
+                <th>Track</th>
+                <th>区域</th>
+                <th>线</th>
+                <th>类别</th>
+                <th>方向</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {records.slice(0, TABLE_PREVIEW_LIMIT).map((record, index) => (
+                <tr key={`${record.event_id}-${record.track_id}-${index}`}>
+                  <td>{formatValue(record.event_id)}</td>
+                  <td>{formatValue(record.track_id)}</td>
+                  <td>{formatValue(record.zone_id)}</td>
+                  <td>{formatValue(record.counting_line_id)}</td>
+                  <td>{formatValue(record.class_name)}</td>
+                  <td>{formatValue(record.direction)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <PreviewNotice total={records.length} limit={TABLE_PREVIEW_LIMIT} />
+        </>
       )}
     </>
   );
@@ -1182,62 +1391,68 @@ function ZoneStatisticsDetail({ data }: { data: ZoneStatisticsArtifact }) {
       {windows.length === 0 ? (
         <p className="muted">暂无 zone windows</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>窗口</th>
-              <th>区域</th>
-              <th>车辆</th>
-              <th>行人</th>
-              <th>占用</th>
-              <th>平均速度</th>
-            </tr>
-          </thead>
-          <tbody>
-            {windows.slice(0, 20).map((window, index) => (
-              <tr key={`${window.time_window_start_ms}-${window.zone_id}-${index}`}>
-                <td>
-                  {formatValue(window.time_window_start_ms)} -{" "}
-                  {formatValue(window.time_window_end_ms)}
-                </td>
-                <td>{formatValue(window.zone_id)}</td>
-                <td>{formatValue(window.vehicle_count)}</td>
-                <td>{formatValue(window.person_count)}</td>
-                <td>{formatValue(window.occupancy_count)}</td>
-                <td>{formatValue(window.avg_speed_px_per_frame)}</td>
+        <>
+          <table>
+            <thead>
+              <tr>
+                <th>窗口</th>
+                <th>区域</th>
+                <th>车辆</th>
+                <th>行人</th>
+                <th>占用</th>
+                <th>平均速度</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {windows.slice(0, TABLE_PREVIEW_LIMIT).map((window, index) => (
+                <tr key={`${window.time_window_start_ms}-${window.zone_id}-${index}`}>
+                  <td>
+                    {formatValue(window.time_window_start_ms)} -{" "}
+                    {formatValue(window.time_window_end_ms)}
+                  </td>
+                  <td>{formatValue(window.zone_id)}</td>
+                  <td>{formatValue(window.vehicle_count)}</td>
+                  <td>{formatValue(window.person_count)}</td>
+                  <td>{formatValue(window.occupancy_count)}</td>
+                  <td>{formatValue(window.avg_speed_px_per_frame)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <PreviewNotice total={windows.length} limit={TABLE_PREVIEW_LIMIT} />
+        </>
       )}
       <h3>拥堵事件</h3>
       {congestionEvents.length === 0 ? (
         <p className="muted">暂无 congestion events</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>事件</th>
-              <th>区域</th>
-              <th>帧</th>
-              <th>时间戳</th>
-              <th>车辆</th>
-              <th>平均速度</th>
-            </tr>
-          </thead>
-          <tbody>
-            {congestionEvents.slice(0, 20).map((event, index) => (
-              <tr key={`${event.event_id}-${index}`}>
-                <td>{formatValue(event.event_id)}</td>
-                <td>{formatValue(event.zone_id)}</td>
-                <td>{formatValue(event.frame_index)}</td>
-                <td>{formatValue(event.timestamp_ms)}</td>
-                <td>{formatValue(event.vehicle_count)}</td>
-                <td>{formatValue(event.avg_speed_px_per_frame)}</td>
+        <>
+          <table>
+            <thead>
+              <tr>
+                <th>事件</th>
+                <th>区域</th>
+                <th>帧</th>
+                <th>时间戳</th>
+                <th>车辆</th>
+                <th>平均速度</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {congestionEvents.slice(0, TABLE_PREVIEW_LIMIT).map((event, index) => (
+                <tr key={`${event.event_id}-${index}`}>
+                  <td>{formatValue(event.event_id)}</td>
+                  <td>{formatValue(event.zone_id)}</td>
+                  <td>{formatValue(event.frame_index)}</td>
+                  <td>{formatValue(event.timestamp_ms)}</td>
+                  <td>{formatValue(event.vehicle_count)}</td>
+                  <td>{formatValue(event.avg_speed_px_per_frame)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <PreviewNotice total={congestionEvents.length} limit={TABLE_PREVIEW_LIMIT} />
+        </>
       )}
     </>
   );
@@ -1316,6 +1531,36 @@ function formatCountMap(value: Record<string, number> | undefined): string {
   return Object.entries(value)
     .map(([key, count]) => `${key}:${count}`)
     .join(", ");
+}
+
+function topCountLabel(value: Record<string, number> | undefined): string {
+  const [key, count] = Object.entries(value ?? {}).sort((left, right) => right[1] - left[1])[0] ?? [];
+  return key ? `${key}:${count}` : "-";
+}
+
+function countRowsByStatus(rows: RuleExecutionRecord[], status: string): number {
+  return rows.filter((row) => String(row.status ?? "").toLowerCase() === status).length;
+}
+
+function artifactStatus(summary: ArtifactSummary | undefined, key: string): string {
+  return summary?.[key]?.status ?? "-";
+}
+
+function artifactRecordCount(summary: ArtifactSummary | undefined, key: string): string {
+  const item = summary?.[key];
+  if (!item) {
+    return "-";
+  }
+  return item.record_count !== undefined ? String(item.record_count) : item.status;
+}
+
+function artifactSummaryLabel(summary: ArtifactSummary | undefined): string {
+  const items = Object.values(summary ?? {});
+  if (items.length === 0) {
+    return "-";
+  }
+  const availableCount = items.filter((item) => item.status === "available").length;
+  return `${availableCount}/${items.length} 可用`;
 }
 
 function formatTrackIds(frame: TrajectoryFrame): string {
