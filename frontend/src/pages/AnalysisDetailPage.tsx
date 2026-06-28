@@ -441,19 +441,21 @@ export default function AnalysisDetailPage({
             }}
             selectedEventId={selectedEventId}
           />
-          <section className="panel">
-            <h3>叠加数据</h3>
-            {zonesLoading ? <p className="muted">正在加载区域...</p> : null}
-            {zonesError ? <p className="alert-box error">{zonesError}</p> : null}
-            <p>
-              {overlayData.detections.length} 检测帧 ·{" "}
-              {overlayData.tracks.length} 跟踪帧 ·{" "}
-              {overlayData.trajectoryFrames.length} 轨迹帧 ·{" "}
-              {overlayData.zones.length} 区域
-            </p>
-          </section>
         </div>
       </div>
+      <section className="panel overlay-data-panel">
+        <div className="section-heading-row">
+          <h3>叠加数据</h3>
+          {zonesLoading ? <span className="muted">正在加载区域...</span> : null}
+        </div>
+        {zonesError ? <p className="alert-box error">{zonesError}</p> : null}
+        <div className="overlay-data-grid">
+          <span className="status-pill">{overlayData.detections.length} 检测帧</span>
+          <span className="status-pill">{overlayData.tracks.length} 跟踪帧</span>
+          <span className="status-pill">{overlayData.trajectoryFrames.length} 轨迹帧</span>
+          <span className="status-pill">{overlayData.zones.length} 区域</span>
+        </div>
+      </section>
       <div className="grid two content-grid analysis-content-grid">
         <div className="grid content-grid">
           <section className="panel info-callout">
