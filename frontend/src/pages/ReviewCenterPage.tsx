@@ -341,7 +341,7 @@ export default function ReviewCenterPage({
         run_id: payload.run_id,
         reviewer: payload.reviewer ?? "local_reviewer"
       });
-      setSuccessMessage(`False negative saved: ${response.false_negative.false_negative_id}`);
+      setSuccessMessage(`漏报已保存：${response.false_negative.false_negative_id}`);
       if (payload.run_id === runId.trim()) {
         await loadEvents(selectedEventId ?? undefined);
       }
@@ -364,7 +364,7 @@ export default function ReviewCenterPage({
     <>
       <header className="page-header">
         <div>
-          <h2>复核中心 Review Center</h2>
+          <h2>复核中心</h2>
           <p>人工确认事件、标记误报/漏报，并沉淀复核记录。</p>
         </div>
       </header>
@@ -380,19 +380,19 @@ export default function ReviewCenterPage({
             />
           </label>
           <label>
-            状态 Status
+            状态
             <select value={status} onChange={(event) => setStatus(event.target.value)}>
-              <option value="">全部 All</option>
-              <option value="pending">待复核 pending</option>
-              <option value="confirmed">已确认 confirmed</option>
-              <option value="false_positive">误报 false_positive</option>
-              <option value="false_negative">漏报 false_negative</option>
-              <option value="ignored">已忽略 ignored</option>
-              <option value="resolved">已解决 resolved</option>
+              <option value="">全部</option>
+              <option value="pending">待复核</option>
+              <option value="confirmed">已确认</option>
+              <option value="false_positive">误报</option>
+              <option value="false_negative">漏报</option>
+              <option value="ignored">已忽略</option>
+              <option value="resolved">已解决</option>
             </select>
           </label>
           <label>
-            事件类型 Event type
+            事件类型
             <input
               placeholder="all"
               value={eventType}
@@ -400,14 +400,14 @@ export default function ReviewCenterPage({
             />
           </label>
           <button type="button" onClick={() => loadEvents()} disabled={loadingEvents}>
-            刷新 Refresh
+            刷新
           </button>
         </div>
         <div className="metric-row review-metric-row">
-          <Metric label="待复核 pending" value={counts.pending} />
-          <Metric label="已确认 confirmed" value={counts.confirmed} />
-          <Metric label="误报 false_positive" value={counts.false_positive} />
-          <Metric label="已解决 resolved" value={counts.resolved} />
+          <Metric label="待复核" value={counts.pending} />
+          <Metric label="已确认" value={counts.confirmed} />
+          <Metric label="误报" value={counts.false_positive} />
+          <Metric label="已解决" value={counts.resolved} />
         </div>
         {successMessage ? <p className="alert-box success">{successMessage}</p> : null}
         {error ? <p className="alert-box error">{error}</p> : null}
@@ -423,24 +423,24 @@ export default function ReviewCenterPage({
       <div className="grid two content-grid review-workspace">
         <section className="panel">
           <div className="section-heading-row">
-            <h3>事件列表 Events</h3>
-            {eventsData ? <span className="muted">{eventsData.total} 条 total</span> : null}
+            <h3>事件列表</h3>
+            {eventsData ? <span className="muted">{eventsData.total} 条</span> : null}
           </div>
           {events.length > 0 ? (
             <table>
               <thead>
                 <tr>
-                  <th>事件 Event</th>
-                  <th>状态 Status</th>
-                  <th>原状态 Original</th>
-                  <th>类型 Type</th>
-                  <th>严重程度 Severity</th>
+                  <th>事件</th>
+                  <th>状态</th>
+                  <th>原状态</th>
+                  <th>类型</th>
+                  <th>严重程度</th>
                   <th>Track</th>
-                  <th>区域 Zone</th>
-                  <th>帧 Frames</th>
-                  <th>告警 Alerts</th>
-                  <th>评论 Comments</th>
-                  <th>操作 Action</th>
+                  <th>区域</th>
+                  <th>帧</th>
+                  <th>告警</th>
+                  <th>评论</th>
+                  <th>操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -478,7 +478,7 @@ export default function ReviewCenterPage({
 
       <section className="panel">
         <div className="section-heading-row">
-          <h3>添加漏报 Add False Negative</h3>
+          <h3>添加漏报</h3>
           <span className="muted">仅记录本地复核产物</span>
         </div>
         <div className="form-grid">
@@ -490,7 +490,7 @@ export default function ReviewCenterPage({
             />
           </label>
           <label>
-            期望事件类型 Expected event type
+            期望事件类型
             <input
               value={falseNegativeForm.expected_event_type}
               onChange={(event) =>
@@ -499,14 +499,14 @@ export default function ReviewCenterPage({
             />
           </label>
           <label>
-            复核人 Reviewer
+            复核人
             <input
               value={falseNegativeForm.reviewer}
               onChange={(event) => updateFalseNegativeField("reviewer", event.target.value)}
             />
           </label>
           <label>
-            区域 Zone
+            区域
             <input
               value={falseNegativeForm.zone_id}
               onChange={(event) => updateFalseNegativeField("zone_id", event.target.value)}
@@ -521,7 +521,7 @@ export default function ReviewCenterPage({
             />
           </label>
           <label>
-            起始帧 Start frame
+            起始帧
             <input
               type="number"
               value={falseNegativeForm.start_frame}
@@ -529,7 +529,7 @@ export default function ReviewCenterPage({
             />
           </label>
           <label>
-            结束帧 End frame
+            结束帧
             <input
               type="number"
               value={falseNegativeForm.end_frame}
@@ -537,7 +537,7 @@ export default function ReviewCenterPage({
             />
           </label>
           <label>
-            起始 ms Start ms
+            起始 ms
             <input
               type="number"
               value={falseNegativeForm.start_time_ms}
@@ -545,7 +545,7 @@ export default function ReviewCenterPage({
             />
           </label>
           <label>
-            结束 ms End ms
+            结束 ms
             <input
               type="number"
               value={falseNegativeForm.end_time_ms}
@@ -554,7 +554,7 @@ export default function ReviewCenterPage({
           </label>
         </div>
         <label className="stacked-control">
-          描述 Description
+          描述
           <textarea
             rows={3}
             value={falseNegativeForm.description}
@@ -562,7 +562,7 @@ export default function ReviewCenterPage({
           />
         </label>
         <button type="button" disabled={submitting !== null} onClick={submitFalseNegative}>
-          添加漏报 Add false negative
+          添加漏报
         </button>
       </section>
     </>
@@ -601,7 +601,7 @@ function ReviewEventRow({
       <td>{summary.commentCount}</td>
       <td>
         <button type="button" onClick={onOpen}>
-          打开 Open
+          打开
         </button>
       </td>
     </tr>

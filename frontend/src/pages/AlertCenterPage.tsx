@@ -68,7 +68,7 @@ export default function AlertCenterPage({ onOpenReview }: AlertCenterPageProps) 
     <>
       <header className="page-header">
         <div>
-          <h2>告警中心 Alert Center</h2>
+          <h2>告警中心</h2>
           <p>查看事件告警，并进行确认、忽略或解决。</p>
         </div>
       </header>
@@ -83,26 +83,26 @@ export default function AlertCenterPage({ onOpenReview }: AlertCenterPageProps) 
             />
           </label>
           <label>
-            状态 Status
+            状态
             <select value={status} onChange={(event) => setStatus(event.target.value)}>
-              <option value="">全部 All</option>
-              <option value="new">新告警 new</option>
-              <option value="acknowledged">已确认 acknowledged</option>
-              <option value="resolved">已解决 resolved</option>
-              <option value="ignored">已忽略 ignored</option>
+              <option value="">全部</option>
+              <option value="new">新告警</option>
+              <option value="acknowledged">已确认</option>
+              <option value="resolved">已解决</option>
+              <option value="ignored">已忽略</option>
             </select>
           </label>
           <label>
-            级别 Level
+            级别
             <select value={level} onChange={(event) => setLevel(event.target.value)}>
-              <option value="">全部 All</option>
-              <option value="critical">严重 critical</option>
-              <option value="warning">警告 warning</option>
-              <option value="info">信息 info</option>
+              <option value="">全部</option>
+              <option value="critical">严重</option>
+              <option value="warning">警告</option>
+              <option value="info">信息</option>
             </select>
           </label>
           <label>
-            操作人 Operator
+            操作人
             <input
               placeholder="operator"
               value={acknowledgedBy}
@@ -110,7 +110,7 @@ export default function AlertCenterPage({ onOpenReview }: AlertCenterPageProps) 
             />
           </label>
           <button type="button" onClick={loadAlerts} disabled={loading}>
-            刷新 Refresh
+            刷新
           </button>
         </div>
         <AlertPanel

@@ -15,18 +15,18 @@ export const REPORT_EXPORT_SECTIONS: Array<{
   label: string;
   description: string;
 }> = [
-  { key: "events", label: "事件 Events", description: "检测到的交通事件" },
-  { key: "alerts", label: "告警 Alerts", description: "告警中心记录" },
-  { key: "flow_counts", label: "流量统计 Flow counts", description: "计数线记录" },
+  { key: "events", label: "事件", description: "检测到的交通事件" },
+  { key: "alerts", label: "告警", description: "告警中心记录" },
+  { key: "flow_counts", label: "流量统计", description: "计数线记录" },
   {
     key: "zone_statistics",
-    label: "区域统计 Zone statistics",
+    label: "区域统计",
     description: "区域占用和指标窗口"
   },
-  { key: "bad_cases", label: "坏例 Bad cases", description: "复核和评测坏例" },
+  { key: "bad_cases", label: "坏例", description: "复核和评测坏例" },
   {
     key: "evaluation_results",
-    label: "评测结果 Evaluation results",
+    label: "评测结果",
     description: "评测指标记录"
   }
 ];
@@ -34,12 +34,12 @@ export const REPORT_EXPORT_SECTIONS: Array<{
 export function buildReportSummaryCards(summary: ReportSummaryResponse | null) {
   const counts = summary?.counts;
   return [
-    { label: "事件 Events", value: counts?.events_count ?? 0 },
-    { label: "告警 Alerts", value: counts?.alerts_count ?? 0 },
-    { label: "流量记录 Flow records", value: counts?.flow_count_records ?? 0 },
-    { label: "区域窗口 Zone windows", value: counts?.zone_statistics_records ?? 0 },
-    { label: "坏例 Bad cases", value: counts?.bad_cases_count ?? 0 },
-    { label: "评测结果 Evaluation results", value: counts?.evaluation_results_count ?? 0 }
+    { label: "事件", value: counts?.events_count ?? 0 },
+    { label: "告警", value: counts?.alerts_count ?? 0 },
+    { label: "流量记录", value: counts?.flow_count_records ?? 0 },
+    { label: "区域窗口", value: counts?.zone_statistics_records ?? 0 },
+    { label: "坏例", value: counts?.bad_cases_count ?? 0 },
+    { label: "评测结果", value: counts?.evaluation_results_count ?? 0 }
   ];
 }
 
@@ -66,9 +66,9 @@ export function buildJsonExportMetadata(payload: ReportJsonExportResponse | null
   }
   return [
     { label: "Schema", value: payload.metadata.schema_version },
-    { label: "Generated", value: payload.metadata.generated_at },
+    { label: "生成时间", value: payload.metadata.generated_at },
     { label: "Run", value: payload.run.run_id || payload.run.id },
-    { label: "Sections", value: payload.metadata.available_exports.join(", ") }
+    { label: "区块", value: payload.metadata.available_exports.join(", ") }
   ];
 }
 
@@ -105,7 +105,7 @@ export function buildBundleSectionLabel(bundle: ReportBundleResponse | null): st
   if (!bundle) {
     return "暂无 bundle metadata。";
   }
-  return `${bundle.included_sections.length} sections: ${bundle.included_sections.join(", ")}`;
+  return `${bundle.included_sections.length} 个区块：${bundle.included_sections.join(", ")}`;
 }
 
 export function buildArtifactReferenceRows(bundle: ReportBundleResponse | null) {
@@ -113,7 +113,7 @@ export function buildArtifactReferenceRows(bundle: ReportBundleResponse | null) 
     key: item.key,
     type: item.artifact_type,
     path: item.path || "-",
-    status: item.exists ? "可用 Available" : "不可用 Unavailable",
+    status: item.exists ? "可用" : "不可用",
     note: item.note
   }));
 }
@@ -133,9 +133,9 @@ export function buildAnnotatedVideoLabel(summary: ReportAnnotatedVideoSummary | 
     return "标注视频 metadata 尚未加载。";
   }
   if (summary.available) {
-    return `可用 Available: ${summary.annotated_video_reference || "annotated_video.mp4"}`;
+    return `可用：${summary.annotated_video_reference || "annotated_video.mp4"}`;
   }
-  return `不可用 Unavailable (${summary.status}): ${summary.notes}`;
+  return `不可用（${summary.status}）：${summary.notes}`;
 }
 
 function safeName(value: string): string {

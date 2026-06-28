@@ -28,7 +28,7 @@ interface VideoPlayerWithOverlayProps {
 }
 
 export default function VideoPlayerWithOverlay({
-  title = "Video Overlay",
+  title = "视频叠加",
   videoUrl = null,
   width = 960,
   height = 540,
@@ -70,7 +70,7 @@ export default function VideoPlayerWithOverlay({
             src={videoUrl}
           />
         ) : (
-          <div className="overlay-placeholder">No video URL for this run</div>
+          <div className="overlay-placeholder">当前任务没有可播放视频 URL</div>
         )}
         <svg
           className="video-overlay-svg"

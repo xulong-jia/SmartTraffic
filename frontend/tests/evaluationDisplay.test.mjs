@@ -84,9 +84,9 @@ test("buildEvaluationMetricCards produces display cards from result rows", () =>
   assert.deepEqual(evaluationDisplay.buildEvaluationMetricCards([result]), [
     {
       key: "result_1",
-      label: "检测 detection · Detection map",
+      label: "检测 · Detection map",
       value: "0.750",
-      status: "可用 available",
+      status: "可用",
       detail: "ok"
     }
   ]);
@@ -95,7 +95,7 @@ test("buildEvaluationMetricCards produces display cards from result rows", () =>
 test("buildInsufficientDataLabel makes missing data boundary explicit", () => {
   assert.equal(
     evaluationDisplay.buildInsufficientDataLabel(insufficientResult),
-    "Insufficient data: missing annotations/data, not a zero score."
+    "数据不足：缺少标注或数据，不计为 0 分。"
   );
 });
 
@@ -134,6 +134,6 @@ test("buildFailedCaseBadCaseRequest creates conversion payload", () => {
 test("formatEvaluationBoundaryForType labels non-official metric boundaries", () => {
   assert.equal(
     evaluationDisplay.formatEvaluationBoundaryForType("tracking"),
-    "Lightweight deterministic frame-level association, not TrackEval official metrics."
+    "轻量确定性帧级关联指标，不是 TrackEval official metrics。"
   );
 });

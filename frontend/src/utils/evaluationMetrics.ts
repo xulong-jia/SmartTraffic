@@ -72,12 +72,12 @@ export function formatEvaluationStatusLabel(
 ): string {
   const normalized = normalizeText(status, "unknown");
   const labels: Record<string, string> = {
-    available: "可用 available",
-    empty: "为空 empty",
-    insufficient_data: "数据不足 insufficient_data",
-    not_applicable: "不适用 not_applicable",
-    planned: "计划中 planned",
-    unknown: "未知 unknown"
+    available: "可用",
+    empty: "为空",
+    insufficient_data: "数据不足",
+    not_applicable: "不适用",
+    planned: "计划中",
+    unknown: "未知"
   };
   return labels[normalized] ?? normalized;
 }
@@ -87,13 +87,13 @@ export function formatEvaluationTypeLabel(
 ): string {
   const normalized = normalizeText(evaluationType, "unknown");
   const labels: Record<string, string> = {
-    event: "事件 event",
-    flow_counting: "流量统计 flow_counting",
-    trajectory: "轨迹 trajectory",
-    detection: "检测 detection",
-    tracking: "跟踪 tracking",
-    regression: "回归 regression",
-    unknown: "未知 unknown"
+    event: "事件",
+    flow_counting: "流量统计",
+    trajectory: "轨迹",
+    detection: "检测",
+    tracking: "跟踪",
+    regression: "回归",
+    unknown: "未知"
   };
   return labels[normalized] ?? normalized;
 }

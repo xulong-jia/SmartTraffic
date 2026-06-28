@@ -409,7 +409,7 @@ export default function AnalysisDetailPage({
     <>
       <header className="page-header">
         <div>
-          <h2>分析详情 Analysis Detail</h2>
+          <h2>分析详情</h2>
           <p>查看检测、跟踪、轨迹、事件证据和分析产物。</p>
         </div>
       </header>
@@ -422,7 +422,7 @@ export default function AnalysisDetailPage({
           selectedEventId={selectedEventId}
           selectedTrackId={overlayData.selectedTrackId}
           selectedZoneId={overlayData.selectedZoneId}
-          title="视频叠加 Video Overlay"
+          title="视频叠加"
           tracks={overlayData.tracks}
           trajectoryPoints={overlayData.trajectoryFrames}
           videoUrl={videoUrl}
@@ -442,14 +442,14 @@ export default function AnalysisDetailPage({
             selectedEventId={selectedEventId}
           />
           <section className="panel">
-            <h3>叠加数据 Overlay Data</h3>
+            <h3>叠加数据</h3>
             {zonesLoading ? <p className="muted">正在加载区域...</p> : null}
             {zonesError ? <p className="alert-box error">{zonesError}</p> : null}
             <p>
-              {overlayData.detections.length} 检测帧 detection frames ·{" "}
-              {overlayData.tracks.length} 跟踪帧 track frames ·{" "}
-              {overlayData.trajectoryFrames.length} 轨迹帧 trajectory frames ·{" "}
-              {overlayData.zones.length} 区域 zones
+              {overlayData.detections.length} 检测帧 ·{" "}
+              {overlayData.tracks.length} 跟踪帧 ·{" "}
+              {overlayData.trajectoryFrames.length} 轨迹帧 ·{" "}
+              {overlayData.zones.length} 区域
             </p>
           </section>
         </div>
@@ -458,12 +458,12 @@ export default function AnalysisDetailPage({
         <div className="grid content-grid">
           <section className="panel info-callout">
             <label>
-              分析任务 Run ID
+              分析任务 ID
               <select
                 value={selectedRunId}
                 onChange={(event) => setSelectedRunId(event.target.value)}
               >
-                <option value="">未选择分析任务 No run selected</option>
+                <option value="">未选择分析任务</option>
                 {selectedRunId && !runs.some((run) => getRunId(run) === selectedRunId) ? (
                   <option value={selectedRunId}>{selectedRunId}</option>
                 ) : null}
@@ -481,13 +481,13 @@ export default function AnalysisDetailPage({
             ) : null}
           </section>
           <section className="panel">
-            <h3>任务摘要 Run Summary</h3>
+            <h3>任务摘要</h3>
             {runSummaryLoading ? <p className="muted">正在加载任务摘要...</p> : null}
             {runSummaryError ? <p className="alert-box error">{runSummaryError}</p> : null}
             {runSummary ? <RunSummaryPanel run={runSummary} /> : null}
           </section>
           <section className="panel">
-            <h3>索引状态 Index Status</h3>
+            <h3>索引状态</h3>
             {manifestLoading ? <p className="muted">正在加载 manifest...</p> : null}
             {manifestError ? <p className="alert-box error">{manifestError}</p> : null}
             {runSummary ? (
@@ -497,20 +497,20 @@ export default function AnalysisDetailPage({
             )}
           </section>
           <section className="panel">
-            <h3>产物摘要 Artifact Summary</h3>
+            <h3>产物摘要</h3>
             <ArtifactSummaryTable artifactSummary={runSummary?.artifact_summary} />
           </section>
           <section className="panel">
-            <h3>可视化产物 Visual Artifacts</h3>
+            <h3>可视化产物</h3>
             <VisualArtifactsPanel artifactSummary={runSummary?.artifact_summary} />
           </section>
         </div>
         <div className="grid content-grid">
           <section className="panel">
-            <h3>轨迹查询 Trajectory Query</h3>
+            <h3>轨迹查询</h3>
             <div className="toolbar">
               <label>
-                条数 Limit
+                条数
                 <input
                   max={1000}
                   min={0}
@@ -531,7 +531,7 @@ export default function AnalysisDetailPage({
                 />
               </label>
               <button disabled={!selectedRunId || trajectoryLoading} type="button" onClick={handleTrajectoryRefresh}>
-                应用 / 刷新 Apply / Refresh
+                应用 / 刷新
               </button>
             </div>
             {trajectoryLoading ? <p className="muted">正在加载轨迹点...</p> : null}
@@ -539,10 +539,10 @@ export default function AnalysisDetailPage({
             {trajectoryData ? <TrajectoryDetail data={trajectoryData} /> : null}
           </section>
           <section className="panel">
-            <h3>事件查询 Event Query</h3>
+            <h3>事件查询</h3>
             <div className="toolbar">
               <label>
-                条数 Limit
+                条数
                 <input
                   max={1000}
                   min={0}
@@ -554,7 +554,7 @@ export default function AnalysisDetailPage({
                 />
               </label>
               <label>
-                事件类型 Event type
+                事件类型
                 <input
                   placeholder="all"
                   value={eventTypeFilter}
@@ -571,7 +571,7 @@ export default function AnalysisDetailPage({
                 />
               </label>
               <button disabled={!selectedRunId || eventsLoading} type="button" onClick={handleEventsRefresh}>
-                应用 / 刷新 Apply / Refresh
+                应用 / 刷新
               </button>
             </div>
             {eventsLoading ? <p className="muted">正在加载事件...</p> : null}
@@ -589,10 +589,10 @@ export default function AnalysisDetailPage({
             ) : null}
           </section>
           <section className="panel">
-            <h3>告警查询 Alert Query</h3>
+            <h3>告警查询</h3>
             <div className="toolbar">
               <label>
-                条数 Limit
+                条数
                 <input
                   max={1000}
                   min={0}
@@ -604,7 +604,7 @@ export default function AnalysisDetailPage({
                 />
               </label>
               <label>
-                状态 Status
+                状态
                 <input
                   placeholder="all"
                   value={alertStatusFilter}
@@ -612,7 +612,7 @@ export default function AnalysisDetailPage({
                 />
               </label>
               <label>
-                级别 Level
+                级别
                 <input
                   placeholder="all"
                   value={alertLevelFilter}
@@ -620,7 +620,7 @@ export default function AnalysisDetailPage({
                 />
               </label>
               <label>
-                事件类型 Event type
+                事件类型
                 <input
                   placeholder="all"
                   value={alertEventTypeFilter}
@@ -628,10 +628,10 @@ export default function AnalysisDetailPage({
                 />
               </label>
               <button disabled={!selectedRunId || alertsLoading} type="button" onClick={handleGenerateAlerts}>
-                从事件生成告警 Generate alerts
+                从事件生成告警
               </button>
               <button disabled={!selectedRunId || alertsLoading} type="button" onClick={handleAlertsRefresh}>
-                刷新告警 Refresh alerts
+                刷新告警
               </button>
             </div>
             {alertsLoading ? <p className="muted">正在加载告警...</p> : null}
@@ -640,13 +640,13 @@ export default function AnalysisDetailPage({
           </section>
           <section className="panel">
             <div className="section-heading-row">
-              <h3>流量统计 Flow Counts</h3>
+              <h3>流量统计</h3>
               <button
                 disabled={!selectedRunId || flowCountsLoading}
                 type="button"
                 onClick={() => selectedRunId && loadFlowCounts(selectedRunId)}
               >
-                刷新 Refresh
+                刷新
               </button>
             </div>
             {flowCountsLoading ? <p className="muted">正在加载 flow_counts.json...</p> : null}
@@ -655,13 +655,13 @@ export default function AnalysisDetailPage({
           </section>
           <section className="panel">
             <div className="section-heading-row">
-              <h3>区域统计 Zone Statistics</h3>
+              <h3>区域统计</h3>
               <button
                 disabled={!selectedRunId || zoneStatisticsLoading}
                 type="button"
                 onClick={() => selectedRunId && loadZoneStatistics(selectedRunId)}
               >
-                刷新 Refresh
+                刷新
               </button>
             </div>
             {zoneStatisticsLoading ? <p className="muted">正在加载 zone_statistics.json...</p> : null}
@@ -669,22 +669,22 @@ export default function AnalysisDetailPage({
             {zoneStatisticsData ? <ZoneStatisticsDetail data={zoneStatisticsData} /> : null}
           </section>
           <section className="panel">
-            <h3>检测摘要 Detection Summary</h3>
+            <h3>检测摘要</h3>
             {detectionsLoading ? <p className="muted">正在加载检测结果...</p> : null}
             {detectionsError ? <p className="alert-box error">{detectionsError}</p> : null}
             {detections ? (
               <>
               <p>
-                {formatValue(detections.summary.total_frames_processed, "0")} 帧 frames ·{" "}
-                {formatValue(detections.summary.total_detections, "0")} 检测 detections
+                {formatValue(detections.summary.total_frames_processed, "0")} 帧 ·{" "}
+                {formatValue(detections.summary.total_detections, "0")} 检测
               </p>
-              <h3>帧结果 Frame Results</h3>
+              <h3>帧结果</h3>
               <table>
                 <thead>
                   <tr>
-                    <th>帧 Frame</th>
-                    <th>时间戳 Timestamp</th>
-                    <th>检测数 Detections</th>
+                    <th>帧</th>
+                    <th>时间戳</th>
+                    <th>检测数</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -701,24 +701,24 @@ export default function AnalysisDetailPage({
             ) : null}
           </section>
           <section className="panel">
-            <h3>跟踪摘要 Tracking Summary</h3>
+            <h3>跟踪摘要</h3>
             {tracksLoading ? <p className="muted">正在加载跟踪结果...</p> : null}
             {tracksError ? <p className="alert-box error">{tracksError}</p> : null}
             {tracks ? (
               <>
               <p>
-                {formatValue(tracks.summary.total_frames_processed, "0")} 帧 frames ·{" "}
-                {formatValue(tracks.summary.total_tracks, "0")} 跟踪行 track rows ·{" "}
-                {formatValue(tracks.summary.unique_track_ids, "0")} 唯一 ID unique IDs
+                {formatValue(tracks.summary.total_frames_processed, "0")} 帧 ·{" "}
+                {formatValue(tracks.summary.total_tracks, "0")} 跟踪行 ·{" "}
+                {formatValue(tracks.summary.unique_track_ids, "0")} 唯一 ID
               </p>
-              <h3>跟踪结果 Track Results</h3>
+              <h3>跟踪结果</h3>
               <table>
                 <thead>
                   <tr>
-                    <th>帧 Frame</th>
+                    <th>帧</th>
                     <th>Track ID</th>
-                    <th>类别 Class</th>
-                    <th>状态 State</th>
+                    <th>类别</th>
+                    <th>状态</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -753,7 +753,7 @@ function RunSummaryPanel({ run }: { run: AnalysisRunSummary }) {
         <dd>{formatValue(run.video_id)}</dd>
       </div>
       <div>
-        <dt>状态 status</dt>
+        <dt>状态</dt>
         <dd>{formatValue(run.status)}</dd>
       </div>
       <div>
@@ -797,11 +797,11 @@ function IndexStatusPanel({
         <thead>
           <tr>
             <th>Index</th>
-            <th>状态 Status</th>
-            <th>可用 Available</th>
-            <th>路径 Path</th>
+            <th>状态</th>
+            <th>可用</th>
+            <th>路径</th>
             <th>Schema</th>
-            <th>错误 Error</th>
+            <th>错误</th>
           </tr>
         </thead>
         <tbody>
@@ -849,10 +849,10 @@ function ArtifactSummaryTable({ artifactSummary }: { artifactSummary?: ArtifactS
     <table>
       <thead>
         <tr>
-          <th>产物键 Artifact key</th>
-          <th>状态 Status</th>
-          <th>路径 Path</th>
-          <th>记录数 Record count</th>
+          <th>产物键</th>
+          <th>状态</th>
+          <th>路径</th>
+          <th>记录数</th>
         </tr>
       </thead>
       <tbody>
@@ -884,10 +884,10 @@ function VisualArtifactsPanel({ artifactSummary }: { artifactSummary?: ArtifactS
     <table>
       <thead>
         <tr>
-          <th>产物 Artifact</th>
-          <th>状态 Status</th>
-          <th>数量 Count</th>
-          <th>路径 Path</th>
+          <th>产物</th>
+          <th>状态</th>
+          <th>数量</th>
+          <th>路径</th>
         </tr>
       </thead>
       <tbody>
@@ -931,17 +931,17 @@ function TrajectoryDetail({ data }: { data: TrajectoryPointsResponse }) {
 
   return (
     <>
-      <h3>轨迹摘要 Trajectory Summary</h3>
+      <h3>轨迹摘要</h3>
       <p>
-        {formatValue(data.summary.total_frames_processed ?? 0)} 帧 frames ·{" "}
-        {formatValue(data.summary.total_trajectory_points ?? 0)} 轨迹点 trajectory points ·{" "}
-        {formatValue(data.summary.unique_track_ids ?? 0)} 唯一 ID unique IDs · 平均长度 avg length{" "}
-        {formatValue(data.summary.avg_track_length)} · 最大长度 max length{" "}
-        {formatValue(data.summary.max_track_length)} · 平均速度 avg speed{" "}
+        {formatValue(data.summary.total_frames_processed ?? 0)} 帧 ·{" "}
+        {formatValue(data.summary.total_trajectory_points ?? 0)} 轨迹点 ·{" "}
+        {formatValue(data.summary.unique_track_ids ?? 0)} 唯一 ID · 平均长度{" "}
+        {formatValue(data.summary.avg_track_length)} · 最大长度{" "}
+        {formatValue(data.summary.max_track_length)} · 平均速度{" "}
         {formatValue(data.summary.avg_speed_px_per_second)}
       </p>
       {hasNoMatches ? <p className="muted">没有匹配的 trajectory points</p> : null}
-      <h3>轨迹行 Trajectory Rows</h3>
+      <h3>轨迹行</h3>
       {rowPreview.length === 0 ? (
         <p className="muted">暂无 trajectory rows</p>
       ) : (
@@ -964,16 +964,16 @@ function TrajectoryDetail({ data }: { data: TrajectoryPointsResponse }) {
           </tbody>
         </table>
       )}
-      <h3>轨迹帧 Trajectory Frames</h3>
+      <h3>轨迹帧</h3>
       {framePreview.length === 0 ? (
         <p className="muted">暂无 trajectory frames</p>
       ) : (
         <table>
           <thead>
             <tr>
-              <th>帧 Frame</th>
-              <th>时间戳 Timestamp</th>
-              <th>点数 Point count</th>
+              <th>帧</th>
+              <th>时间戳</th>
+              <th>点数</th>
               <th>Track IDs</th>
             </tr>
           </thead>
@@ -1009,19 +1009,19 @@ function EventsDetail({
 
   return (
     <>
-      <h3>事件摘要 Event Summary</h3>
+      <h3>事件摘要</h3>
       <p>
-        {formatValue(data.summary.total_events ?? 0)} 事件 events ·{" "}
-        {formatValue(data.summary.unique_track_ids ?? 0)} 唯一 ID unique IDs · 首个 first{" "}
-        {formatValue(data.summary.first_event_time_ms)} · 最后 last{" "}
+        {formatValue(data.summary.total_events ?? 0)} 事件 ·{" "}
+        {formatValue(data.summary.unique_track_ids ?? 0)} 唯一 ID · 首个{" "}
+        {formatValue(data.summary.first_event_time_ms)} · 最后{" "}
         {formatValue(data.summary.last_event_time_ms)}
       </p>
       <p className="muted">
-        types {formatCountMap(data.summary.per_event_type_counts)} · severity{" "}
-        {formatCountMap(data.summary.per_severity_counts)} · status{" "}
+        类型 {formatCountMap(data.summary.per_event_type_counts)} · 严重程度{" "}
+        {formatCountMap(data.summary.per_severity_counts)} · 状态{" "}
         {formatCountMap(data.summary.per_status_counts)}
       </p>
-      <h3>事件 Events</h3>
+      <h3>事件</h3>
       <EventTable
         buildReviewHref={(event) => {
           const eventId = normalizeOptionalRecordValue(event.event_id);
@@ -1033,13 +1033,13 @@ function EventsDetail({
         onSelectEvent={onSelectEvent}
         selectedEventId={selectedEventId}
       />
-      <h3>事件证据 Event Evidence</h3>
+      <h3>事件证据</h3>
       {evidencePreview.length === 0 ? (
         <p className="muted">暂无 event evidence</p>
       ) : (
         <RecordTable columns={evidenceColumns} rows={evidencePreview} />
       )}
-      <h3>规则执行 Rule Executions</h3>
+      <h3>规则执行</h3>
       {executionPreview.length === 0 ? (
         <p className="muted">暂无 rule executions</p>
       ) : (
@@ -1058,20 +1058,20 @@ function AlertsDetail({ data }: { data: AlertsResponse }) {
 
   return (
     <>
-      <h3>告警摘要 Alert Summary</h3>
+      <h3>告警摘要</h3>
       <p>
-        {formatValue(data.summary.total_alerts ?? 0)} 告警 alerts ·{" "}
-        {formatValue(data.summary.unique_event_ids ?? 0)} 事件 events ·{" "}
-        {formatValue(data.summary.unique_track_ids ?? 0)} 唯一 ID unique IDs · 首个 first{" "}
-        {formatValue(data.summary.first_alert_time_ms)} · 最后 last{" "}
+        {formatValue(data.summary.total_alerts ?? 0)} 告警 ·{" "}
+        {formatValue(data.summary.unique_event_ids ?? 0)} 事件 ·{" "}
+        {formatValue(data.summary.unique_track_ids ?? 0)} 唯一 ID · 首个{" "}
+        {formatValue(data.summary.first_alert_time_ms)} · 最后{" "}
         {formatValue(data.summary.last_alert_time_ms)}
       </p>
       <p className="muted">
-        types {formatCountMap(data.summary.per_alert_type_counts)} · level{" "}
-        {formatCountMap(data.summary.per_level_counts)} · status{" "}
+        类型 {formatCountMap(data.summary.per_alert_type_counts)} · 级别{" "}
+        {formatCountMap(data.summary.per_level_counts)} · 状态{" "}
         {formatCountMap(data.summary.per_status_counts)}
       </p>
-      <h3>告警 Alerts</h3>
+      <h3>告警</h3>
       {alertPreview.length === 0 ? (
         <p className="muted">暂无告警。事件触发后会在这里显示。</p>
       ) : (
@@ -1088,27 +1088,27 @@ function FlowCountsDetail({ data }: { data: FlowCountsArtifact }) {
   return (
     <>
       <p>
-        {formatValue(data.summary?.total_count ?? 0)} 总计 total ·{" "}
-        {formatValue(data.summary?.vehicle_count ?? 0)} 车辆 vehicles ·{" "}
-        {formatValue(data.summary?.person_count ?? 0)} 行人 people · {records.length} 记录 records ·{" "}
-        {windows.length} 窗口 windows
+        {formatValue(data.summary?.total_count ?? 0)} 总计 ·{" "}
+        {formatValue(data.summary?.vehicle_count ?? 0)} 车辆 ·{" "}
+        {formatValue(data.summary?.person_count ?? 0)} 行人 · {records.length} 记录 ·{" "}
+        {windows.length} 窗口
       </p>
       <p className="muted">
         schema {formatValue(data.schema_version)} · window {formatValue(data.window_ms)} ms
       </p>
-      <h3>流量窗口 Flow Windows</h3>
+      <h3>流量窗口</h3>
       {windows.length === 0 ? (
         <p className="muted">暂无 flow windows</p>
       ) : (
         <table>
           <thead>
             <tr>
-              <th>窗口 Window</th>
-              <th>区域 Zone</th>
-              <th>线 Line</th>
-              <th>类别 Class</th>
-              <th>方向 Direction</th>
-              <th>总计 Total</th>
+              <th>窗口</th>
+              <th>区域</th>
+              <th>线</th>
+              <th>类别</th>
+              <th>方向</th>
+              <th>总计</th>
             </tr>
           </thead>
           <tbody>
@@ -1128,19 +1128,19 @@ function FlowCountsDetail({ data }: { data: FlowCountsArtifact }) {
           </tbody>
         </table>
       )}
-      <h3>流量记录 Flow Records</h3>
+      <h3>流量记录</h3>
       {records.length === 0 ? (
         <p className="muted">暂无 flow records</p>
       ) : (
         <table>
           <thead>
             <tr>
-              <th>事件 Event</th>
+              <th>事件</th>
               <th>Track</th>
-              <th>区域 Zone</th>
-              <th>线 Line</th>
-              <th>类别 Class</th>
-              <th>方向 Direction</th>
+              <th>区域</th>
+              <th>线</th>
+              <th>类别</th>
+              <th>方向</th>
             </tr>
           </thead>
           <tbody>
@@ -1168,27 +1168,27 @@ function ZoneStatisticsDetail({ data }: { data: ZoneStatisticsArtifact }) {
   return (
     <>
       <p>
-        {formatValue(data.summary?.zone_count ?? 0)} 区域 zones ·{" "}
-        {formatValue(data.summary?.total_windows ?? 0)} 窗口 windows ·{" "}
-        {formatValue(data.summary?.congestion_event_count ?? 0)} 拥堵事件 congestion events ·{" "}
-        {windows.length} 窗口行 window rows · {congestionEvents.length} 事件行 event rows
+        {formatValue(data.summary?.zone_count ?? 0)} 区域 ·{" "}
+        {formatValue(data.summary?.total_windows ?? 0)} 窗口 ·{" "}
+        {formatValue(data.summary?.congestion_event_count ?? 0)} 拥堵事件 ·{" "}
+        {windows.length} 窗口行 · {congestionEvents.length} 事件行
       </p>
       <p className="muted">
         schema {formatValue(data.schema_version)} · window {formatValue(data.window_ms)} ms
       </p>
-      <h3>区域窗口 Zone Windows</h3>
+      <h3>区域窗口</h3>
       {windows.length === 0 ? (
         <p className="muted">暂无 zone windows</p>
       ) : (
         <table>
           <thead>
             <tr>
-              <th>窗口 Window</th>
-              <th>区域 Zone</th>
-              <th>车辆 Vehicles</th>
-              <th>行人 People</th>
-              <th>占用 Occupancy</th>
-              <th>平均速度 Avg speed</th>
+              <th>窗口</th>
+              <th>区域</th>
+              <th>车辆</th>
+              <th>行人</th>
+              <th>占用</th>
+              <th>平均速度</th>
             </tr>
           </thead>
           <tbody>
@@ -1208,19 +1208,19 @@ function ZoneStatisticsDetail({ data }: { data: ZoneStatisticsArtifact }) {
           </tbody>
         </table>
       )}
-      <h3>拥堵事件 Congestion Events</h3>
+      <h3>拥堵事件</h3>
       {congestionEvents.length === 0 ? (
         <p className="muted">暂无 congestion events</p>
       ) : (
         <table>
           <thead>
             <tr>
-              <th>事件 Event</th>
-              <th>区域 Zone</th>
-              <th>帧 Frame</th>
-              <th>时间戳 Timestamp</th>
-              <th>车辆 Vehicles</th>
-              <th>平均速度 Avg speed</th>
+              <th>事件</th>
+              <th>区域</th>
+              <th>帧</th>
+              <th>时间戳</th>
+              <th>车辆</th>
+              <th>平均速度</th>
             </tr>
           </thead>
           <tbody>

@@ -84,12 +84,12 @@ export function formatBadCaseStatusLabel(
 ): string {
   const normalized = normalizeText(status, "unknown");
   const labels: Record<string, string> = {
-    open: "未处理 open",
-    triaged: "已分诊 triaged",
-    fixed: "已修复 fixed",
-    verified: "已验证 verified",
-    wont_fix: "暂不修复 wont_fix",
-    unknown: "未知 unknown"
+    open: "未处理",
+    triaged: "已分诊",
+    fixed: "已修复",
+    verified: "已验证",
+    wont_fix: "暂不修复",
+    unknown: "未知"
   };
   return labels[normalized] ?? normalized;
 }
@@ -99,17 +99,17 @@ export function formatBadCaseTypeLabel(
 ): string {
   const normalized = normalizeText(caseType, "unknown");
   const labels: Record<string, string> = {
-    false_positive: "误报 false_positive",
-    false_negative: "漏报 false_negative",
-    detection_miss: "检测漏检 detection_miss",
-    detection_false_positive: "检测误检 detection_false_positive",
-    tracking_fragmentation: "跟踪断裂 tracking_fragmentation",
-    id_switch: "ID 切换 id_switch",
-    trajectory_error: "轨迹错误 trajectory_error",
-    event_rule_error: "规则错误 event_rule_error",
-    annotation_error: "标注错误 annotation_error",
-    other: "其他 other",
-    unknown: "未知 unknown"
+    false_positive: "误报",
+    false_negative: "漏报",
+    detection_miss: "检测漏检",
+    detection_false_positive: "检测误检",
+    tracking_fragmentation: "跟踪断裂",
+    id_switch: "ID 切换",
+    trajectory_error: "轨迹错误",
+    event_rule_error: "规则错误",
+    annotation_error: "标注错误",
+    other: "其他",
+    unknown: "未知"
   };
   return labels[normalized] ?? normalized;
 }
@@ -119,14 +119,14 @@ export function formatBadCaseModuleLabel(
 ): string {
   const normalized = normalizeText(module, "unknown");
   const labels: Record<string, string> = {
-    detector: "检测器 detector",
-    tracker: "跟踪器 tracker",
-    trajectory: "轨迹 trajectory",
-    event_engine: "事件引擎 event_engine",
-    review_center: "复核中心 review_center",
-    visualization: "可视化 visualization",
-    other: "其他 other",
-    unknown: "未知 unknown"
+    detector: "检测器",
+    tracker: "跟踪器",
+    trajectory: "轨迹",
+    event_engine: "事件引擎",
+    review_center: "复核中心",
+    visualization: "可视化",
+    other: "其他",
+    unknown: "未知"
   };
   return labels[normalized] ?? normalized;
 }

@@ -58,12 +58,12 @@ const summary = {
 
 test("buildReportSummaryCards exposes export-focused counts", () => {
   assert.deepEqual(reportExport.buildReportSummaryCards(summary), [
-    { label: "事件 Events", value: 4 },
-    { label: "告警 Alerts", value: 5 },
-    { label: "流量记录 Flow records", value: 6 },
-    { label: "区域窗口 Zone windows", value: 7 },
-    { label: "坏例 Bad cases", value: 8 },
-    { label: "评测结果 Evaluation results", value: 9 }
+    { label: "事件", value: 4 },
+    { label: "告警", value: 5 },
+    { label: "流量记录", value: 6 },
+    { label: "区域窗口", value: 7 },
+    { label: "坏例", value: 8 },
+    { label: "评测结果", value: 9 }
   ]);
 });
 
@@ -92,9 +92,9 @@ test("JSON export preview and metadata are deterministic", () => {
   assert.match(reportExport.buildJsonExportPreview(payload), /full_stage_6ab\.report\.v1/);
   assert.deepEqual(reportExport.buildJsonExportMetadata(payload), [
     { label: "Schema", value: "full_stage_6ab.report.v1" },
-    { label: "Generated", value: "2026-01-01T00:00:00+00:00" },
+    { label: "生成时间", value: "2026-01-01T00:00:00+00:00" },
     { label: "Run", value: "run.1" },
-    { label: "Sections", value: "events, alerts" }
+    { label: "区块", value: "events, alerts" }
   ]);
 });
 
@@ -151,21 +151,21 @@ test("bundle summary helpers map sections and artifact rows", () => {
   };
   assert.equal(
     reportExport.buildBundleSectionLabel(bundle),
-    "4 sections: summary, events, keyframes, annotated_video"
+    "4 个区块：summary, events, keyframes, annotated_video"
   );
   assert.deepEqual(reportExport.buildArtifactReferenceRows(bundle), [
     {
       key: "keyframes",
       type: "visual_artifact_reference",
       path: "keyframes/index.json",
-      status: "可用 Available",
+      status: "可用",
       note: "Keyframes available."
     },
     {
       key: "annotated_video",
       type: "visual_artifact_reference",
       path: "annotated_video.mp4",
-      status: "不可用 Unavailable",
+      status: "不可用",
       note: "Source video missing."
     }
   ]);
@@ -210,7 +210,7 @@ test("visual artifact helpers normalize keyframes and annotated video labels", (
       record_count: 1,
       notes: "available"
     }),
-    "可用 Available: annotated_video.mp4"
+    "可用：annotated_video.mp4"
   );
   assert.equal(
     reportExport.buildAnnotatedVideoLabel({
@@ -221,6 +221,6 @@ test("visual artifact helpers normalize keyframes and annotated video labels", (
       record_count: 0,
       notes: "Source video was not available."
     }),
-    "不可用 Unavailable (missing_source_video): Source video was not available."
+    "不可用（missing_source_video）：Source video was not available."
   );
 });

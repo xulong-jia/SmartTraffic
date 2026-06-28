@@ -37,7 +37,7 @@ export default function DashboardPage({ onOpenAnalysisRun }: DashboardPageProps)
     <>
       <header className="page-header">
         <div>
-          <h2>总览 Dashboard</h2>
+          <h2>总览</h2>
           <p>查看分析任务状态、结果产物和系统运行概况。</p>
         </div>
       </header>
@@ -47,26 +47,26 @@ export default function DashboardPage({ onOpenAnalysisRun }: DashboardPageProps)
         <>
           <MetricCards
             metrics={[
-              { label: "总分析数", value: String(overview.totalRuns), detail: "已索引 indexed" },
+              { label: "总分析数", value: String(overview.totalRuns), detail: "已索引" },
               {
                 label: "已完成",
                 value: String(overview.statusCounts.completed),
-                detail: "可查看 ready"
+                detail: "可查看"
               },
               {
                 label: "运行中",
                 value: String(overview.statusCounts.running),
-                detail: "处理中 active"
+                detail: "处理中"
               },
               {
                 label: "失败",
                 value: String(overview.statusCounts.failed),
-                detail: "需检查 needs check"
+                detail: "需检查"
               },
               {
                 label: "未知",
                 value: String(overview.statusCounts.unknown),
-                detail: "未分类 unclassified"
+                detail: "未分类"
               }
             ]}
           />
@@ -77,19 +77,19 @@ export default function DashboardPage({ onOpenAnalysisRun }: DashboardPageProps)
           ) : (
             <div className="grid content-grid">
               <section className="panel">
-                <h3>产物状态汇总 Artifact Status</h3>
+                <h3>产物状态汇总</h3>
                 <div className="table-scroll">
                   <table className="data-table dashboard-table">
                     <thead>
                       <tr>
-                        <th>Artifact</th>
-                        <th>Available</th>
-                        <th>Missing</th>
-                        <th>Planned</th>
-                        <th>Empty</th>
-                        <th>Missing source</th>
-                        <th>Error</th>
-                        <th>Other</th>
+                        <th>产物</th>
+                        <th>可用</th>
+                        <th>缺失</th>
+                        <th>计划中</th>
+                        <th>为空</th>
+                        <th>缺少源视频</th>
+                        <th>错误</th>
+                        <th>其他</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -110,20 +110,20 @@ export default function DashboardPage({ onOpenAnalysisRun }: DashboardPageProps)
                 </div>
               </section>
               <section className="panel">
-                <h3>最近分析任务 Recent Analysis Runs</h3>
+                <h3>最近分析任务</h3>
                 <div className="table-scroll">
                   <table className="data-table dashboard-table">
                     <thead>
                       <tr>
-                        <th>Run</th>
-                        <th>Video</th>
-                        <th>Status</th>
-                        <th>Updated</th>
-                        <th>Source</th>
+                        <th>任务</th>
+                        <th>视频</th>
+                        <th>状态</th>
+                        <th>更新时间</th>
+                        <th>来源</th>
                         {DASHBOARD_ARTIFACT_KEYS.map((artifactKey) => (
                           <th key={artifactKey}>{artifactLabel(artifactKey)}</th>
                         ))}
-                        {onOpenAnalysisRun ? <th>Action</th> : null}
+                        {onOpenAnalysisRun ? <th>操作</th> : null}
                       </tr>
                     </thead>
                     <tbody>
@@ -143,7 +143,7 @@ export default function DashboardPage({ onOpenAnalysisRun }: DashboardPageProps)
                             return (
                               <td key={artifactKey}>
                                 <span className={`status-pill status-${status}`}>
-                                  {status}
+                                  {formatArtifactStatusValue(status)}
                                 </span>
                               </td>
                             );
@@ -151,7 +151,7 @@ export default function DashboardPage({ onOpenAnalysisRun }: DashboardPageProps)
                           {onOpenAnalysisRun ? (
                             <td>
                               <button type="button" onClick={() => onOpenAnalysisRun(getRunId(run))}>
-                                Open
+                                打开
                               </button>
                             </td>
                           ) : null}
@@ -201,12 +201,24 @@ function formatValue(value: AnalysisRunSummary[keyof AnalysisRunSummary]): strin
 function formatStatusValue(value: AnalysisRunSummary[keyof AnalysisRunSummary]): string {
   const raw = formatValue(value);
   const labels: Record<string, string> = {
-    completed: "已完成 completed",
-    running: "运行中 running",
-    failed: "失败 failed",
-    pending: "待处理 pending"
+    completed: "已完成",
+    running: "运行中",
+    failed: "失败",
+    pending: "待处理"
   };
   return labels[raw] ?? raw;
+}
+
+function formatArtifactStatusValue(value: string): string {
+  const labels: Record<string, string> = {
+    available: "可用",
+    missing: "缺失",
+    planned: "计划中",
+    empty: "为空",
+    missing_source_video: "缺少源视频",
+    error: "错误"
+  };
+  return labels[value] ?? value;
 }
 
 function statusClassName(value: AnalysisRunSummary[keyof AnalysisRunSummary]): string {
@@ -216,12 +228,12 @@ function statusClassName(value: AnalysisRunSummary[keyof AnalysisRunSummary]): s
 
 function artifactLabel(value: string): string {
   const labels: Record<string, string> = {
-    detections: "Detections",
-    tracks: "Tracks",
-    events: "Events",
-    alerts: "Alerts",
-    flow_counts: "Flow",
-    zone_statistics: "Zones"
+    detections: "检测",
+    tracks: "跟踪",
+    events: "事件",
+    alerts: "告警",
+    flow_counts: "流量",
+    zone_statistics: "区域"
   };
   return labels[value] ?? value;
 }

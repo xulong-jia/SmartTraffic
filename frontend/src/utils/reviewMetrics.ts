@@ -37,13 +37,13 @@ export function buildReviewStatusCounts(events: ReviewEventSummary[]): ReviewSta
 export function formatReviewStatusLabel(status: ReviewStatus | string | null | undefined): string {
   const normalized = normalizeReviewText(status, "unknown");
   const labels: Record<string, string> = {
-    pending: "待复核 pending",
-    confirmed: "已确认 confirmed",
-    false_positive: "误报 false_positive",
-    false_negative: "漏报 false_negative",
-    ignored: "已忽略 ignored",
-    resolved: "已解决 resolved",
-    unknown: "未知 unknown"
+    pending: "待复核",
+    confirmed: "已确认",
+    false_positive: "误报",
+    false_negative: "漏报",
+    ignored: "已忽略",
+    resolved: "已解决",
+    unknown: "未知"
   };
   return labels[normalized] ?? normalized;
 }

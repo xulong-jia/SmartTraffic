@@ -96,10 +96,10 @@ export function alertPanelEmptyLabel(
 export function formatAlertStatusLabel(status: string | null | undefined): string {
   const normalized = normalizeText(status);
   const labels: Record<string, string> = {
-    new: "新告警 new",
-    acknowledged: "已确认 acknowledged",
-    resolved: "已解决 resolved",
-    ignored: "已忽略 ignored"
+    new: "新告警",
+    acknowledged: "已确认",
+    resolved: "已解决",
+    ignored: "已忽略"
   };
   return labels[normalized] ?? normalizeDisplay(status);
 }
@@ -107,9 +107,9 @@ export function formatAlertStatusLabel(status: string | null | undefined): strin
 export function formatAlertLevelLabel(level: string | null | undefined): string {
   const normalized = normalizeText(level);
   const labels: Record<string, string> = {
-    info: "信息 info",
-    warning: "警告 warning",
-    critical: "严重 critical"
+    info: "信息",
+    warning: "警告",
+    critical: "严重"
   };
   return labels[normalized] ?? normalizeDisplay(level);
 }

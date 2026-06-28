@@ -25,16 +25,16 @@ type PageKey =
   | "reports";
 
 const pages: Array<{ key: PageKey; label: string }> = [
-  { key: "dashboard", label: "总览 Dashboard" },
-  { key: "cameras", label: "摄像头中心 Camera" },
-  { key: "videos", label: "视频中心 Video" },
-  { key: "analysis", label: "分析详情 Analysis" },
-  { key: "zones", label: "区域与规则 Zone & Rules" },
-  { key: "alerts", label: "告警中心 Alert" },
-  { key: "review", label: "复核中心 Review" },
-  { key: "badCases", label: "坏例中心 Bad Case" },
-  { key: "evaluation", label: "评测中心 Evaluation" },
-  { key: "reports", label: "报告中心 Report" }
+  { key: "dashboard", label: "总览" },
+  { key: "cameras", label: "摄像头中心" },
+  { key: "videos", label: "视频中心" },
+  { key: "analysis", label: "分析详情" },
+  { key: "zones", label: "区域与规则" },
+  { key: "alerts", label: "告警中心" },
+  { key: "review", label: "复核中心" },
+  { key: "badCases", label: "坏例中心" },
+  { key: "evaluation", label: "评测中心" },
+  { key: "reports", label: "报告中心" }
 ];
 
 const pagePaths: Record<PageKey, string> = {

@@ -164,7 +164,7 @@ export default function BadCaseCenterPage() {
     try {
       const created = await createBadCase(buildCreateRequest(createForm));
       setCreateForm({ ...emptyCreateForm, run_id: normalizedRunId });
-      setSuccessMessage(`Created ${created.case_id}.`);
+      setSuccessMessage(`已创建 ${created.case_id}。`);
       await loadCases(created.case_id);
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Bad Case create failed");
@@ -191,7 +191,7 @@ export default function BadCaseCenterPage() {
       };
       const updated = await updateBadCase(detail.case_id, body);
       setDetail(updated);
-      setSuccessMessage(`Updated ${updated.case_id}.`);
+      setSuccessMessage(`已更新 ${updated.case_id}。`);
       await loadCases(updated.case_id);
     } catch (currentError) {
       setDetailError(currentError instanceof Error ? currentError.message : "Bad Case update failed");
@@ -204,11 +204,11 @@ export default function BadCaseCenterPage() {
     <>
       <header className="page-header">
         <div>
-          <h2>坏例中心 Bad Case Center</h2>
+          <h2>坏例中心</h2>
           <p>记录误报、漏报、ID 切换、轨迹丢失和规则错误。</p>
         </div>
         <button type="button" onClick={() => loadCases()} disabled={loading}>
-          刷新 Refresh
+          刷新
         </button>
       </header>
 
@@ -223,9 +223,9 @@ export default function BadCaseCenterPage() {
             />
           </label>
           <label>
-            类型 Type
+            类型
             <select value={caseType} onChange={(event) => setCaseType(event.target.value)}>
-              <option value="">全部 All</option>
+              <option value="">全部</option>
               {BAD_CASE_TYPE_KEYS.map((value) => (
                 <option key={value} value={value}>
                   {formatBadCaseTypeLabel(value)}
@@ -234,9 +234,9 @@ export default function BadCaseCenterPage() {
             </select>
           </label>
           <label>
-            模块 Module
+            模块
             <select value={module} onChange={(event) => setModule(event.target.value)}>
-              <option value="">全部 All</option>
+              <option value="">全部</option>
               {BAD_CASE_MODULE_KEYS.map((value) => (
                 <option key={value} value={value}>
                   {formatBadCaseModuleLabel(value)}
@@ -245,9 +245,9 @@ export default function BadCaseCenterPage() {
             </select>
           </label>
           <label>
-            状态 Status
+            状态
             <select value={status} onChange={(event) => setStatus(event.target.value)}>
-              <option value="">全部 All</option>
+              <option value="">全部</option>
               {BAD_CASE_STATUS_KEYS.map((value) => (
                 <option key={value} value={value}>
                   {formatBadCaseStatusLabel(value)}
@@ -256,11 +256,11 @@ export default function BadCaseCenterPage() {
             </select>
           </label>
           <label>
-            标签 Tag
+            标签
             <input value={tag} onChange={(event) => setTag(event.target.value)} />
           </label>
           <button type="button" onClick={() => loadCases()} disabled={loading}>
-            应用 Apply
+            应用
           </button>
         </div>
         {error ? <p className="alert-box error">{error}</p> : null}
@@ -268,12 +268,12 @@ export default function BadCaseCenterPage() {
         {loading ? <p className="muted">正在加载坏例...</p> : null}
         {summary ? (
           <div className="metric-row review-metric-row">
-            <MetricCard label="总数 Total" value={String(summary.total)} />
-            <MetricCard label="未处理 Open" value={String(summary.by_status.open ?? 0)} />
-            <MetricCard label="已修复 Fixed" value={String(summary.by_status.fixed ?? 0)} />
+            <MetricCard label="总数" value={String(summary.total)} />
+            <MetricCard label="未处理" value={String(summary.by_status.open ?? 0)} />
+            <MetricCard label="已修复" value={String(summary.by_status.fixed ?? 0)} />
             <MetricCard
               detail={topType?.detail}
-              label="主要类型 Top Type"
+              label="主要类型"
               value={topType?.value ?? "-"}
             />
           </div>
@@ -281,7 +281,7 @@ export default function BadCaseCenterPage() {
         {summary ? (
           <div className="summary-strip">
             <p>
-              模块 Modules: {topEntries(summary.by_module)} | 标签 Tags: {topEntries(summary.by_tag)}
+              模块：{topEntries(summary.by_module)} | 标签：{topEntries(summary.by_tag)}
             </p>
           </div>
         ) : null}
@@ -293,18 +293,18 @@ export default function BadCaseCenterPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>坏例 Case</th>
+                <th>坏例</th>
                 <th>Run</th>
-                <th>类型 Type</th>
-                <th>模块 Module</th>
-                <th>状态 Status</th>
-                <th>事件 Event</th>
+                <th>类型</th>
+                <th>模块</th>
+                <th>状态</th>
+                <th>事件</th>
                 <th>Track</th>
-                <th>帧 Frame</th>
-                <th>标签 Tags</th>
-                <th>来源 Source</th>
-                <th>失败用例 Failed Case</th>
-                <th>更新时间 Updated</th>
+                <th>帧</th>
+                <th>标签</th>
+                <th>来源</th>
+                <th>失败用例</th>
+                <th>更新时间</th>
               </tr>
             </thead>
             <tbody>
@@ -350,8 +350,8 @@ export default function BadCaseCenterPage() {
       <section className="grid two content-grid bad-case-workspace">
         <div className="panel">
           <div className="section-heading-row">
-            <h3>详情 Detail</h3>
-            {loadingDetail ? <span className="muted">加载中 Loading</span> : null}
+            <h3>详情</h3>
+            {loadingDetail ? <span className="muted">加载中</span> : null}
           </div>
           {detailError ? <p className="alert-box error">{detailError}</p> : null}
           {detail ? (
@@ -359,22 +359,22 @@ export default function BadCaseCenterPage() {
               <dl className="detail-grid">
                 <DetailItem label="Case ID" value={detail.case_id} />
                 <DetailItem label="Run ID" value={detail.run_id} />
-                <DetailItem label="描述 Description" value={detail.description} />
-                <DetailItem label="期望 Expected" value={detail.expected_result} />
-                <DetailItem label="实际 Actual" value={detail.actual_result} />
-                <DetailItem label="根因 Root cause" value={detail.root_cause} />
-                <DetailItem label="快照 Snapshot" value={detail.snapshot_path} />
-                <DetailItem label="复核 Review" value={detail.linked_review_id} />
-                <DetailItem label="失败用例 Failed Case" value={detail.linked_failed_case_id} />
-                <DetailItem label="事件 Event" value={detail.event_id} />
+                <DetailItem label="描述" value={detail.description} />
+                <DetailItem label="期望" value={detail.expected_result} />
+                <DetailItem label="实际" value={detail.actual_result} />
+                <DetailItem label="根因" value={detail.root_cause} />
+                <DetailItem label="快照" value={detail.snapshot_path} />
+                <DetailItem label="复核" value={detail.linked_review_id} />
+                <DetailItem label="失败用例" value={detail.linked_failed_case_id} />
+                <DetailItem label="事件" value={detail.event_id} />
                 <DetailItem label="Track" value={detail.track_id} />
-                <DetailItem label="帧 Frame" value={detail.frame_index} />
-                <DetailItem label="创建时间 Created" value={detail.created_at} />
-                <DetailItem label="更新时间 Updated" value={detail.updated_at} />
+                <DetailItem label="帧" value={detail.frame_index} />
+                <DetailItem label="创建时间" value={detail.created_at} />
+                <DetailItem label="更新时间" value={detail.updated_at} />
               </dl>
               <div className="summary-strip">
                 <label className="stacked-control">
-                  状态 Status
+                  状态
                   <select
                     value={updateForm.status}
                     onChange={(event) =>
@@ -389,7 +389,7 @@ export default function BadCaseCenterPage() {
                   </select>
                 </label>
                 <label className="stacked-control">
-                  根因 Root cause
+                  根因
                   <textarea
                     rows={2}
                     value={updateForm.root_cause}
@@ -402,7 +402,7 @@ export default function BadCaseCenterPage() {
                   />
                 </label>
                 <label className="stacked-control">
-                  标签 Tags
+                  标签
                   <input
                     value={updateForm.tags}
                     onChange={(event) =>
@@ -411,7 +411,7 @@ export default function BadCaseCenterPage() {
                   />
                 </label>
                 <label className="stacked-control">
-                  描述 Description
+                  描述
                   <textarea
                     rows={2}
                     value={updateForm.description}
@@ -428,21 +428,21 @@ export default function BadCaseCenterPage() {
                   onClick={submitUpdate}
                   disabled={submitting === "update"}
                 >
-                  更新 Update
+                  更新
                 </button>
               </div>
             </>
           ) : (
-            <p className="empty-state">请选择一个坏例 Bad Case。</p>
+            <p className="empty-state">请选择一个坏例。</p>
           )}
         </div>
 
         <div className="panel">
-          <h3>创建坏例 Create</h3>
+          <h3>创建坏例</h3>
           <div className="grid two">
             <TextInput label="Run ID" field="run_id" form={createForm} setForm={setCreateForm} />
             <label className="stacked-control">
-              类型 Type
+              类型
               <select
                 value={createForm.case_type}
                 onChange={(event) => updateCreateField("case_type", event.target.value)}
@@ -455,7 +455,7 @@ export default function BadCaseCenterPage() {
               </select>
             </label>
             <label className="stacked-control">
-              模块 Module
+              模块
               <select
                 value={createForm.module}
                 onChange={(event) => updateCreateField("module", event.target.value)}
@@ -470,21 +470,21 @@ export default function BadCaseCenterPage() {
             <TextInput label="Event ID" field="event_id" form={createForm} setForm={setCreateForm} />
             <TextInput label="Track ID" field="track_id" form={createForm} setForm={setCreateForm} />
             <TextInput
-              label="Frame"
+              label="帧"
               field="frame_index"
               form={createForm}
               setForm={setCreateForm}
             />
-            <TextInput label="Tags" field="tags" form={createForm} setForm={setCreateForm} />
+            <TextInput label="标签" field="tags" form={createForm} setForm={setCreateForm} />
             <TextInput
-              label="Snapshot"
+              label="快照"
               field="snapshot_path"
               form={createForm}
               setForm={setCreateForm}
             />
           </div>
           <label className="stacked-control">
-            描述 Description
+            描述
             <textarea
               rows={2}
               value={createForm.description}
@@ -492,7 +492,7 @@ export default function BadCaseCenterPage() {
             />
           </label>
           <label className="stacked-control">
-            期望 Expected
+            期望
             <textarea
               rows={2}
               value={createForm.expected_result}
@@ -500,7 +500,7 @@ export default function BadCaseCenterPage() {
             />
           </label>
           <label className="stacked-control">
-            实际 Actual
+            实际
             <textarea
               rows={2}
               value={createForm.actual_result}
@@ -508,7 +508,7 @@ export default function BadCaseCenterPage() {
             />
           </label>
           <label className="stacked-control">
-            根因 Root cause
+            根因
             <textarea
               rows={2}
               value={createForm.root_cause}
@@ -516,7 +516,7 @@ export default function BadCaseCenterPage() {
             />
           </label>
           <button type="button" onClick={submitCreate} disabled={submitting === "create"}>
-            创建 Create
+            创建
           </button>
         </div>
       </section>

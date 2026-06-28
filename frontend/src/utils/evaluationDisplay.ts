@@ -45,22 +45,22 @@ export const EVALUATION_BOUNDARY_NOTICES: EvaluationBoundaryNotice[] = [
   {
     key: "detection-map",
     label: "Detection mAP",
-    detail: "VOC-style single-IoU AP/mAP, not COCO official mAP."
+    detail: "本地 VOC-style 单 IoU AP/mAP，不是 COCO official mAP。"
   },
   {
     key: "tracking-metrics",
     label: "Tracking IDF1 / MOTA",
-    detail: "Lightweight deterministic frame-level association, not TrackEval official metrics."
+    detail: "轻量确定性帧级关联指标，不是 TrackEval official metrics。"
   },
   {
     key: "regression-rerun",
-    label: "Regression replay",
-    detail: "Deterministic replay / stored rule replay, not a complete video rerun."
+    label: "回归重放",
+    detail: "使用确定性重放或已存规则重放，不是完整视频重跑。"
   },
   {
     key: "insufficient-data",
-    label: "Insufficient data",
-    detail: "Missing annotations or replay data; it is not a zero score or failed case by itself."
+    label: "数据不足",
+    detail: "缺少标注或重放数据时不会直接计为 0 分或失败用例。"
   }
 ];
 
@@ -139,24 +139,24 @@ export function buildRegressionSummaryCards(
   return [
     {
       key: "regression-total",
-      label: "Regression total",
+      label: "回归总数",
       value: display.totalCases,
       status: display.statusLabel,
-      detail: "Stored Bad Case replay scope."
+      detail: "已存坏例重放范围。"
     },
     {
       key: "regression-pass-rate",
-      label: "Regression pass rate",
+      label: "回归通过率",
       value: display.regressionPassRate,
       status: display.statusLabel,
       detail: display.definition
     },
     {
       key: "regression-fixed",
-      label: "Fixed / verified",
+      label: "已修复 / 已验证",
       value: `${display.fixedCases} / ${display.verifiedCases}`,
       status: display.statusLabel,
-      detail: `Open ${display.openCases}; reopened ${display.reopenedCaseCount}.`
+      detail: `未处理 ${display.openCases}；重开 ${display.reopenedCaseCount}。`
     }
   ];
 }
@@ -171,7 +171,7 @@ export function formatEvaluationBoundaryForType(evaluationType: string): string 
   if (evaluationType === "regression") {
     return EVALUATION_BOUNDARY_NOTICES[2].detail;
   }
-  return `${formatEvaluationTypeLabel(evaluationType)} metrics follow the local MVP artifact contract.`;
+  return `${formatEvaluationTypeLabel(evaluationType)}指标遵循本地 MVP 产物契约。`;
 }
 
 export function isInsufficientDataResult(result: EvaluationResultRecord): boolean {
@@ -185,7 +185,7 @@ export function buildInsufficientDataLabel(result: EvaluationResultRecord): stri
   if (!isInsufficientDataResult(result)) {
     return formatEvaluationStatusLabel(String(result.details?.status ?? "available"));
   }
-  return "Insufficient data: missing annotations/data, not a zero score.";
+  return "数据不足：缺少标注或数据，不计为 0 分。";
 }
 
 function formatFrameRange(frameRange: Record<string, number | null | undefined>): string {

@@ -100,7 +100,7 @@ export default function CameraCenterPage() {
         stream_url: form.stream_url?.trim() || null,
         location: form.location?.trim() || null
       });
-      setSuccessMessage(`已创建 Created ${created.name}.`);
+      setSuccessMessage(`已创建 ${created.name}。`);
       await refreshCameras(created.id);
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Create camera failed");
@@ -146,7 +146,7 @@ export default function CameraCenterPage() {
       const nextStatus = await startRealtimePreview(selectedCamera.id);
       setStatus(nextStatus);
       await refreshRealtime(selectedCamera.id);
-      setSuccessMessage(`已启动 Started ${selectedCamera.name}.`);
+      setSuccessMessage(`已启动 ${selectedCamera.name}。`);
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Start preview failed");
     } finally {
@@ -165,7 +165,7 @@ export default function CameraCenterPage() {
       const nextStatus = await stopRealtimePreview(selectedCamera.id);
       setStatus(nextStatus);
       await refreshRealtime(selectedCamera.id);
-      setSuccessMessage(`已停止 Stopped ${selectedCamera.name}.`);
+      setSuccessMessage(`已停止 ${selectedCamera.name}。`);
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Stop preview failed");
     } finally {
@@ -184,7 +184,7 @@ export default function CameraCenterPage() {
       const updated = selectedCamera.enabled
         ? await disableCamera(selectedCamera.id)
         : await enableCamera(selectedCamera.id);
-      setSuccessMessage(`${updated.name} ${updated.enabled ? "已启用 enabled" : "已停用 disabled"}.`);
+      setSuccessMessage(`${updated.name} ${updated.enabled ? "已启用" : "已停用"}。`);
       await refreshCameras(updated.id);
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Camera update failed");
@@ -204,11 +204,11 @@ export default function CameraCenterPage() {
     <>
       <header className="page-header">
         <div>
-          <h2>摄像头中心 Camera Center</h2>
+          <h2>摄像头中心</h2>
           <p>管理本地摄像头、文件源和 RTSP 预览配置。</p>
         </div>
         <button type="button" onClick={() => refreshCameras()} disabled={loading}>
-          刷新 Refresh
+          刷新
         </button>
       </header>
 
@@ -217,45 +217,45 @@ export default function CameraCenterPage() {
 
       <section className="grid two content-grid">
         <div className="panel">
-          <h3>创建摄像头 Create Camera</h3>
+          <h3>创建摄像头</h3>
           <div className="form-grid">
             <label>
-              名称 Name
+              名称
               <input
                 value={form.name}
                 onChange={(event) => setForm({ ...form, name: event.target.value })}
               />
             </label>
             <label>
-              来源 Source
+              来源
               <select
                 value={form.source_type}
                 onChange={(event) =>
                   setForm({ ...form, source_type: event.target.value as CameraSourceType })
                 }
               >
-                <option value="mock">模拟 Mock</option>
-                <option value="file">本地文件 Local file</option>
+                <option value="mock">模拟</option>
+                <option value="file">本地文件</option>
                 <option value="rtsp">RTSP</option>
-                <option value="upload">上传 Upload</option>
+                <option value="upload">上传</option>
               </select>
             </label>
             <label>
-              位置 Location
+              位置
               <input
                 value={form.location || ""}
                 onChange={(event) => setForm({ ...form, location: event.target.value })}
               />
             </label>
             <label>
-              URL / 路径 URL / path
+              URL / 路径
               <input
                 value={form.stream_url || ""}
                 onChange={(event) => setForm({ ...form, stream_url: event.target.value })}
               />
             </label>
             <label>
-              宽度 Width
+              宽度
               <input
                 min="0"
                 type="number"
@@ -264,7 +264,7 @@ export default function CameraCenterPage() {
               />
             </label>
             <label>
-              高度 Height
+              高度
               <input
                 min="0"
                 type="number"
@@ -284,20 +284,20 @@ export default function CameraCenterPage() {
             </label>
           </div>
           <button type="button" onClick={submitCamera} disabled={loading || !form.name.trim()}>
-            创建 Create
+            创建
           </button>
         </div>
 
         <div className="panel">
-          <h3>实时预览 Realtime Preview</h3>
+          <h3>实时预览</h3>
           <div className="toolbar">
             <label>
-              摄像头 Camera
+              摄像头
               <select
                 value={selectedCameraId}
                 onChange={(event) => void setSelectedCamera(event.target.value)}
               >
-                <option value="">选择摄像头 Select camera</option>
+                <option value="">选择摄像头</option>
                 {cameras.map((camera) => (
                   <option key={camera.id} value={camera.id}>
                     {camera.name}
@@ -309,31 +309,31 @@ export default function CameraCenterPage() {
               type="button"
               onClick={startSelectedCamera}
               disabled={loading || Boolean(startDisabledReason)}
-              title={startDisabledReason || "Start preview"}
+              title={startDisabledReason || "启动预览"}
             >
-              启动 Start
+              启动
             </button>
             <button type="button" onClick={stopSelectedCamera} disabled={loading || !selectedCamera}>
-              停止 Stop
+              停止
             </button>
             <button type="button" onClick={toggleSelectedCamera} disabled={loading || !selectedCamera}>
-              {selectedCamera?.enabled ? "停用 Disable" : "启用 Enable"}
+              {selectedCamera?.enabled ? "停用" : "启用"}
             </button>
           </div>
 
           {selectedCamera ? (
             <dl className="detail-grid">
               <div>
-                <dt>来源 Source</dt>
+                <dt>来源</dt>
                 <dd>{formatCameraSourceLabel(selectedCamera.source_type)}</dd>
               </div>
               <div>
-                <dt>脱敏流地址 Masked stream</dt>
+                <dt>脱敏流地址</dt>
                 <dd>{buildMaskedStreamDisplay(selectedCamera)}</dd>
               </div>
               <div>
-                <dt>启用状态 Enabled</dt>
-                <dd>{selectedCamera.enabled ? "是 Yes" : "否 No"}</dd>
+                <dt>启用状态</dt>
+                <dd>{selectedCamera.enabled ? "是" : "否"}</dd>
               </div>
             </dl>
           ) : null}
@@ -347,16 +347,16 @@ export default function CameraCenterPage() {
       </section>
 
       <section className="panel">
-        <h3>最近帧 Recent Frames</h3>
+        <h3>最近帧</h3>
         <div className="table-scroll">
           <table className="data-table">
             <thead>
               <tr>
-                <th>帧 Frame</th>
-                <th>来源 Source</th>
-                <th>状态 Status</th>
-                <th>时间戳 Timestamp</th>
-                <th>说明 Description</th>
+                <th>帧</th>
+                <th>来源</th>
+                <th>状态</th>
+                <th>时间戳</th>
+                <th>说明</th>
               </tr>
             </thead>
             <tbody>
@@ -380,15 +380,15 @@ export default function CameraCenterPage() {
 
       <section className="grid two content-grid">
         <div className="panel">
-          <h3>最近事件 Recent Events</h3>
+          <h3>最近事件</h3>
           <div className="table-scroll">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>类型 Type</th>
-                  <th>严重程度 Severity</th>
-                  <th>帧 Frame</th>
-                  <th>状态 Status</th>
+                  <th>类型</th>
+                  <th>严重程度</th>
+                  <th>帧</th>
+                  <th>状态</th>
                 </tr>
               </thead>
               <tbody>
@@ -410,15 +410,15 @@ export default function CameraCenterPage() {
         </div>
 
         <div className="panel">
-          <h3>最近告警 Recent Alerts</h3>
+          <h3>最近告警</h3>
           <div className="table-scroll">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>级别 Level</th>
-                  <th>类型 Type</th>
-                  <th>状态 Status</th>
-                  <th>消息 Message</th>
+                  <th>级别</th>
+                  <th>类型</th>
+                  <th>状态</th>
+                  <th>消息</th>
                 </tr>
               </thead>
               <tbody>
@@ -444,15 +444,15 @@ export default function CameraCenterPage() {
 }
 
 function RealtimeMetricCard({ label, value }: { label: string; value: string | number }) {
-  const status = label === "状态 Status" && typeof value === "string" ? splitStatusValue(value) : null;
+  const status = label === "状态" && typeof value === "string" ? value : null;
   return (
     <div className="metric-card">
       <span className="metric-label">{label}</span>
       {status ? (
         <>
-          <span className="metric-value metric-status-main">{status.primary}</span>
-          <span className={`status-pill status-${statusClassName(status.secondary)}`}>
-            {status.secondary}
+          <span className="metric-value metric-status-main">{status}</span>
+          <span className={`status-pill status-${statusClassName(status)}`}>
+            {status}
           </span>
         </>
       ) : (
@@ -462,13 +462,24 @@ function RealtimeMetricCard({ label, value }: { label: string; value: string | n
   );
 }
 
-function splitStatusValue(value: string): { primary: string; secondary: string } {
-  const [primary, ...rest] = value.split(" ");
-  return { primary, secondary: rest.join(" ") || value };
-}
-
 function statusClassName(value: string): string {
-  const parts = value.split(" ");
-  const raw = parts[parts.length - 1] || value;
+  const reverseLabels: Record<string, string> = {
+    运行中: "running",
+    已停止: "stopped",
+    已完成: "completed",
+    待处理: "pending",
+    失败: "failed",
+    新告警: "new",
+    已确认: "acknowledged",
+    已解决: "resolved",
+    已忽略: "ignored",
+    低: "low",
+    中: "medium",
+    高: "high",
+    信息: "info",
+    警告: "warning",
+    严重: "critical"
+  };
+  const raw = reverseLabels[value] ?? value;
   return raw.toLowerCase().replace(/[^a-z0-9_-]+/g, "_") || "unknown";
 }

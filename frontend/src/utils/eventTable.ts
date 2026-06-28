@@ -90,11 +90,11 @@ export function eventTableEmptyLabel(
 function formatEventStatusLabel(status: string | number | boolean | null | undefined | object): string {
   const raw = formatOptional(status);
   const labels: Record<string, string> = {
-    pending: "待处理 pending",
-    confirmed: "已确认 confirmed",
-    new: "新事件 new",
-    resolved: "已解决 resolved",
-    ignored: "已忽略 ignored"
+    pending: "待处理",
+    confirmed: "已确认",
+    new: "新事件",
+    resolved: "已解决",
+    ignored: "已忽略"
   };
   return labels[raw] ?? raw;
 }

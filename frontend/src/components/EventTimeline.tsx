@@ -37,14 +37,14 @@ export default function EventTimeline({
   return (
     <section className="panel event-timeline">
       <div className="section-heading-row">
-        <h3>事件时间线 Event Timeline</h3>
-        <span className="status-pill">{visibleEvents.length} 个事件 events</span>
+        <h3>事件时间线</h3>
+        <span className="status-pill">{visibleEvents.length} 个事件</span>
       </div>
       <div className="toolbar compact">
         <label>
-          类型 Type
+          类型
           <select value={eventTypeFilter} onChange={(event) => setEventTypeFilter(event.target.value)}>
-            <option value="">全部 all</option>
+            <option value="">全部</option>
             {uniqueEventValues(events, "event_type").map((value) => (
               <option key={value} value={value}>
                 {value}
@@ -53,9 +53,9 @@ export default function EventTimeline({
           </select>
         </label>
         <label>
-          严重程度 Severity
+          严重程度
           <select value={severityFilter} onChange={(event) => setSeverityFilter(event.target.value)}>
-            <option value="">全部 all</option>
+            <option value="">全部</option>
             {uniqueEventValues(events, "severity").map((value) => (
               <option key={value} value={value}>
                 {value}
@@ -64,9 +64,9 @@ export default function EventTimeline({
           </select>
         </label>
         <label>
-          状态 Status
+          状态
           <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-            <option value="">全部 all</option>
+            <option value="">全部</option>
             {uniqueEventValues(events, "status").map((value) => (
               <option key={value} value={value}>
                 {value}
@@ -97,8 +97,8 @@ export default function EventTimeline({
                 <span className="timeline-time">{Math.round(seekTime)} ms</span>
                 <span className="timeline-main">{formatValue(event.event_type)}</span>
                 <span className="timeline-meta">
-                  {formatValue(event.severity)} · {formatValue(event.status)} · track{" "}
-                  {formatValue(event.track_id)} · zone {formatValue(event.zone_id)}
+                  {formatValue(event.severity)} · {formatValue(event.status)} · track_id{" "}
+                  {formatValue(event.track_id)} · zone_id {formatValue(event.zone_id)}
                 </span>
               </button>
             );

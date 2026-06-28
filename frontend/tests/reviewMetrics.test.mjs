@@ -59,9 +59,9 @@ test("buildReviewStatusCounts counts known statuses and unknown fallback", () =>
 });
 
 test("formatReviewStatusLabel keeps compact labels for UI chips", () => {
-  assert.equal(reviewMetrics.formatReviewStatusLabel("pending"), "待复核 pending");
-  assert.equal(reviewMetrics.formatReviewStatusLabel("false_positive"), "误报 false_positive");
-  assert.equal(reviewMetrics.formatReviewStatusLabel("false_negative"), "漏报 false_negative");
+  assert.equal(reviewMetrics.formatReviewStatusLabel("pending"), "待复核");
+  assert.equal(reviewMetrics.formatReviewStatusLabel("false_positive"), "误报");
+  assert.equal(reviewMetrics.formatReviewStatusLabel("false_negative"), "漏报");
   assert.equal(reviewMetrics.formatReviewStatusLabel("unexpected_status"), "unexpected_status");
 });
 
@@ -84,7 +84,7 @@ test("buildReviewEventDisplaySummary normalizes optional fields", () => {
     eventId: "event-a",
     runId: "run-a",
     eventType: "danger_zone_intrusion",
-    statusLabel: "待复核 pending",
+    statusLabel: "待复核",
     originalStatus: "pending",
     track: "-",
     zone: "-",

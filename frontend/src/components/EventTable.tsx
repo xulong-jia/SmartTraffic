@@ -53,14 +53,14 @@ export default function EventTable({
         <table>
           <thead>
             <tr>
-              <th>类型 Type</th>
-              <th>严重程度 Severity</th>
-              <th>状态 Status</th>
+              <th>类型</th>
+              <th>严重程度</th>
+              <th>状态</th>
               <th>Track</th>
-              <th>区域 Zone</th>
-              <th>开始 Start</th>
+              <th>区域</th>
+              <th>开始</th>
               <th>Run</th>
-              <th>复核 Review</th>
+              <th>复核</th>
             </tr>
           </thead>
           <tbody>
@@ -87,7 +87,7 @@ export default function EventTable({
                         href={href}
                         onClick={(clickEvent) => openReviewLink(clickEvent, href, onOpenReview)}
                       >
-                        复核 Review
+                        复核
                       </a>
                     ) : (
                       <span className="muted">无 event_id</span>

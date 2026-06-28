@@ -9,37 +9,37 @@ import type {
 
 export function formatCameraSourceLabel(sourceType: CameraSourceType | string): string {
   const labels: Record<string, string> = {
-    upload: "上传 Upload",
+    upload: "上传",
     rtsp: "RTSP",
-    file: "本地文件 Local file",
-    mock: "模拟 Mock"
+    file: "本地文件",
+    mock: "模拟"
   };
   return labels[sourceType] || sourceType;
 }
 
 export function buildMaskedStreamDisplay(camera: CameraRecord | null): string {
   if (!camera) {
-    return "未选择摄像头 No camera selected";
+    return "未选择摄像头";
   }
-  return camera.masked_stream_url || `${formatCameraSourceLabel(camera.source_type)} source`;
+  return camera.masked_stream_url || `${formatCameraSourceLabel(camera.source_type)}源`;
 }
 
 export function buildStartDisabledReason(camera: CameraRecord | null): string {
   if (!camera) {
-    return "请选择摄像头 Select a camera";
+    return "请选择摄像头";
   }
   if (!camera.enabled) {
-    return "摄像头已停用 Camera disabled";
+    return "摄像头已停用";
   }
   return "";
 }
 
 export function buildRealtimeStatusCards(status: RealtimeStatus | null) {
   return [
-    { label: "状态 Status", value: formatRealtimeStatus(status?.status || "stopped") },
-    { label: "帧 Frames", value: status?.frame_count ?? 0 },
-    { label: "事件 Events", value: status?.event_count ?? 0 },
-    { label: "告警 Alerts", value: status?.alert_count ?? 0 }
+    { label: "状态", value: formatRealtimeStatus(status?.status || "stopped") },
+    { label: "帧数", value: status?.frame_count ?? 0 },
+    { label: "事件", value: status?.event_count ?? 0 },
+    { label: "告警", value: status?.alert_count ?? 0 }
   ];
 }
 
@@ -77,33 +77,33 @@ export function buildAlertRows(alerts: RealtimeAlert[]) {
 
 function formatRealtimeStatus(status: string | null | undefined): string {
   const labels: Record<string, string> = {
-    running: "运行中 running",
-    stopped: "已停止 stopped",
-    completed: "已完成 completed",
-    pending: "待处理 pending",
-    failed: "失败 failed",
-    new: "新告警 new",
-    acknowledged: "已确认 acknowledged",
-    resolved: "已解决 resolved",
-    ignored: "已忽略 ignored"
+    running: "运行中",
+    stopped: "已停止",
+    completed: "已完成",
+    pending: "待处理",
+    failed: "失败",
+    new: "新告警",
+    acknowledged: "已确认",
+    resolved: "已解决",
+    ignored: "已忽略"
   };
   return labels[status || ""] ?? (status || "-");
 }
 
 function formatSeverityLabel(severity: string | null | undefined): string {
   const labels: Record<string, string> = {
-    low: "低 low",
-    medium: "中 medium",
-    high: "高 high"
+    low: "低",
+    medium: "中",
+    high: "高"
   };
   return labels[severity || ""] ?? (severity || "-");
 }
 
 function formatAlertLevelLabel(level: string | null | undefined): string {
   const labels: Record<string, string> = {
-    info: "信息 info",
-    warning: "警告 warning",
-    critical: "严重 critical"
+    info: "信息",
+    warning: "警告",
+    critical: "严重"
   };
   return labels[level || ""] ?? (level || "-");
 }

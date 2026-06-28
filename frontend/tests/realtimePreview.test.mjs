@@ -52,16 +52,16 @@ const camera = {
 
 test("camera source and masked display helpers are deterministic", () => {
   assert.equal(realtimePreview.formatCameraSourceLabel("rtsp"), "RTSP");
-  assert.equal(realtimePreview.formatCameraSourceLabel("file"), "本地文件 Local file");
+  assert.equal(realtimePreview.formatCameraSourceLabel("file"), "本地文件");
   assert.equal(realtimePreview.buildMaskedStreamDisplay(camera), "rtsp://***@example.local/...");
-  assert.equal(realtimePreview.buildMaskedStreamDisplay(null), "未选择摄像头 No camera selected");
+  assert.equal(realtimePreview.buildMaskedStreamDisplay(null), "未选择摄像头");
 });
 
 test("start disabled reason reflects camera selection and enabled state", () => {
-  assert.equal(realtimePreview.buildStartDisabledReason(null), "请选择摄像头 Select a camera");
+  assert.equal(realtimePreview.buildStartDisabledReason(null), "请选择摄像头");
   assert.equal(
     realtimePreview.buildStartDisabledReason({ ...camera, enabled: false }),
-    "摄像头已停用 Camera disabled"
+    "摄像头已停用"
   );
   assert.equal(realtimePreview.buildStartDisabledReason(camera), "");
 });
@@ -80,10 +80,10 @@ test("status cards expose realtime preview counts", () => {
       alert_count: 1
     }),
     [
-      { label: "状态 Status", value: "运行中 running" },
-      { label: "帧 Frames", value: 3 },
-      { label: "事件 Events", value: 1 },
-      { label: "告警 Alerts", value: 1 }
+      { label: "状态", value: "运行中" },
+      { label: "帧数", value: 3 },
+      { label: "事件", value: 1 },
+      { label: "告警", value: 1 }
     ]
   );
 });
@@ -131,7 +131,7 @@ test("recent frame event and alert rows are display ready", () => {
       {
         id: "event_1",
         type: "motion",
-        severity: "低 low",
+        severity: "低",
         frame: 2,
         status: "preview",
         description: "motion"
@@ -153,7 +153,7 @@ test("recent frame event and alert rows are display ready", () => {
     [
       {
         id: "alert_1",
-        level: "信息 info",
+        level: "信息",
         type: "motion",
         status: "preview",
         message: "alert"
