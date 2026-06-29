@@ -56,6 +56,7 @@ class ReportService:
     def build_summary(self, run_id: str) -> dict[str, Any]:
         run = self._get_run(run_id)
         sections = self._collect_sections(run_id)
+        evaluation = _latest_evaluation_context(sections["evaluation_results"])
         counts = self._build_counts(run, sections)
         keyframe_summary = self._keyframe_summary(run_id, run)
         annotated_video = self._annotated_video_summary(run)
@@ -78,9 +79,11 @@ class ReportService:
                 "flow_totals": _flow_totals(sections["flow_counts"]),
                 "bad_case_status_counts": dict(Counter(_status(row) for row in sections["bad_cases"])),
                 "bad_case_type_counts": dict(Counter(_bad_case_type(row) for row in sections["bad_cases"])),
-                "evaluation_metric_summary": _evaluation_metric_summary(
-                    sections["evaluation_results"]
-                ),
+                "latest_evaluation_run_id": evaluation["latest_evaluation_run_id"],
+                "latest_evaluation_results": evaluation["latest_evaluation_results"],
+                "latest_evaluation_metrics": evaluation["latest_evaluation_metrics"],
+                "evaluation_summary": evaluation["evaluation_summary"],
+                "evaluation_metric_summary": evaluation["latest_evaluation_metrics"],
                 "available_exports": list(REPORT_EXPORT_SECTIONS),
                 "bundle": bundle,
                 "keyframe_summary": keyframe_summary,
@@ -92,6 +95,7 @@ class ReportService:
     def build_json_report(self, run_id: str) -> dict[str, Any]:
         run = self._get_run(run_id)
         sections = self._collect_sections(run_id)
+        evaluation = _latest_evaluation_context(sections["evaluation_results"])
         return sanitize_report_payload(
             {
                 "metadata": {
@@ -107,6 +111,10 @@ class ReportService:
                 "zone_statistics": sections["zone_statistics"],
                 "bad_cases": sections["bad_cases"],
                 "evaluation_results": sections["evaluation_results"],
+                "latest_evaluation_run_id": evaluation["latest_evaluation_run_id"],
+                "latest_evaluation_results": evaluation["latest_evaluation_results"],
+                "latest_evaluation_metrics": evaluation["latest_evaluation_metrics"],
+                "evaluation_summary": evaluation["evaluation_summary"],
             }
         )
 
@@ -330,6 +338,81 @@ def _evaluation_metric_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         str(row.get("metric_name") or row.get("evaluation_result_id")): row.get("metric_value")
         for row in rows
     }
+
+
+def _latest_evaluation_context(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    event_rows = [row for row in rows if str(row.get("evaluation_type") or "") == "event"]
+    latest_results = _latest_evaluation_results(event_rows or rows)
+    latest_run_id = (
+        str(latest_results[0].get("evaluation_run_id"))
+        if latest_results and latest_results[0].get("evaluation_run_id")
+        else None
+    )
+    latest_metrics = _evaluation_metric_summary(latest_results)
+    return {
+        "latest_evaluation_run_id": latest_run_id,
+        "latest_evaluation_results": latest_results,
+        "latest_evaluation_metrics": latest_metrics,
+        "evaluation_summary": {
+            "latest_evaluation_run_id": latest_run_id,
+            "result_count": len(latest_results),
+            "status_counts": dict(Counter(_evaluation_result_status(row) for row in latest_results)),
+            "metrics": latest_metrics,
+        },
+    }
+
+
+def _latest_evaluation_results(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    runs: dict[str, tuple[tuple[str, str], str]] = {}
+    for row in rows:
+        evaluation_run_id = str(row.get("evaluation_run_id") or "")
+        if not evaluation_run_id:
+            continue
+        if _evaluation_run_status(row) != "completed":
+            continue
+        order_key = _evaluation_run_order_key(row)
+        current = runs.get(evaluation_run_id)
+        if current is None or order_key >= current[0]:
+            runs[evaluation_run_id] = (order_key, evaluation_run_id)
+    if not runs:
+        return []
+    latest_run_id = max(runs.values(), key=lambda item: item)[1]
+    return [
+        _public_evaluation_result(row)
+        for row in rows
+        if str(row.get("evaluation_run_id") or "") == latest_run_id
+    ]
+
+
+def _evaluation_run_status(row: dict[str, Any]) -> str:
+    run = row.get("_evaluation_run")
+    if isinstance(run, dict):
+        return str(run.get("status") or row.get("status") or "completed")
+    return str(row.get("status") or "completed")
+
+
+def _evaluation_run_order_key(row: dict[str, Any]) -> tuple[str, str]:
+    run = row.get("_evaluation_run")
+    if not isinstance(run, dict):
+        run = {}
+    timestamp = (
+        run.get("finished_at")
+        or run.get("started_at")
+        or row.get("created_at")
+        or ""
+    )
+    return (str(timestamp), str(row.get("created_at") or ""))
+
+
+def _evaluation_result_status(row: dict[str, Any]) -> str:
+    details = row.get("details")
+    if isinstance(details, dict):
+        return str(details.get("status") or "unknown")
+    return "unknown"
+
+
+def _public_evaluation_result(row: dict[str, Any]) -> dict[str, Any]:
+    return {str(key): value for key, value in row.items() if not str(key).startswith("_")}
 
 
 def _int_value(value: Any) -> int:

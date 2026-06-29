@@ -198,6 +198,15 @@ export interface ReportSummaryResponse {
   flow_totals: Record<string, unknown>;
   bad_case_status_counts: Record<string, number>;
   bad_case_type_counts: Record<string, number>;
+  latest_evaluation_run_id?: string | null;
+  latest_evaluation_results?: EvaluationResultRecord[];
+  latest_evaluation_metrics?: Record<string, unknown>;
+  evaluation_summary?: {
+    latest_evaluation_run_id?: string | null;
+    result_count: number;
+    status_counts: Record<string, number>;
+    metrics: Record<string, unknown>;
+  };
   evaluation_metric_summary: Record<string, unknown>;
   available_exports: ReportExportSection[];
   bundle: ReportBundleResponse;
@@ -266,6 +275,15 @@ export interface ReportJsonExportResponse {
   zone_statistics: Array<Record<string, unknown>>;
   bad_cases: BadCaseRecord[];
   evaluation_results: EvaluationResultRecord[];
+  latest_evaluation_run_id?: string | null;
+  latest_evaluation_results?: EvaluationResultRecord[];
+  latest_evaluation_metrics?: Record<string, unknown>;
+  evaluation_summary?: {
+    latest_evaluation_run_id?: string | null;
+    result_count: number;
+    status_counts: Record<string, number>;
+    metrics: Record<string, unknown>;
+  };
 }
 
 export interface DetectionProcessOptions {
