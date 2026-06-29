@@ -65,7 +65,7 @@ export default function AlertCenterPage({ onOpenReview }: AlertCenterPageProps) 
   }
 
   return (
-    <>
+    <div className="alert-center-page">
       <header className="page-header">
         <div>
           <h2>告警中心</h2>
@@ -137,7 +137,7 @@ export default function AlertCenterPage({ onOpenReview }: AlertCenterPageProps) 
           statusFilter={status}
         />
       </section>
-    </>
+    </div>
   );
 
   function runAlertPanelAction(
