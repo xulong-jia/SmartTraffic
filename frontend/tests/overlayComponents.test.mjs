@@ -79,6 +79,33 @@ test("DetectionOverlay accepts DB-backed object bbox without throwing", () => {
   );
 });
 
+test("DetectionOverlay report mode limits dense boxes while normal mode stays complete", () => {
+  const detections = Array.from({ length: 12 }, (_, index) => ({
+    class_name: "person",
+    confidence: 0.6 + index * 0.01,
+    bbox: { x1: index, y1: index, x2: index + 20, y2: index + 30 }
+  }));
+  const frames = [{ frame_index: 0, timestamp_ms: 0, detections }];
+
+  const normalMarkup = ReactDOMServer.renderToStaticMarkup(
+    React.createElement(DetectionOverlay, {
+      currentTimeMs: 0,
+      frames,
+      reportMode: false
+    })
+  );
+  const reportMarkup = ReactDOMServer.renderToStaticMarkup(
+    React.createElement(DetectionOverlay, {
+      currentTimeMs: 0,
+      frames,
+      reportMode: true
+    })
+  );
+
+  assert.equal(countOccurrences(normalMarkup, "detection-box"), 12);
+  assert.equal(countOccurrences(reportMarkup, "detection-box"), 10);
+});
+
 test("TrackOverlay accepts DB-backed metadata bbox without throwing", () => {
   assert.doesNotThrow(() =>
     TrackOverlay({
@@ -142,3 +169,7 @@ test("TrackOverlay renders duplicate track labels without duplicate key warnings
     false
   );
 });
+
+function countOccurrences(value, needle) {
+  return value.split(needle).length - 1;
+}

@@ -1,7 +1,8 @@
 import type { FrameTrackingResult, TrajectoryFrame } from "../types";
 import {
+  filterReportOverlayItems,
   filterTracksForTime,
-  formatConfidence,
+  formatOverlayLabel,
   groupTrajectoryPolylines,
   isTrackHighlighted,
   normalizeBbox
@@ -11,16 +12,21 @@ interface TrackOverlayProps {
   frames: FrameTrackingResult[];
   trajectoryFrames: TrajectoryFrame[];
   currentTimeMs: number;
+  reportMode?: boolean;
   selectedTrackId?: number | null;
+  showLabels?: boolean;
 }
 
 export default function TrackOverlay({
   frames,
   trajectoryFrames,
   currentTimeMs,
-  selectedTrackId = null
+  reportMode = false,
+  selectedTrackId = null,
+  showLabels = true
 }: TrackOverlayProps) {
-  const tracks = filterTracksForTime(frames, currentTimeMs);
+  const currentTracks = filterTracksForTime(frames, currentTimeMs);
+  const tracks = reportMode ? filterReportOverlayItems(currentTracks) : currentTracks;
   const polylines = groupTrajectoryPolylines(trajectoryFrames, currentTimeMs, selectedTrackId);
 
   if (tracks.length === 0 && polylines.length === 0) {
@@ -45,11 +51,8 @@ export default function TrackOverlay({
         }
         const [x1, y1, x2, y2] = bbox;
         const highlighted = isTrackHighlighted(track.track_id, selectedTrackId);
-        const trackId = track.track_id ?? "-";
+        const trackId = track.track_id ?? null;
         const className = track.class_name || track.state || "track";
-        const confidence = Number.isFinite(Number(track.confidence))
-          ? Number(track.confidence)
-          : null;
         return (
           <g
             className={highlighted ? "overlay-item highlighted" : "overlay-item"}
@@ -62,9 +65,11 @@ export default function TrackOverlay({
               x={Number(x1)}
               y={Number(y1)}
             />
-            <text className="overlay-label track-label" x={Number(x1)} y={Number(y2) + 16}>
-              #{trackId} {className} {formatConfidence(confidence)}
-            </text>
+            {showLabels ? (
+              <text className="overlay-label track-label" x={Number(x1)} y={Number(y2) + 16}>
+                {formatOverlayLabel({ trackId, className, confidence: track.confidence })}
+              </text>
+            ) : null}
           </g>
         );
       })}

@@ -51,6 +51,8 @@ export interface TrackPolyline {
 }
 
 const DEFAULT_FRAME_DURATION_MS = 1000 / 30;
+const REPORT_OVERLAY_LIMIT = 10;
+const REPORT_CONFIDENCE_THRESHOLD = 0.5;
 
 export function computeAspectFit(
   sourceWidth: number,
@@ -139,6 +141,53 @@ export function formatConfidence(value: number | null | undefined): string {
     return "";
   }
   return `${Math.round(Number(value) * 100)}%`;
+}
+
+export function formatOverlayLabel({
+  className,
+  confidence,
+  trackId
+}: {
+  className?: string | null;
+  confidence?: number | string | null;
+  trackId?: number | string | null;
+}): string {
+  const parts: string[] = [];
+  if (trackId !== null && trackId !== undefined && String(trackId).trim() !== "") {
+    parts.push(`#${trackId}`);
+  }
+  parts.push(className || "object");
+  const confidenceLabel = formatConfidence(toFiniteNumber(confidence));
+  if (confidenceLabel) {
+    parts.push(confidenceLabel);
+  }
+  return parts.join(" ");
+}
+
+export function filterReportOverlayItems<T extends { confidence?: number | string | null }>(
+  items: T[],
+  limit = REPORT_OVERLAY_LIMIT,
+  minConfidence = REPORT_CONFIDENCE_THRESHOLD
+): T[] {
+  const indexed = items.map((item, index) => ({
+    confidence: toFiniteNumber(item.confidence),
+    index,
+    item
+  }));
+  const hasConfidence = indexed.some(({ confidence }) => confidence !== null);
+  const filtered = hasConfidence
+    ? indexed.filter(({ confidence }) => confidence === null || confidence >= minConfidence)
+    : indexed;
+
+  return filtered
+    .sort((left, right) => {
+      if (!hasConfidence) {
+        return left.index - right.index;
+      }
+      return (right.confidence ?? -1) - (left.confidence ?? -1) || left.index - right.index;
+    })
+    .slice(0, Math.max(0, limit))
+    .map(({ item }) => item);
 }
 
 export function frameTimeMs(frame: { timestamp_ms?: number | null; frame_index?: number }): number {

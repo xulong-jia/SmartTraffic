@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { flushSync } from "react-dom";
 
 import {
   generateAlerts,
@@ -126,6 +127,8 @@ export default function AnalysisDetailPage({
   const [zonesLoading, setZonesLoading] = useState(false);
   const [zonesError, setZonesError] = useState("");
   const [currentTimeMs, setCurrentTimeMs] = useState(0);
+  const [reportMode, setReportMode] = useState(false);
+  const reportModeBeforePrintRef = useRef<boolean | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -169,6 +172,28 @@ export default function AnalysisDetailPage({
       setSelectedRunId(requestedRunId);
     }
   }, [initialRunId]);
+
+  useEffect(() => {
+    function handleBeforePrint() {
+      reportModeBeforePrintRef.current = reportMode;
+      flushSync(() => setReportMode(true));
+    }
+
+    function handleAfterPrint() {
+      const previousReportMode = reportModeBeforePrintRef.current;
+      if (previousReportMode !== null) {
+        flushSync(() => setReportMode(previousReportMode));
+        reportModeBeforePrintRef.current = null;
+      }
+    }
+
+    window.addEventListener("beforeprint", handleBeforePrint);
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => {
+      window.removeEventListener("beforeprint", handleBeforePrint);
+      window.removeEventListener("afterprint", handleAfterPrint);
+    };
+  }, [reportMode]);
 
   async function loadRunSummary(runId: string) {
     setRunSummaryLoading(true);
@@ -416,12 +441,20 @@ export default function AnalysisDetailPage({
   const artifactSummary = runSummary?.artifact_summary;
 
   return (
-    <>
+    <div className={reportMode ? "analysis-detail-page analysis-report-mode" : "analysis-detail-page"}>
       <header className="page-header">
         <div>
           <h2>分析详情</h2>
           <p>查看检测、跟踪、轨迹、事件证据和分析产物。</p>
         </div>
+        <label className="inline-control report-mode-toggle">
+          <input
+            checked={reportMode}
+            type="checkbox"
+            onChange={(event) => setReportMode(event.target.checked)}
+          />
+          报告模式
+        </label>
       </header>
       <div className="page-grid-2 analysis-hero-grid">
         <VideoPlayerWithOverlay
@@ -429,6 +462,7 @@ export default function AnalysisDetailPage({
           detections={overlayData.detections}
           height={overlaySize.height}
           onSeek={setCurrentTimeMs}
+          reportMode={reportMode}
           selectedEventId={selectedEventId}
           selectedTrackId={overlayData.selectedTrackId}
           selectedZoneId={overlayData.selectedZoneId}
@@ -806,7 +840,7 @@ export default function AnalysisDetailPage({
           </div>
         </CollapsibleSection>
       </section>
-    </>
+    </div>
   );
 }
 

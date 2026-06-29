@@ -1,7 +1,8 @@
 import type { FrameDetectionResult } from "../types";
 import {
+  filterReportOverlayItems,
   filterDetectionsForTime,
-  formatConfidence,
+  formatOverlayLabel,
   isTrackHighlighted,
   normalizeBbox
 } from "../utils/videoOverlay";
@@ -9,15 +10,22 @@ import {
 interface DetectionOverlayProps {
   frames: FrameDetectionResult[];
   currentTimeMs: number;
+  reportMode?: boolean;
   selectedTrackId?: number | null;
+  showLabels?: boolean;
 }
 
 export default function DetectionOverlay({
   frames,
   currentTimeMs,
-  selectedTrackId = null
+  reportMode = false,
+  selectedTrackId = null,
+  showLabels = true
 }: DetectionOverlayProps) {
-  const detections = filterDetectionsForTime(frames, currentTimeMs);
+  const currentDetections = filterDetectionsForTime(frames, currentTimeMs);
+  const detections = reportMode
+    ? filterReportOverlayItems(currentDetections)
+    : currentDetections;
   if (detections.length === 0) {
     return null;
   }
@@ -32,9 +40,6 @@ export default function DetectionOverlay({
         const [x1, y1, x2, y2] = bbox;
         const highlighted = isTrackHighlighted(index, selectedTrackId);
         const className = detection.class_name || "object";
-        const confidence = Number.isFinite(Number(detection.confidence))
-          ? Number(detection.confidence)
-          : null;
         return (
           <g className={highlighted ? "overlay-item highlighted" : "overlay-item"} key={index}>
             <rect
@@ -44,9 +49,11 @@ export default function DetectionOverlay({
               x={Number(x1)}
               y={Number(y1)}
             />
-            <text className="overlay-label" x={Number(x1)} y={Math.max(14, Number(y1) - 6)}>
-              {className} {formatConfidence(confidence)}
-            </text>
+            {showLabels ? (
+              <text className="overlay-label" x={Number(x1)} y={Math.max(14, Number(y1) - 6)}>
+                {formatOverlayLabel({ className, confidence: detection.confidence })}
+              </text>
+            ) : null}
           </g>
         );
       })}
