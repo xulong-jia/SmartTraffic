@@ -93,29 +93,6 @@ test("filterDetectionsForTime and filterTracksForTime pick nearest frame", () =>
   assert.equal(tracks[0].track_id, 2);
 });
 
-test("filterReportOverlayItems keeps top 10 targets by confidence", () => {
-  const items = Array.from({ length: 12 }, (_, index) => ({
-    id: index,
-    confidence: 0.51 + index * 0.01
-  }));
-
-  const filtered = overlay.filterReportOverlayItems(items);
-
-  assert.equal(filtered.length, 10);
-  assert.deepEqual(filtered.map((item) => item.id), [11, 10, 9, 8, 7, 6, 5, 4, 3, 2]);
-});
-
-test("filterReportOverlayItems hides low-confidence targets but keeps missing confidence data", () => {
-  const filtered = overlay.filterReportOverlayItems([
-    { id: "high", confidence: 0.91 },
-    { id: "low", confidence: 0.49 },
-    { id: "boundary", confidence: "0.5" },
-    { id: "missing" }
-  ]);
-
-  assert.deepEqual(filtered.map((item) => item.id), ["high", "boundary", "missing"]);
-});
-
 test("normal overlay time filtering does not truncate dense detections", () => {
   const detections = Array.from({ length: 12 }, (_, index) => ({
     class_name: "person",

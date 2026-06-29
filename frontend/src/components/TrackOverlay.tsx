@@ -1,6 +1,5 @@
 import type { FrameTrackingResult, TrajectoryFrame } from "../types";
 import {
-  filterReportOverlayItems,
   filterTracksForTime,
   formatOverlayLabel,
   groupTrajectoryPolylines,
@@ -12,7 +11,6 @@ interface TrackOverlayProps {
   frames: FrameTrackingResult[];
   trajectoryFrames: TrajectoryFrame[];
   currentTimeMs: number;
-  reportMode?: boolean;
   selectedTrackId?: number | null;
   showLabels?: boolean;
 }
@@ -21,12 +19,10 @@ export default function TrackOverlay({
   frames,
   trajectoryFrames,
   currentTimeMs,
-  reportMode = false,
   selectedTrackId = null,
   showLabels = true
 }: TrackOverlayProps) {
-  const currentTracks = filterTracksForTime(frames, currentTimeMs);
-  const tracks = reportMode ? filterReportOverlayItems(currentTracks) : currentTracks;
+  const tracks = filterTracksForTime(frames, currentTimeMs);
   const polylines = groupTrajectoryPolylines(trajectoryFrames, currentTimeMs, selectedTrackId);
 
   if (tracks.length === 0 && polylines.length === 0) {

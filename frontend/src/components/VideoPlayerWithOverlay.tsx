@@ -9,8 +9,6 @@ import type {
 import DetectionOverlay from "./DetectionOverlay";
 import TrackOverlay from "./TrackOverlay";
 import {
-  filterReportOverlayItems,
-  filterTracksForTime,
   isZoneHighlighted,
   zonePolygonPoints
 } from "../utils/videoOverlay";
@@ -26,7 +24,6 @@ interface VideoPlayerWithOverlayProps {
   zones?: ZoneRecord[];
   events?: EventRecord[];
   currentTimeMs: number;
-  reportMode?: boolean;
   selectedEventId?: string | null;
   selectedTrackId?: number | null;
   selectedZoneId?: string | null;
@@ -43,15 +40,11 @@ export default function VideoPlayerWithOverlay({
   trajectoryPoints = [],
   zones = [],
   currentTimeMs,
-  reportMode = false,
   selectedTrackId = null,
   selectedZoneId = null,
   onSeek
 }: VideoPlayerWithOverlayProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const reportTracks = reportMode
-    ? filterReportOverlayItems(filterTracksForTime(tracks, currentTimeMs))
-    : [];
 
   useEffect(() => {
     const video = videoRef.current;
@@ -87,18 +80,15 @@ export default function VideoPlayerWithOverlay({
           preserveAspectRatio="xMidYMid meet"
           viewBox={`0 0 ${width} ${height}`}
         >
-          <ZoneOverlay reportMode={reportMode} zones={zones} selectedZoneId={selectedZoneId} />
+          <ZoneOverlay zones={zones} selectedZoneId={selectedZoneId} />
           <DetectionOverlay
             currentTimeMs={currentTimeMs}
             frames={detections}
-            reportMode={reportMode}
             selectedTrackId={selectedTrackId}
-            showLabels={!reportMode || reportTracks.length === 0}
           />
           <TrackOverlay
             currentTimeMs={currentTimeMs}
             frames={tracks}
-            reportMode={reportMode}
             selectedTrackId={selectedTrackId}
             trajectoryFrames={trajectoryPoints}
           />
@@ -109,11 +99,9 @@ export default function VideoPlayerWithOverlay({
 }
 
 function ZoneOverlay({
-  reportMode,
   zones,
   selectedZoneId
 }: {
-  reportMode: boolean;
   zones: ZoneRecord[];
   selectedZoneId: string | null;
 }) {
@@ -158,7 +146,7 @@ function ZoneOverlay({
               />
             ) : null}
             <text className="overlay-label zone-label" x={labelPoint.x} y={labelPoint.y - 8}>
-              {reportMode ? zone.name : `${zone.name} · ${zone.zone_type}`}
+              {zone.name} · {zone.zone_type}
             </text>
           </g>
         );

@@ -307,17 +307,6 @@ nav button.active {
   padding: 8px 10px;
 }
 
-.report-mode-toggle {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-
-.report-mode-toggle input[type="checkbox"] {
-  width: 16px;
-  min-height: 0;
-  margin: 0;
-}
-
 .stacked-control {
   display: grid;
   gap: 7px;
@@ -2109,24 +2098,6 @@ tbody tr:hover td {
   margin-top: 22px;
 }
 
-.analysis-report-mode .analysis-advanced-sections {
-  display: none;
-}
-
-.analysis-report-mode .overlay-label {
-  font-size: 12px;
-  stroke-width: 3px;
-}
-
-.analysis-report-mode .detection-box,
-.analysis-report-mode .track-box {
-  stroke-width: 2.5;
-}
-
-.analysis-report-mode .track-polyline {
-  opacity: 0.58;
-}
-
 .collapsible-section {
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: var(--radius-card);
@@ -2282,8 +2253,8 @@ tbody tr:hover td {
 }
 
 @page {
-  size: A4 landscape;
-  margin: 8mm;
+  size: 1760px 1100px;
+  margin: 0;
 }
 
 @media print {
@@ -2297,586 +2268,168 @@ tbody tr:hover td {
   html,
   body,
   #root {
-    width: 100% !important;
-    min-width: 0 !important;
-    background: #eef6ff !important;
+    width: 1760px !important;
+    min-width: 1760px !important;
   }
 
   body {
-    background:
-      linear-gradient(135deg, #eef6ff 0%, #f8fbff 45%, #edf5fc 100%) !important;
+    margin: 0 !important;
   }
 
   .app-shell {
-    display: grid !important;
-    grid-template-columns: 170px minmax(0, 1fr) !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    min-height: auto;
+    display: block !important;
+    width: 1760px !important;
+    min-width: 1760px !important;
+    max-width: none !important;
   }
 
   .sidebar {
-    position: static !important;
-    width: 170px !important;
-    min-width: 170px !important;
-    height: auto !important;
-    min-height: auto;
-    gap: 10px;
-    page-break-inside: avoid;
-    break-inside: avoid;
-    padding: 10px 8px !important;
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    z-index: 10 !important;
+    display: flex !important;
+    flex: 0 0 260px !important;
+    flex-direction: column !important;
+    width: 260px !important;
+    min-width: 260px !important;
+    max-width: 260px !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+    border-right: 1px solid rgba(148, 163, 184, 0.2) !important;
+    border-bottom: 0 !important;
+    padding: 24px 12px !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
   .sidebar > div:first-child {
-    padding: 9px !important;
+    position: fixed !important;
+    top: 24px !important;
+    left: 12px !important;
+    z-index: 11 !important;
+    width: 236px !important;
   }
 
   .sidebar h1 {
-    font-size: 11px !important;
-    line-height: 1.2 !important;
     white-space: nowrap !important;
   }
 
-  .sidebar .eyebrow {
-    font-size: 8px !important;
-    margin-bottom: 5px !important;
-    white-space: nowrap !important;
-  }
-
-  nav {
+  .sidebar nav {
+    position: fixed !important;
+    top: 124px !important;
+    left: 12px !important;
+    z-index: 11 !important;
     display: grid !important;
     grid-template-columns: 1fr !important;
-    gap: 5px !important;
+    width: 236px !important;
   }
 
-  nav button {
-    min-height: 28px !important;
-    padding: 5px 8px !important;
-    font-size: 10px !important;
+  .sidebar nav button {
+    position: fixed !important;
+    left: 12px !important;
+    width: 236px !important;
+    white-space: nowrap !important;
+  }
+
+  .sidebar nav button:nth-child(1) {
+    top: 124px !important;
+  }
+
+  .sidebar nav button:nth-child(2) {
+    top: 175px !important;
+  }
+
+  .sidebar nav button:nth-child(3) {
+    top: 226px !important;
+  }
+
+  .sidebar nav button:nth-child(4) {
+    top: 277px !important;
+  }
+
+  .sidebar nav button:nth-child(5) {
+    top: 328px !important;
+  }
+
+  .sidebar nav button:nth-child(6) {
+    top: 379px !important;
+  }
+
+  .sidebar nav button:nth-child(7) {
+    top: 430px !important;
+  }
+
+  .sidebar nav button:nth-child(8) {
+    top: 481px !important;
+  }
+
+  .sidebar nav button:nth-child(9) {
+    top: 532px !important;
+  }
+
+  .sidebar nav button:nth-child(10) {
+    top: 583px !important;
   }
 
   .workspace,
   .main-content,
   .page-shell {
+    width: calc(1760px - 260px) !important;
+    min-width: calc(1760px - 260px) !important;
     max-width: none !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    margin: 0 !important;
-    overflow: visible !important;
-    padding: 0 10px 8px !important;
+    margin: 0 0 0 260px !important;
+  }
+
+  .workspace {
+    padding: 30px 32px 42px !important;
   }
 
   .page-header {
     align-items: center !important;
     flex-direction: row !important;
-    gap: 10px !important;
-    margin: 0 0 8px !important;
-    padding: 10px 12px !important;
-    break-after: avoid;
-    page-break-after: avoid;
-  }
-
-  .page-header p,
-  .page-description {
-    font-size: 11px !important;
-    line-height: 1.35 !important;
-  }
-
-  h1 {
-    font-size: 17px !important;
-  }
-
-  h2 {
-    font-size: 24px !important;
-  }
-
-  h3 {
-    font-size: 15px !important;
-  }
-
-  .grid,
-  .content-grid {
-    gap: 8px !important;
-  }
-
-  h1,
-  h2,
-  h3 {
-    break-after: avoid;
-    page-break-after: avoid;
-  }
-
-  .grid.two,
-  .review-workspace-grid,
-  .bad-case-workspace,
-  .zone-workspace-grid {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.85fr) !important;
-    gap: 10px !important;
-    align-items: start !important;
-    break-inside: auto !important;
-    page-break-inside: auto !important;
-  }
-
-  .analysis-hero-grid {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr) !important;
-    gap: 10px !important;
-    align-items: start !important;
-    break-inside: auto !important;
-    page-break-inside: auto !important;
   }
 
   .metric-row,
   .metric-grid {
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 8px !important;
-    margin-bottom: 8px !important;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
   }
 
-  .panel,
-  .card,
-  .metric-card,
-  .metric-row .card,
-  .table-shell,
-  .summary-strip,
-  .info-callout,
-  .warning-callout,
-  .empty-state,
-  .timeline-item {
-    border: 1px solid rgba(148, 163, 184, 0.28) !important;
-    background: rgba(255, 255, 255, 0.96) !important;
-    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08) !important;
-    page-break-inside: auto;
-    break-inside: auto;
-  }
-
-  .panel,
-  .card {
-    margin-bottom: 8px !important;
-    padding: 10px !important;
-  }
-
-  .metric-card,
-  .metric-row .card {
-    min-height: 92px !important;
-    padding: 12px !important;
-  }
-
-  .metric-value {
-    font-size: 24px !important;
-  }
-
-  .metric-label,
-  .metric-row .card strong,
-  .metric-subvalue {
-    font-size: 10px !important;
-  }
-
-  .page-header,
-  .metric-card,
-  .info-callout,
-  .warning-callout {
-    page-break-inside: avoid;
-    break-inside: avoid;
-  }
-
-  .card,
-  .panel,
-  .table-shell,
-  .summary-strip,
-  .video-overlay-panel,
-  .event-timeline {
-    page-break-inside: auto;
-    break-inside: auto;
-  }
-
-  .table-scroll {
-    overflow: visible !important;
-    width: 100% !important;
-  }
-
-  table,
-  .data-table {
-    width: 100% !important;
-    min-width: 0 !important;
-    table-layout: auto !important;
-    border-spacing: 0 4px !important;
-    font-size: 9px !important;
-  }
-
-  .data-table th,
-  .data-table td,
-  th,
-  td {
-    padding: 5px 7px !important;
-    white-space: nowrap !important;
-    word-break: keep-all !important;
-    overflow-wrap: normal !important;
-  }
-
-  .data-table td.wrap-cell,
-  .cell-id,
-  .cell-path,
-  .mono,
-  code {
-    white-space: normal !important;
-    word-break: break-all !important;
-    overflow-wrap: anywhere !important;
-  }
-
-  .cell-id,
-  .cell-path,
-  .mono,
-  code {
-    font-size: 9px !important;
-  }
-
-  th {
-    position: static !important;
-    background: #eef6ff !important;
-  }
-
-  td {
-    background: rgba(255, 255, 255, 0.86) !important;
-  }
-
-  button,
-  .button,
-  .button-group a,
-  input,
-  select,
-  textarea {
-    box-shadow: none !important;
-  }
-
-  input,
-  select,
-  textarea {
-    min-height: 26px !important;
-    padding: 4px 6px !important;
-    font-size: 10px !important;
-  }
-
-  td button,
-  .toolbar button,
-  .section-heading-row button {
-    min-height: 28px !important;
-    padding: 5px 8px !important;
-    font-size: 10px !important;
-  }
-
-  .toolbar,
-  .button-group {
-    gap: 7px !important;
-  }
-
-  .toolbar label,
-  .inline-control,
-  .stacked-control,
-  .form-grid label {
-    font-size: 10px !important;
-    gap: 4px !important;
-  }
-
-  .timeline-list {
-    gap: 5px !important;
-  }
-
-  .timeline-item {
-    min-height: 46px !important;
-    padding: 5px 7px !important;
-  }
-
-  .timeline-time,
-  .timeline-meta {
-    font-size: 10px !important;
-  }
-
-  .json-panel,
-  .json-preview,
-  .compact-json,
-  .timeline-list {
-    max-height: none !important;
-    overflow: visible !important;
-  }
-
-  .video-overlay-stage,
-  .zone-canvas {
-    page-break-inside: avoid;
-    break-inside: avoid;
-  }
-
-  .no-print,
-  .print-hidden {
-    display: none !important;
-  }
-
-  .app-shell {
-    display: block !important;
-  }
-
-  .sidebar {
-    display: none !important;
-  }
-
-  .workspace,
-  .main-content,
-  .page-shell {
-    max-width: none !important;
-    width: 100% !important;
-    padding: 0 !important;
-  }
-
-  .analysis-detail-page {
-    width: 100% !important;
-  }
-
-  .analysis-detail-page .page-header {
-    padding: 8px 0 10px !important;
-  }
-
-  .analysis-detail-page .report-mode-toggle,
-  .analysis-detail-page .analysis-advanced-sections,
-  .analysis-detail-page .toolbar,
-  .analysis-detail-page button {
-    display: none !important;
-  }
-
-  .analysis-detail-page .analysis-hero-grid {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) !important;
-    gap: 8px !important;
-  }
-
-  .analysis-detail-page .video-overlay-panel {
-    width: 100% !important;
-    max-width: 920px !important;
-    margin: 0 auto 8px !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
-
-  .analysis-detail-page .video-overlay-stage {
-    width: 100% !important;
-    min-height: 0 !important;
-    border-radius: 10px !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
-
-  .analysis-detail-page .analysis-summary-grid {
-    display: grid !important;
+  .grid.two,
+  .page-grid-2,
+  .balanced-grid,
+  .bad-case-workspace,
+  .zone-workspace-grid,
+  .review-workspace-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px !important;
   }
 
-  .analysis-detail-page .summary-card {
-    min-height: 0 !important;
+  .analysis-hero-grid {
+    grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr) !important;
   }
 
-  .analysis-detail-page .summary-metric {
-    padding: 6px 8px !important;
+  .analysis-summary-grid,
+  .report-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 
-  .analysis-detail-page .summary-metric-label,
-  .analysis-detail-page .summary-metric-value {
-    font-size: 10px !important;
+  .bad-case-summary-grid,
+  .evaluation-summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
 
-  .analysis-detail-page .analysis-business-results {
-    gap: 8px !important;
-    margin-top: 8px !important;
+  .camera-source-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 
-  .analysis-detail-page .panel,
-  .analysis-detail-page .summary-card,
-  .analysis-detail-page .event-timeline,
-  .analysis-detail-page .table-card,
-  .analysis-detail-page .evidence-overview-card {
-    overflow: visible !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
-
-  .analysis-detail-page .timeline-list {
-    max-height: none !important;
-  }
-
-  .analysis-detail-page .timeline-item:nth-child(n + 9) {
-    display: none !important;
-  }
-
-  .analysis-detail-page .detection-overlay > .overlay-item:nth-of-type(n + 11),
-  .analysis-detail-page .track-overlay > .overlay-item:nth-of-type(n + 11) {
-    display: none !important;
-  }
-
-  .analysis-detail-page .detection-overlay .overlay-label {
-    display: none !important;
-  }
-
-  .analysis-detail-page .overlay-label {
-    font-size: 10px !important;
-    paint-order: normal !important;
-    stroke: none !important;
-    stroke-width: 0 !important;
-  }
-
-  .alert-center-page {
-    width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-    background: #fff !important;
-  }
-
-  html:has(.alert-center-page),
-  html:has(.alert-center-page) body,
-  html:has(.alert-center-page) #root,
-  html:has(.alert-center-page) .app-shell,
-  html:has(.alert-center-page) .workspace,
-  html:has(.alert-center-page) .main-content,
-  html:has(.alert-center-page) .page-shell {
-    height: auto !important;
-    min-height: 0 !important;
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-    background: #fff !important;
-  }
-
-  .alert-center-page .page-header {
-    margin-bottom: 8px !important;
-    padding: 8px 0 10px !important;
-    background: #fff !important;
-  }
-
-  .alert-center-page .page-header h2 {
-    margin-bottom: 4px !important;
-    font-size: 18pt !important;
-  }
-
-  .alert-center-page .page-header p {
-    font-size: 10pt !important;
-    line-height: 1.3 !important;
-  }
-
-  .alert-center-page .panel {
-    overflow: visible !important;
-    margin-bottom: 0 !important;
-    border-radius: 8px !important;
-    box-shadow: none !important;
-    padding: 8px !important;
-    background: #fff !important;
-  }
-
-  .alert-center-page .toolbar {
-    display: none !important;
-  }
-
-  .alert-center-page .table-scroll,
-  .alert-center-page .data-table {
-    overflow: visible !important;
-    width: 100% !important;
-  }
-
-  .alert-center-page .data-table {
-    table-layout: fixed !important;
-    border-collapse: collapse !important;
-    border-spacing: 0 !important;
-    font-size: 10pt !important;
-    line-height: 1.25 !important;
-  }
-
-  .alert-center-page .data-table thead {
-    display: table-header-group !important;
-  }
-
-  .alert-center-page .data-table tr {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
-
-  .alert-center-page .data-table th,
-  .alert-center-page .data-table td {
-    border-bottom: 1px solid rgba(148, 163, 184, 0.28) !important;
-    padding: 4px 6px !important;
-    vertical-align: top !important;
-    white-space: normal !important;
-    word-break: break-word !important;
-    overflow-wrap: anywhere !important;
-  }
-
-  .alert-center-page .data-table th {
-    background: #f3f7fb !important;
-    font-size: 9pt !important;
-    font-weight: 800 !important;
-  }
-
-  .alert-center-page .data-table th:nth-child(1),
-  .alert-center-page .data-table td:nth-child(1) {
-    width: 9%;
-  }
-
-  .alert-center-page .data-table th:nth-child(2),
-  .alert-center-page .data-table td:nth-child(2) {
-    width: 8%;
-  }
-
-  .alert-center-page .data-table th:nth-child(3),
-  .alert-center-page .data-table td:nth-child(3) {
-    width: 18%;
-  }
-
-  .alert-center-page .data-table th:nth-child(4),
-  .alert-center-page .data-table td:nth-child(4) {
-    width: 22%;
-  }
-
-  .alert-center-page .data-table th:nth-child(5),
-  .alert-center-page .data-table td:nth-child(5) {
-    width: 7%;
-  }
-
-  .alert-center-page .data-table th:nth-child(6),
-  .alert-center-page .data-table td:nth-child(6) {
-    width: 18%;
-  }
-
-  .alert-center-page .data-table th:nth-child(7),
-  .alert-center-page .data-table td:nth-child(7) {
-    display: none !important;
-  }
-
-  .alert-center-page .data-table th:nth-child(8),
-  .alert-center-page .data-table td:nth-child(8) {
-    width: 18%;
-  }
-
-  .alert-center-page .data-table th:nth-child(9),
-  .alert-center-page .data-table td:nth-child(9) {
-    display: none !important;
-  }
-
-  .alert-center-page .data-table tbody tr:nth-child(n + 15) {
-    display: none !important;
-  }
-
-  .alert-center-page .table-scroll::after {
-    content: "Report view shows the first 14 alerts.";
-    display: block;
-    margin-top: 8px;
-    color: #475569;
-    font-size: 9pt;
-  }
-
-  .alert-center-page .status-pill {
-    min-height: 0 !important;
-    border-radius: 5px !important;
-    font-size: 9.5pt !important;
-    line-height: 1.1 !important;
-    padding: 2px 5px !important;
+  .status-grid-2x2,
+  .camera-overview-grid,
+  .bad-case-create-grid,
+  .bad-case-update-grid,
+  .evaluation-dataset-grid,
+  .evaluation-outcome-grid,
+  .report-summary-export-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }

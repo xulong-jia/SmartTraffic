@@ -1,6 +1,5 @@
 import type { FrameDetectionResult } from "../types";
 import {
-  filterReportOverlayItems,
   filterDetectionsForTime,
   formatOverlayLabel,
   isTrackHighlighted,
@@ -10,7 +9,6 @@ import {
 interface DetectionOverlayProps {
   frames: FrameDetectionResult[];
   currentTimeMs: number;
-  reportMode?: boolean;
   selectedTrackId?: number | null;
   showLabels?: boolean;
 }
@@ -18,14 +16,10 @@ interface DetectionOverlayProps {
 export default function DetectionOverlay({
   frames,
   currentTimeMs,
-  reportMode = false,
   selectedTrackId = null,
   showLabels = true
 }: DetectionOverlayProps) {
-  const currentDetections = filterDetectionsForTime(frames, currentTimeMs);
-  const detections = reportMode
-    ? filterReportOverlayItems(currentDetections)
-    : currentDetections;
+  const detections = filterDetectionsForTime(frames, currentTimeMs);
   if (detections.length === 0) {
     return null;
   }
