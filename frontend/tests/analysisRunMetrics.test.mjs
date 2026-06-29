@@ -81,6 +81,31 @@ test("getArtifactStatus prefers artifact_summary and falls back to paths", () =>
   assert.equal(metrics.getArtifactStatus(run, "alerts"), "missing");
 });
 
+test("getArtifactStatus resolves dashboard artifact aliases from detailed artifact keys", () => {
+  const run = {
+    id: "run_50007c86fd60",
+    run_id: "run_50007c86fd60",
+    status: "completed",
+    artifact_summary: {
+      detection_summary: { status: "available", path: "detection_summary.json", record_count: 1 },
+      detections_csv: { status: "missing", path: "detections.csv", record_count: 0 },
+      detections_jsonl: { status: "available", path: "detections.jsonl", record_count: 120 },
+      tracking_summary: { available: true, path: "tracking_summary.json", record_count: 1 },
+      tracks_csv: { status: "available", path: "tracks.csv", record_count: 6483 },
+      trajectory_summary: { status: "available", path: "trajectory_summary.json", record_count: 1 },
+      trajectory_points_jsonl: {
+        status: "available",
+        path: "trajectory_points.jsonl",
+        record_count: 120
+      }
+    }
+  };
+
+  assert.equal(metrics.getArtifactStatus(run, "detections"), "available");
+  assert.equal(metrics.getArtifactStatus(run, "tracks"), "available");
+  assert.equal(metrics.getArtifactStatus(run, "trajectory_points"), "available");
+});
+
 test("buildArtifactStatusCounts summarizes selected artifact availability", () => {
   const counts = metrics.buildArtifactStatusCounts(
     [

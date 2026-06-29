@@ -117,6 +117,40 @@ def test_analysis_runs_list_discovers_artifact_index_backed_runs(
     assert item["artifact_paths"] == {"detections_csv": "detections.csv"}
 
 
+def test_analysis_runs_list_treats_manifest_available_true_as_available(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    client = _client_for_tmp_results(tmp_path, monkeypatch)
+    run_dir = tmp_path / "results" / "run_available_manifest"
+    run_dir.mkdir(parents=True)
+    (run_dir / "manifest.json").write_text(
+        json.dumps(
+            {
+                "run_id": "run_available_manifest",
+                "video_id": "video_available",
+                "status": "completed",
+                "artifacts": {
+                    "detections_csv": {
+                        "available": True,
+                        "path": "detections.csv",
+                        "record_count": 0,
+                    },
+                },
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    response = client.get("/api/analysis-runs")
+
+    assert response.status_code == 200
+    item = response.json()["items"][0]
+    assert item["artifact_summary"]["detections_csv"]["status"] == "available"
+
+
 def test_analysis_runs_list_discovers_directory_scan_runs(
     tmp_path: Path,
     monkeypatch,

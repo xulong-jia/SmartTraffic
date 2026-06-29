@@ -11,6 +11,17 @@ export const DASHBOARD_ARTIFACT_KEYS = [
   "zone_statistics"
 ] as const;
 
+const ARTIFACT_STATUS_ALIASES: Record<string, readonly string[]> = {
+  detections: ["detections", "detection_summary", "detections_csv", "detections_jsonl"],
+  tracks: ["tracks", "tracking_summary", "tracks_csv", "tracks_jsonl"],
+  trajectory_points: [
+    "trajectory_points",
+    "trajectory_summary",
+    "trajectory_points_csv",
+    "trajectory_points_jsonl"
+  ]
+};
+
 export type TrackedRunStatus = (typeof TRACKED_RUN_STATUSES)[number];
 export type ArtifactStatusCounts = Record<string, Record<string, number>>;
 
@@ -56,12 +67,23 @@ export function buildArtifactStatusCounts(
 }
 
 export function getArtifactStatus(run: AnalysisRunSummary, artifactKey: string): string {
-  const summaryStatus = run.artifact_summary?.[artifactKey]?.status;
-  if (summaryStatus) {
-    return summaryStatus;
+  const artifactKeys = ARTIFACT_STATUS_ALIASES[artifactKey] ?? [artifactKey];
+  const summaryStatuses = artifactKeys
+    .map((currentKey) => getSummaryStatus(run, currentKey))
+    .filter((status): status is string => Boolean(status));
+
+  if (summaryStatuses.includes("available")) {
+    return "available";
   }
 
-  if (run.artifact_paths?.[artifactKey]) {
+  if (summaryStatuses.length > 0) {
+    return (
+      summaryStatuses.find((status) => status !== "missing") ??
+      summaryStatuses[0]
+    );
+  }
+
+  if (artifactKeys.some((currentKey) => run.artifact_paths?.[currentKey])) {
     return "available";
   }
 
@@ -86,4 +108,15 @@ function toTrackedStatus(status: string | undefined): TrackedRunStatus {
     return status;
   }
   return "unknown";
+}
+
+function getSummaryStatus(run: AnalysisRunSummary, artifactKey: string): string | undefined {
+  const item = run.artifact_summary?.[artifactKey];
+  if (!item) {
+    return undefined;
+  }
+  if (item.available === true) {
+    return "available";
+  }
+  return item.status;
 }

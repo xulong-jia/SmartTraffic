@@ -1138,8 +1138,13 @@ def _artifact_summary(
 
 
 def _summary_artifact_record(value: dict[str, Any]) -> dict[str, Any]:
+    status = (
+        "available"
+        if value.get("available") is True
+        else str(value.get("status", "unknown"))
+    )
     return {
-        "status": str(value.get("status", "unknown")),
+        "status": status,
         "path": _safe_relative_path(value.get("path", "")),
         "record_count": int(value.get("record_count") or 0),
     }
