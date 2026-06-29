@@ -59,6 +59,68 @@ def test_evaluation_api_list_register_run_results_summary_and_failed_cases(
     assert any(item["failure_type"] == "false_positive" for item in failed_cases.json()["items"])
 
 
+def test_evaluation_api_uses_run_expected_events_without_dataset(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    client = _client_for_tmp_evaluation(tmp_path, monkeypatch)
+    run_id = _create_api_run(tmp_path)
+    _write_run_expected_events(tmp_path, run_id)
+
+    run_response = client.post(
+        "/api/evaluation/run",
+        json={"run_id": run_id, "evaluation_type": "event"},
+    )
+
+    assert run_response.status_code == 200
+    results = {
+        item["metric_name"]: item
+        for item in run_response.json()["results"]
+    }
+    assert results["event_precision"]["metric_value"] == 1.0
+    assert results["event_recall"]["metric_value"] == 1.0
+    assert results["event_f1"]["metric_value"] == 1.0
+    assert results["false_alarm_rate"]["metric_value"] == 0.0
+    assert results["event_precision"]["details"]["status"] == "available"
+
+
+def test_evaluation_api_dataset_without_expected_events_stays_not_applicable(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    client = _client_for_tmp_evaluation(tmp_path, monkeypatch)
+    run_id = _create_api_run(tmp_path)
+    _write_run_expected_events(tmp_path, run_id)
+
+    registered = client.post(
+        "/api/evaluation/datasets",
+        json={
+            "dataset_id": "dataset_without_expected",
+            "name": "Dataset without expected events",
+            "dataset_type": "event",
+        },
+    )
+    run_response = client.post(
+        "/api/evaluation/run",
+        json={
+            "run_id": run_id,
+            "dataset_id": "dataset_without_expected",
+            "evaluation_type": "event",
+        },
+    )
+
+    assert registered.status_code == 200
+    assert run_response.status_code == 200
+    result = next(
+        item
+        for item in run_response.json()["results"]
+        if item["metric_name"] == "event_precision"
+    )
+    assert result["metric_value"] is None
+    assert result["details"]["status"] == "not_applicable"
+    assert result["details"]["reason"] == "missing expected events"
+
+
 def test_evaluation_api_missing_run_and_dataset_return_clear_errors(
     tmp_path: Path,
     monkeypatch,
@@ -180,5 +242,25 @@ def _write_expected_events(tmp_path: Path) -> None:
     expected_path.parent.mkdir(parents=True)
     expected_path.write_text(
         json.dumps({"events": [{"event_id": "expected_1", "event_type": "illegal_parking", "start_frame": 40, "end_frame": 50}]}),
+        encoding="utf-8",
+    )
+
+
+def _write_run_expected_events(tmp_path: Path, run_id: str) -> None:
+    expected_path = tmp_path / "evals" / "expected" / f"{run_id}_expected_events.json"
+    expected_path.parent.mkdir(parents=True)
+    expected_path.write_text(
+        json.dumps(
+            {
+                "events": [
+                    {
+                        "event_id": "expected_1",
+                        "event_type": "wrong_way_driving",
+                        "start_frame": 12,
+                        "end_frame": 18,
+                    }
+                ]
+            }
+        ),
         encoding="utf-8",
     )

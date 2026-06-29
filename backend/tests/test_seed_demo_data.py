@@ -31,7 +31,7 @@ def test_seed_demo_data_dry_run_does_not_write(tmp_path, capsys):
     module.main(["--dry-run", "--output-root", str(tmp_path)])
 
     output = capsys.readouterr().out
-    assert "would create: 5" in output
+    assert "would create: 6" in output
     assert not (tmp_path / "samples" / "configs" / "demo_zones.json").exists()
     assert not (tmp_path / "evals" / "expected" / "demo_expected_events.json").exists()
 
@@ -41,7 +41,7 @@ def test_seed_demo_data_writes_json_to_output_root(tmp_path):
 
     summary = module.seed_demo_files(output_root=tmp_path)
 
-    assert len(summary["created"]) == 5
+    assert len(summary["created"]) == 6
     assert not summary["updated"]
     for relative_path in summary["created"]:
         payload = json.loads((tmp_path / relative_path).read_text(encoding="utf-8"))
@@ -70,6 +70,18 @@ def test_seed_demo_data_writes_json_to_output_root(tmp_path):
         "pedestrian_in_vehicle_lane",
         "congestion",
     }
+    run_expected_events = json.loads(
+        (tmp_path / "evals" / "expected" / "run_50007c86fd60_expected_events.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert run_expected_events["run_id"] == "run_50007c86fd60"
+    assert len(run_expected_events["events"]) == 14
+    assert {
+        event["track_id"]
+        for event in run_expected_events["events"]
+        if event["start_frame"] == 0
+    } >= {2, 4, 6, 7, 11, 16, 17, 18, 24, 30}
 
 
 def test_seed_demo_data_does_not_overwrite_without_force(tmp_path):

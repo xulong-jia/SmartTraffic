@@ -38,6 +38,55 @@ def test_event_metrics_match_by_type_and_frame_overlap() -> None:
     assert metrics["failed_cases"][0]["failure_type"] == "false_negative"
 
 
+def test_event_metrics_match_by_track_zone_and_zero_frame() -> None:
+    metrics = compute_event_metrics(
+        expected_events=[
+            {
+                "event_id": "expected_1",
+                "event_type": "danger_zone_intrusion",
+                "track_id": 2,
+                "zone_id": "zone_demo",
+                "start_frame": 0,
+                "end_frame": 0,
+            },
+            {
+                "event_id": "expected_2",
+                "event_type": "danger_zone_intrusion",
+                "track_id": 4,
+                "zone_id": "zone_demo",
+                "start_frame": 0,
+                "end_frame": 0,
+            },
+        ],
+        actual_events=[
+            {
+                "event_id": "actual_1",
+                "event_type": "danger_zone_intrusion",
+                "track_id": 2,
+                "zone_id": "zone_demo",
+                "start_frame": 0,
+                "end_frame": 0,
+            },
+            {
+                "event_id": "actual_wrong_track",
+                "event_type": "danger_zone_intrusion",
+                "track_id": 99,
+                "zone_id": "zone_demo",
+                "start_frame": 0,
+                "end_frame": 0,
+            },
+        ],
+        frame_tolerance=0,
+    )
+
+    assert metrics["status"] == "available"
+    assert metrics["true_positive"] == 1
+    assert metrics["false_positive"] == 1
+    assert metrics["false_negative"] == 1
+    assert metrics["precision"] == 0.5
+    assert metrics["recall"] == 0.5
+
+
 def test_event_metrics_without_expected_annotations_is_not_applicable() -> None:
     metrics = compute_event_metrics(expected_events=[], actual_events=[])
 

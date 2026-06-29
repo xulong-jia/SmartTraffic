@@ -207,6 +207,10 @@ def _events_match(
 ) -> bool:
     if str(expected.get("event_type")) != str(actual.get("event_type")):
         return False
+    if not _event_field_matches(expected, actual, "track_id"):
+        return False
+    if not _event_field_matches(expected, actual, "zone_id"):
+        return False
     expected_start, expected_end = _event_frame_range(expected)
     actual_start, actual_end = _event_frame_range(actual)
     if expected_start is None or actual_start is None:
@@ -214,14 +218,40 @@ def _events_match(
     return expected_start - frame_tolerance <= actual_end and actual_start <= expected_end + frame_tolerance
 
 
+def _event_field_matches(
+    expected: Mapping[str, Any],
+    actual: Mapping[str, Any],
+    key: str,
+) -> bool:
+    expected_value = expected.get(key)
+    if expected_value is None or expected_value == "":
+        return True
+    actual_value = actual.get(key)
+    if actual_value is None or actual_value == "":
+        return False
+    return str(expected_value) == str(actual_value)
+
+
 def _event_frame_range(event: Mapping[str, Any]) -> tuple[int | None, int | None]:
-    start = _optional_int(event.get("start_frame") or event.get("frame_index"))
-    end = _optional_int(event.get("end_frame") or event.get("frame_index"))
+    fallback = _first_present(event, "frame_index", "timestamp_ms")
+    start = _optional_int(_first_present(event, "start_frame", fallback))
+    end = _optional_int(_first_present(event, "end_frame", fallback))
     if start is None and end is not None:
         start = end
     if end is None and start is not None:
         end = start
     return start, end
+
+
+def _first_present(event: Mapping[str, Any], *keys_or_values: Any) -> Any:
+    for key_or_value in keys_or_values:
+        if isinstance(key_or_value, str):
+            value = event.get(key_or_value)
+        else:
+            value = key_or_value
+        if value is not None and value != "":
+            return value
+    return None
 
 
 def _event_failed_case(

@@ -240,7 +240,11 @@ class EvaluationService:
     ) -> tuple[list[tuple[str, int | float | str | None, dict[str, Any]]], list[dict[str, Any]]]:
         if evaluation_type == "event":
             details = compute_event_metrics(
-                expected_events=_load_expected_events(self.eval_root, dataset),
+                expected_events=_load_expected_events(
+                    self.eval_root,
+                    dataset,
+                    run_id=run_dir.name,
+                ),
                 actual_events=_read_jsonl(run_dir / "events.jsonl"),
                 frame_tolerance=int(config.get("frame_tolerance", 5)),
             )
@@ -659,10 +663,18 @@ class EvaluationService:
 def _load_expected_events(
     eval_root: Path,
     dataset: dict[str, Any] | None,
+    *,
+    run_id: str | None = None,
 ) -> list[dict[str, Any]]:
     payload = _load_dataset_json(eval_root, dataset, "expected_events_path")
     if isinstance(payload.get("events"), list):
         return [event for event in payload["events"] if isinstance(event, dict)]
+    if dataset and dataset.get("source") != "ad_hoc":
+        return []
+    if run_id:
+        run_payload = _read_json(eval_root / "expected" / f"{run_id}_expected_events.json")
+        if isinstance(run_payload.get("events"), list):
+            return [event for event in run_payload["events"] if isinstance(event, dict)]
     return []
 
 

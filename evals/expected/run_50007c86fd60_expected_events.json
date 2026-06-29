@@ -1,0 +1,134 @@
+{
+  "schema_version": "stage9.demo.expected_events.v1",
+  "dataset_id": "demo_run_50007c86fd60_event_dataset",
+  "description": "Expected event labels for the SmartTraffic demo run run_50007c86fd60.",
+  "run_id": "run_50007c86fd60",
+  "events": [
+    {
+      "event_id": "expected_event_001",
+      "event_type": "danger_zone_intrusion",
+      "track_id": 2,
+      "zone_id": "zone_b64fa50a13e4",
+      "start_frame": 0,
+      "end_frame": 0,
+      "severity": "medium"
+    },
+    {
+      "event_id": "expected_event_002",
+      "event_type": "danger_zone_intrusion",
+      "track_id": 4,
+      "zone_id": "zone_b64fa50a13e4",
+      "start_frame": 0,
+      "end_frame": 0,
+      "severity": "medium"
+    },
+    {
+      "event_id": "expected_event_003",
+      "event_type": "danger_zone_intrusion",
+      "track_id": 6,
+      "zone_id": "zone_b64fa50a13e4",
+      "start_frame": 0,
+      "end_frame": 0,
+      "severity": "medium"
+    },
+    {
+      "event_id": "expected_event_004",
+      "event_type": "danger_zone_intrusion",
+      "track_id": 7,
+      "zone_id": "zone_b64fa50a13e4",
+      "start_frame": 0,
+      "end_frame": 0,
+      "severity": "medium"
+    },
+    {
+      "event_id": "expected_event_005",
+      "event_type": "danger_zone_intrusion",
+      "track_id": 11,
+      "zone_id": "zone_b64fa50a13e4",
+      "start_frame": 0,
+      "end_frame": 0,
+      "severity": "medium"
+    },
+    {
+      "event_id": "expected_event_006",
+      "event_type": "danger_zone_intrusion",
+      "track_id": 16,
+      "zone_id": "zone_b64fa50a13e4",
+      "start_frame": 0,
+      "end_frame": 0,
+      "severity": "medium"
+    },
+    {
+      "event_id": "expected_event_007",
+      "event_type": "danger_zone_intrusion",
+      "track_id": 17,
+      "zone_id": "zone_b64fa50a13e4",
+      "start_frame": 0,
+      "end_frame": 0,
+      "severity": "medium"
+    },
+    {
+      "event_id": "expected_event_008",
+      "event_type": "danger_zone_intrusion",
+      "track_id": 18,
+      "zone_id": "zone_b64fa50a13e4",
+      "start_frame": 0,
+      "end_frame": 0,
+      "severity": "medium"
+    },
+    {
+      "event_id": "expected_event_009",
+      "event_type": "danger_zone_intrusion",
+      "track_id": 24,
+      "zone_id": "zone_b64fa50a13e4",
+      "start_frame": 0,
+      "end_frame": 0,
+      "severity": "medium"
+    },
+    {
+      "event_id": "expected_event_010",
+      "event_type": "danger_zone_intrusion",
+      "track_id": 30,
+      "zone_id": "zone_b64fa50a13e4",
+      "start_frame": 0,
+      "end_frame": 0,
+      "severity": "medium"
+    },
+    {
+      "event_id": "expected_event_011",
+      "event_type": "danger_zone_intrusion",
+      "track_id": 41,
+      "zone_id": "zone_b64fa50a13e4",
+      "start_frame": 27,
+      "end_frame": 27,
+      "severity": "medium"
+    },
+    {
+      "event_id": "expected_event_012",
+      "event_type": "danger_zone_intrusion",
+      "track_id": 63,
+      "zone_id": "zone_b64fa50a13e4",
+      "start_frame": 54,
+      "end_frame": 54,
+      "severity": "medium"
+    },
+    {
+      "event_id": "expected_event_013",
+      "event_type": "danger_zone_intrusion",
+      "track_id": 8,
+      "zone_id": "zone_b64fa50a13e4",
+      "start_frame": 75,
+      "end_frame": 75,
+      "severity": "medium"
+    },
+    {
+      "event_id": "expected_event_014",
+      "event_type": "danger_zone_intrusion",
+      "track_id": 73,
+      "zone_id": "zone_b64fa50a13e4",
+      "start_frame": 83,
+      "end_frame": 83,
+      "severity": "medium"
+    }
+  ]
+}

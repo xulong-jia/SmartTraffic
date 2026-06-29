@@ -15,6 +15,10 @@ from typing import Any
 PROJECT_DIR = Path(__file__).resolve().parents[1]
 
 
+def _load_repo_json(relative_path: str) -> dict[str, Any]:
+    return json.loads((PROJECT_DIR / relative_path).read_text(encoding="utf-8"))
+
+
 DEMO_ZONES: dict[str, Any] = {
     "schema_version": "stage9.demo.zones.v1",
     "description": "Toy zones for local dry-run demos. Coordinates are pixel-space examples.",
@@ -290,6 +294,10 @@ SEED_FILES: tuple[tuple[str, dict[str, Any]], ...] = (
     ("samples/configs/demo_event_rules.json", DEMO_EVENT_RULES),
     ("samples/configs/demo_processing_request.json", DEMO_PROCESSING_REQUEST),
     ("evals/expected/demo_expected_events.json", DEMO_EXPECTED_EVENTS),
+    (
+        "evals/expected/run_50007c86fd60_expected_events.json",
+        _load_repo_json("evals/expected/run_50007c86fd60_expected_events.json"),
+    ),
     ("evals/expected/demo_expected_counts.json", DEMO_EXPECTED_COUNTS),
 )
 
