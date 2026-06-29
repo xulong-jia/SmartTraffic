@@ -123,6 +123,76 @@ test("buildEvaluationResultDisplaySummary normalizes table values", () => {
   });
 });
 
+test("selectLatestEvaluationRun prefers requested run id", () => {
+  const runs = [
+    {
+      evaluation_run_id: "eval_old",
+      run_id: "run_1",
+      dataset_id: "adhoc-event",
+      evaluation_type: "event",
+      status: "completed",
+      started_at: "2026-01-01T00:00:00+00:00",
+      finished_at: "2026-01-01T00:00:00+00:00",
+      config: {}
+    },
+    {
+      evaluation_run_id: "eval_new",
+      run_id: "run_1",
+      dataset_id: "adhoc-event",
+      evaluation_type: "event",
+      status: "completed",
+      started_at: "2026-01-02T00:00:00+00:00",
+      finished_at: "2026-01-02T00:00:00+00:00",
+      config: {}
+    }
+  ];
+
+  assert.equal(
+    evaluationMetrics.selectLatestEvaluationRun(runs, "eval_old").evaluation_run_id,
+    "eval_old"
+  );
+});
+
+test("selectLatestEvaluationRun falls back to the newest finished run", () => {
+  const runs = [
+    {
+      evaluation_run_id: "eval_old",
+      run_id: "run_1",
+      dataset_id: "adhoc-event",
+      evaluation_type: "event",
+      status: "completed",
+      started_at: "2026-01-01T00:00:00+00:00",
+      finished_at: "2026-01-01T00:00:00+00:00",
+      config: {}
+    },
+    {
+      evaluation_run_id: "eval_new",
+      run_id: "run_1",
+      dataset_id: "adhoc-event",
+      evaluation_type: "event",
+      status: "completed",
+      started_at: "2026-01-03T00:00:00+00:00",
+      finished_at: "2026-01-03T00:00:00+00:00",
+      config: {}
+    },
+    {
+      evaluation_run_id: "eval_middle",
+      run_id: "run_1",
+      dataset_id: "adhoc-event",
+      evaluation_type: "event",
+      status: "completed",
+      started_at: "2026-01-02T00:00:00+00:00",
+      finished_at: "2026-01-02T00:00:00+00:00",
+      config: {}
+    }
+  ];
+
+  assert.equal(
+    evaluationMetrics.selectLatestEvaluationRun(runs).evaluation_run_id,
+    "eval_new"
+  );
+});
+
 test("buildBadCaseRegressionDisplaySummary normalizes regression summary values", () => {
   assert.deepEqual(
     evaluationMetrics.buildBadCaseRegressionDisplaySummary({

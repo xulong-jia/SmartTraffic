@@ -61,8 +61,23 @@ class EvaluationService:
     def list_datasets(self) -> dict[str, Any]:
         datasets = self._list_db_datasets()
         if datasets:
-            return {"schema_version": "stage8efg.v1", "datasets": datasets}
-        return load_evaluation_datasets(self.eval_root)
+            return {
+                "schema_version": "stage8efg.v1",
+                "datasets": _with_ad_hoc_run_datasets(
+                    datasets,
+                    self._list_db_evaluation_runs(
+                        run_id=None,
+                        dataset_id=None,
+                        evaluation_type=None,
+                    ),
+                ),
+            }
+        payload = load_evaluation_datasets(self.eval_root)
+        payload["datasets"] = _with_ad_hoc_run_datasets(
+            payload["datasets"],
+            load_evaluation_runs(self.eval_root),
+        )
+        return payload
 
     def register_dataset(self, record: Mapping[str, Any]) -> dict[str, Any]:
         artifact_record = register_evaluation_dataset(self.eval_root, record)
@@ -112,11 +127,13 @@ class EvaluationService:
         *,
         run_id: str | None = None,
         evaluation_run_id: str | None = None,
+        dataset_id: str | None = None,
         evaluation_type: str | None = None,
     ) -> list[dict[str, Any]]:
         db_results = self._list_db_results(
             run_id=run_id,
             evaluation_run_id=evaluation_run_id,
+            dataset_id=dataset_id,
             evaluation_type=evaluation_type,
         )
         if db_results:
@@ -126,6 +143,7 @@ class EvaluationService:
             for result in load_evaluation_results(self.eval_root)
             if (run_id is None or result.get("run_id") == run_id)
             and (evaluation_run_id is None or result.get("evaluation_run_id") == evaluation_run_id)
+            and (dataset_id is None or result.get("dataset_id") == dataset_id)
             and (evaluation_type is None or result.get("evaluation_type") == evaluation_type)
         ]
 
@@ -163,7 +181,7 @@ class EvaluationService:
         config: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
         run_dir = self._existing_run_dir(run_id)
-        dataset = self._dataset(dataset_id) if dataset_id else None
+        dataset = self._dataset(dataset_id, evaluation_type=evaluation_type) if dataset_id else None
         started_at = _utc_now_iso()
         evaluation_run = append_evaluation_run(
             self.eval_root,
@@ -213,7 +231,12 @@ class EvaluationService:
             )
             for failed_case in failed_cases
         ]
-        summary = self._write_run_summary(run_dir, run_id)
+        summary = self._write_run_summary(
+            run_dir,
+            run_id,
+            extra_results=results,
+            extra_failed_cases=saved_failed_cases,
+        )
         if self._db_run_exists(run_id):
             self._persist_db_evaluation(
                 run_id=run_id,
@@ -332,14 +355,19 @@ class EvaluationService:
             ("bad_case_regression_reopened_cases", details["reopened_case_count"], details),
         ], regression_failed_cases(details)
 
-    def _write_run_summary(self, run_dir: Path, run_id: str) -> dict[str, Any]:
-        results = self.list_results(run_id=run_id)
-        failed_cases = self.list_failed_cases(run_id=run_id)
+    def _write_run_summary(
+        self,
+        run_dir: Path,
+        run_id: str,
+        *,
+        extra_results: list[dict[str, Any]] | None = None,
+        extra_failed_cases: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        results = [*self.list_results(run_id=run_id), *(extra_results or [])]
+        failed_cases = [*self.list_failed_cases(run_id=run_id), *(extra_failed_cases or [])]
         grouped: dict[str, dict[str, Any]] = {}
         for result in results:
-            grouped.setdefault(str(result["evaluation_type"]), {})[
-                str(result["metric_name"])
-            ] = result
+            _set_latest_metric(grouped, result)
         regression = grouped.get("regression")
         if isinstance(regression, dict) and isinstance(regression.get("bad_case_regression_pass_rate"), dict):
             grouped["bad_case_regression"] = regression["bad_case_regression_pass_rate"].get("details", {})
@@ -414,13 +442,20 @@ class EvaluationService:
             updated_count += 1
         return updated_count
 
-    def _dataset(self, dataset_id: str | None) -> dict[str, Any]:
+    def _dataset(
+        self,
+        dataset_id: str | None,
+        *,
+        evaluation_type: str | None = None,
+    ) -> dict[str, Any]:
         db_dataset = self._db_dataset(dataset_id)
         if db_dataset is not None:
-            return db_dataset
+            return _normalize_ad_hoc_dataset(db_dataset, evaluation_type=evaluation_type)
         for dataset in self.list_datasets()["datasets"]:
             if dataset["dataset_id"] == dataset_id:
-                return dataset
+                return _normalize_ad_hoc_dataset(dataset, evaluation_type=evaluation_type)
+        if _is_ad_hoc_dataset_id(dataset_id, evaluation_type=evaluation_type):
+            return _ad_hoc_dataset_record(dataset_id or f"adhoc-{evaluation_type}", evaluation_type or "event")
         raise EvaluationDatasetNotFound(dataset_id or "")
 
     def _existing_run_dir(self, run_id: str) -> Path:
@@ -475,7 +510,7 @@ class EvaluationService:
         if dataset_id is not None:
             if EvaluationDatasetRepository(self.session).get(dataset_id) is not None:
                 return dataset_id
-            dataset = self._dataset(dataset_id)
+            dataset = self._dataset(dataset_id, evaluation_type=evaluation_type)
             EvaluationDatasetRepository(self.session).create(
                 id=dataset["dataset_id"],
                 name=dataset["name"],
@@ -550,6 +585,7 @@ class EvaluationService:
         *,
         run_id: str | None,
         evaluation_run_id: str | None,
+        dataset_id: str | None,
         evaluation_type: str | None,
     ) -> list[dict[str, Any]]:
         if self.session is None:
@@ -568,6 +604,12 @@ class EvaluationService:
                 for record in records
                 if record.get("evaluation_run_id") == evaluation_run_id
             ]
+        if dataset_id is not None:
+            records = [
+                record
+                for record in records
+                if record.get("dataset_id") == dataset_id
+            ]
         return records
 
     def _list_db_evaluation_runs(
@@ -581,6 +623,7 @@ class EvaluationService:
         for result in self._list_db_results(
             run_id=run_id,
             evaluation_run_id=None,
+            dataset_id=None,
             evaluation_type=evaluation_type,
         ):
             evaluation_run_id = result["evaluation_run_id"]
@@ -632,10 +675,12 @@ class EvaluationService:
         generated_at = None
         for row in rows:
             record = _result_from_model(row)
-            grouped.setdefault(record["evaluation_type"], {})[record["metric_name"]] = {
-                key: value for key, value in record.items() if not key.startswith("_")
-            }
-            generated_at = record["created_at"]
+            _set_latest_metric(
+                grouped,
+                {key: value for key, value in record.items() if not key.startswith("_")},
+            )
+            if generated_at is None or str(record["created_at"]) > generated_at:
+                generated_at = record["created_at"]
             for failed_case in _failed_cases_from_model(row):
                 failed_cases[str(failed_case["failed_case_id"])] = failed_case
         if (
@@ -667,15 +712,40 @@ def _load_expected_events(
     run_id: str | None = None,
 ) -> list[dict[str, Any]]:
     payload = _load_dataset_json(eval_root, dataset, "expected_events_path")
-    if isinstance(payload.get("events"), list):
-        return [event for event in payload["events"] if isinstance(event, dict)]
-    if dataset and dataset.get("source") != "ad_hoc":
-        return []
+    dataset_events = _event_records(payload)
+    if dataset_events:
+        return dataset_events
     if run_id:
         run_payload = _read_json(eval_root / "expected" / f"{run_id}_expected_events.json")
-        if isinstance(run_payload.get("events"), list):
-            return [event for event in run_payload["events"] if isinstance(event, dict)]
+        return _event_records(run_payload)
     return []
+
+
+def _event_records(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    events = payload.get("events")
+    if not isinstance(events, list):
+        return []
+    return [event for event in events if isinstance(event, dict)]
+
+
+def _set_latest_metric(
+    grouped: dict[str, dict[str, Any]],
+    record: dict[str, Any],
+) -> None:
+    evaluation_type = str(record["evaluation_type"])
+    metric_name = str(record["metric_name"])
+    group = grouped.setdefault(evaluation_type, {})
+    existing = group.get(metric_name)
+    if existing is None or _result_order_key(record) >= _result_order_key(existing):
+        group[metric_name] = record
+
+
+def _result_order_key(record: dict[str, Any]) -> tuple[str, str, str]:
+    return (
+        str(record.get("created_at") or ""),
+        str(record.get("evaluation_run_id") or ""),
+        str(record.get("evaluation_result_id") or ""),
+    )
 
 
 def _load_expected_counts(
@@ -714,6 +784,74 @@ def _resolve_eval_path(eval_root: Path, value: str) -> Path:
     if parts and parts[0] == "evals":
         return eval_root.joinpath(*parts[1:])
     return eval_root / path
+
+
+def _normalize_ad_hoc_dataset(
+    dataset: dict[str, Any],
+    *,
+    evaluation_type: str | None = None,
+) -> dict[str, Any]:
+    if not _is_ad_hoc_dataset_id(dataset.get("dataset_id"), evaluation_type=evaluation_type):
+        return dataset
+    return {
+        **dataset,
+        "source": "ad_hoc",
+        "metadata": dataset.get("metadata") or {},
+    }
+
+
+def _is_ad_hoc_dataset(dataset: dict[str, Any] | None) -> bool:
+    if not dataset:
+        return False
+    return dataset.get("source") == "ad_hoc" or _is_ad_hoc_dataset_id(dataset.get("dataset_id"))
+
+
+def _is_ad_hoc_dataset_id(
+    dataset_id: Any,
+    *,
+    evaluation_type: str | None = None,
+) -> bool:
+    if dataset_id is None:
+        return False
+    normalized = str(dataset_id)
+    if normalized.startswith("adhoc-"):
+        return True
+    if evaluation_type and normalized == f"adhoc-{evaluation_type}"[:64]:
+        return True
+    return False
+
+
+def _ad_hoc_dataset_record(dataset_id: str, evaluation_type: str) -> dict[str, Any]:
+    now = _utc_now_iso()
+    return {
+        "dataset_id": dataset_id,
+        "name": f"Ad hoc {evaluation_type}",
+        "dataset_type": evaluation_type,
+        "source": "ad_hoc",
+        "annotation_path": None,
+        "expected_events_path": None,
+        "expected_counts_path": None,
+        "metadata": {},
+        "created_at": now,
+    }
+
+
+def _with_ad_hoc_run_datasets(
+    datasets: list[dict[str, Any]],
+    evaluation_runs: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    merged = {str(dataset["dataset_id"]): dataset for dataset in datasets}
+    for run in evaluation_runs:
+        dataset_id = run.get("dataset_id")
+        evaluation_type = str(run.get("evaluation_type") or "event")
+        if not _is_ad_hoc_dataset_id(dataset_id, evaluation_type=evaluation_type):
+            continue
+        normalized_id = str(dataset_id)
+        merged.setdefault(
+            normalized_id,
+            _ad_hoc_dataset_record(normalized_id, evaluation_type),
+        )
+    return sorted(merged.values(), key=lambda item: str(item.get("dataset_id") or ""))
 
 
 def _read_json(path: Path) -> dict[str, Any]:

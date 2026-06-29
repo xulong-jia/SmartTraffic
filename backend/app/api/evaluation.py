@@ -105,6 +105,7 @@ def run_evaluation(
 def list_evaluation_results(
     run_id: str | None = Query(default=None),
     evaluation_run_id: str | None = Query(default=None),
+    dataset_id: str | None = Query(default=None),
     evaluation_type: str | None = Query(default=None),
     limit: int = Query(default=50, ge=0, le=1000),
     offset: int = Query(default=0, ge=0),
@@ -114,6 +115,7 @@ def list_evaluation_results(
         items = EvaluationService(session=db).list_results(
             run_id=run_id,
             evaluation_run_id=evaluation_run_id,
+            dataset_id=dataset_id,
             evaluation_type=evaluation_type,
         )
         page_items = items[offset : offset + limit]

@@ -1,6 +1,7 @@
 import type {
   BadCaseRegressionSummary,
   EvaluationResultRecord,
+  EvaluationRunRecord,
   EvaluationType
 } from "../types";
 
@@ -132,6 +133,32 @@ export function buildEvaluationResultDisplaySummary(
   };
 }
 
+export function selectLatestEvaluationRun(
+  runs: EvaluationRunRecord[],
+  preferredEvaluationRunId?: string | null
+): EvaluationRunRecord | null {
+  if (preferredEvaluationRunId) {
+    const preferred = runs.find(
+      (run) => run.evaluation_run_id === preferredEvaluationRunId
+    );
+    if (preferred) {
+      return preferred;
+    }
+  }
+  let latest: EvaluationRunRecord | null = null;
+  let latestTime = Number.NEGATIVE_INFINITY;
+  let latestIndex = -1;
+  runs.forEach((run, index) => {
+    const timestamp = evaluationRunTime(run);
+    if (timestamp > latestTime || (timestamp === latestTime && index > latestIndex)) {
+      latest = run;
+      latestTime = timestamp;
+      latestIndex = index;
+    }
+  });
+  return latest;
+}
+
 export function buildBadCaseRegressionDisplaySummary(
   summary: BadCaseRegressionSummary | Record<string, unknown> | null | undefined
 ): BadCaseRegressionDisplaySummary {
@@ -203,6 +230,11 @@ function readUnknownNumber(
 ): number | null {
   const value = details[key];
   return typeof value === "number" ? value : null;
+}
+
+function evaluationRunTime(run: EvaluationRunRecord): number {
+  const timestamp = Date.parse(run.finished_at || run.started_at || "");
+  return Number.isNaN(timestamp) ? Number.NEGATIVE_INFINITY : timestamp;
 }
 
 function normalizeText(value: string | null | undefined, fallback = "-"): string {

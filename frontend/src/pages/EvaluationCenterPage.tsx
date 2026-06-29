@@ -26,7 +26,8 @@ import {
   buildEvaluationStatusCounts,
   extractMetricStatus,
   formatEvaluationTypeLabel,
-  normalizeMetricValue
+  normalizeMetricValue,
+  selectLatestEvaluationRun
 } from "../utils/evaluationMetrics";
 import {
   EVALUATION_BOUNDARY_NOTICES,
@@ -82,14 +83,17 @@ export default function EvaluationCenterPage() {
     void loadEvaluationState();
   }, []);
 
-  async function loadEvaluationState(targetRunId = runId) {
+  async function loadEvaluationState(
+    targetRunId = runId,
+    targetEvaluationRunId: string | null = null
+  ) {
     setLoading(true);
     setError("");
     setSuccessMessage("");
     try {
       const normalizedRunId = normalizeOptional(targetRunId);
       const normalizedDatasetId = normalizeOptional(datasetId);
-      const [datasetPayload, runPayload, resultPayload, failedCasePayload] =
+      const [datasetPayload, runPayload] =
         await Promise.all([
           listEvaluationDatasets(),
           listEvaluationRuns({
@@ -98,16 +102,38 @@ export default function EvaluationCenterPage() {
             evaluation_type: normalizeOptional(evaluationType),
             limit: 100,
             offset: 0
-          }),
-          listEvaluationResults({
+          })
+        ]);
+      const latestRun = normalizedRunId
+        ? selectLatestEvaluationRun(runPayload.items, targetEvaluationRunId)
+        : null;
+      const resultQuery = latestRun
+        ? {
+            run_id: normalizedRunId,
+            evaluation_run_id: latestRun.evaluation_run_id,
+            evaluation_type: normalizeOptional(evaluationType),
+            limit: 100,
+            offset: 0
+          }
+        : {
             run_id: normalizedRunId,
             dataset_id: normalizedDatasetId,
             evaluation_type: normalizeOptional(evaluationType),
             limit: 100,
             offset: 0
-          }),
-          listEvaluationFailedCases({ run_id: normalizedRunId, limit: 100, offset: 0 })
-        ]);
+          };
+      const failedCaseQuery = latestRun
+        ? {
+            run_id: normalizedRunId,
+            evaluation_run_id: latestRun.evaluation_run_id,
+            limit: 100,
+            offset: 0
+          }
+        : { run_id: normalizedRunId, limit: 100, offset: 0 };
+      const [resultPayload, failedCasePayload] = await Promise.all([
+        listEvaluationResults(resultQuery),
+        listEvaluationFailedCases(failedCaseQuery)
+      ]);
       setDatasets(datasetPayload);
       setRuns(runPayload);
       setResults(resultPayload);
@@ -169,7 +195,7 @@ export default function EvaluationCenterPage() {
       });
       setSuccessMessage(`已完成 ${response.evaluation_run.evaluation_run_id}。`);
       setSummary(response.summary);
-      await loadEvaluationState(normalizedRunId);
+      await loadEvaluationState(normalizedRunId, response.evaluation_run.evaluation_run_id);
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Evaluation run failed");
     } finally {
