@@ -1,52 +1,58 @@
-# SmartTraffic: Intelligent Traffic Event Detection Platform
+<div align="center">
 
-SmartTraffic is a local smart traffic event detection and analysis platform. It
-covers video upload, YOLOv8 object detection, multi-object tracking, trajectory
-analysis, zone and rule configuration, event detection, alert handling, manual
-review, Bad Case tracking, local evaluation, report export, one-click launch,
-and a Chinese-first Light SaaS Dashboard UI.
+# 🚦 SmartTraffic
 
-SmartTraffic 是一个智慧交通事件检测 local validation project，不是普通 YOLOv8
-检测框 Demo。It is not a production enforcement system, not a formal traffic
-law-enforcement product, and not an official COCO / TrackEval benchmark.
-Generated reports are for analysis and review only.
+### Intelligent Traffic Event Detection and Analysis Platform
+
+SmartTraffic is a local validation platform for traffic video analytics. It
+combines YOLOv8 detection, DeepSORT tracking, trajectory reasoning, zone/rule
+configuration, event detection, alert review, evaluation, report export,
+one-click launch, and a Chinese-first Light SaaS Dashboard UI.
+
+</div>
+
+<div align="center">
+
+![Python](https://img.shields.io/badge/Python-3.11-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688)
+![React](https://img.shields.io/badge/React-TypeScript-61DAFB)
+![YOLOv8](https://img.shields.io/badge/YOLOv8-detection-orange)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)
+![Status](https://img.shields.io/badge/Status-Final%20Showcase-success)
+
+</div>
+
+It is not a simple YOLOv8 bounding-box demo. It is also not a production
+enforcement system, not a formal traffic law-enforcement product, and not an
+official COCO / TrackEval benchmark. Generated reports are for analysis and
+review only.
+
+## ✨ Highlights
+
+| Area | What SmartTraffic Provides |
+| --- | --- |
+| 🎥 Video analytics | Upload local traffic videos and run detection/tracking pipelines |
+| 🧠 AI pipeline | YOLOv8 detection, DeepSORT tracking, and trajectory semantics |
+| 🗺️ Rule reasoning | Configurable zones, direction lines, counting lines, and event rules |
+| 🔔 Event workflow | Events, evidence, alerts, manual review, and Bad Case tracking |
+| 📊 Evaluation and reports | Local metrics, report exports, PDF/JSON/CSV, and final review evidence |
 
 ## Project Snapshot
 
 | Item | Status |
 | --- | --- |
-| Final UI showcase tag | `v1.0.3-ui-showcase-polish` |
-| Main branch note | `main` may contain README/documentation updates after this tag |
-| Project type | Smart traffic event detection local validation platform |
-| Backend | FastAPI, SQLAlchemy, Alembic |
-| Frontend | React, TypeScript, Vite |
-| CV stack | YOLOv8 wrapper, DeepSORT adapter |
-| Database | SQLite prototype via SQLAlchemy |
-| Delivery | Docker Compose local delivery |
-| Event coverage | 6 configurable traffic event rules |
-| Evaluation | Local / synthetic validation metrics |
-| Boundary | Not production-ready or law-enforcement-grade |
+| 🏷️ Latest documentation tag | `v1.0.5-final-readme-showcase` |
+| 🎨 Final UI showcase tag | `v1.0.3-ui-showcase-polish` |
+| 🚦 Project type | Local smart traffic event detection validation platform |
+| ⚡ Backend | FastAPI, SQLAlchemy, Alembic |
+| ⚛️ Frontend | React, TypeScript, Vite |
+| 🤖 CV stack | YOLOv8 detector wrapper, DeepSORT adapter |
+| 🗄️ Database | SQLite prototype |
+| 🐳 Delivery | Docker Compose local delivery |
+| 🖥️ UI | Chinese-first Light SaaS Dashboard |
+| ⚠️ Boundary | Not production-ready or law-enforcement-grade |
 
-## Final UI Showcase Tag
-
-Final UI showcase tag: `v1.0.3-ui-showcase-polish`
-
-This annotated tag contains:
-
-- Chinese-first main UI
-- Light SaaS Dashboard UI
-- UI Expert Review fixes
-- Mobile smoke checks
-- Browser print layout support
-- One-click launch
-- End-to-end manual validation
-- Final showcase report
-- Final manual test report
-- Final UI screenshot checklist
-
-`main` may contain README/documentation updates after this tag.
-
-## What Problem It Solves
+## 🧠 What Problem It Solves
 
 Object detection answers "what is in the frame". SmartTraffic adds the next
 layer: track objects over time, derive trajectory semantics, apply configurable
@@ -64,14 +70,14 @@ video
 -> bad case/evaluation
 ```
 
-## Core Pipeline
+## 🔁 Core Pipeline
 
 ```text
 Video Upload / Camera Source
   -> YOLOv8 Detection
   -> DeepSORT Tracking
   -> Trajectory Engine
-  -> Zone & Rule Config
+  -> Zone and Rule Config
   -> Event Engine
   -> Alert Center
   -> Traffic Analysis Center
@@ -79,9 +85,9 @@ Video Upload / Camera Source
   -> Report Export / Docker Local Delivery
 ```
 
-## Key Features
+## ⚙️ Key Features
 
-### Video Processing
+### 🎥 Video Processing
 
 - Local video upload, metadata extraction, validation, and processing task
   lifecycle.
@@ -89,7 +95,7 @@ Video Upload / Camera Source
   validation runs.
 - Local artifacts remain in ignored output directories and are not committed.
 
-### Detection And Tracking
+### 🤖 Detection and Tracking
 
 - YOLOv8 detector wrapper with deterministic dry-run support for environments
   without local model weights.
@@ -97,7 +103,7 @@ Video Upload / Camera Source
 - Detection and tracking produce structured inputs; event judgment is handled
   by the trajectory and rule layers.
 
-### Trajectory Engine
+### 🧭 Trajectory Engine
 
 - Derives pixel speed, moving angle, dwell time, track length, last-seen state,
   and direction consistency.
@@ -107,7 +113,7 @@ Video Upload / Camera Source
   configured.
 - Pixel speed is a local image-space signal, not calibrated real-world speed.
 
-### Zone & Rule Config
+### 🗺️ Zone and Rule Configuration
 
 - DB-backed zone and event rule CRUD for local validation.
 - Supports polygon zones, direction lines, `counting_zone`, and
@@ -116,7 +122,7 @@ Video Upload / Camera Source
 - Alert level is separate and uses `info` / `warning` / `critical`.
 - Processing runs keep a config snapshot for reproducibility.
 
-### Event Engine
+### 🚨 Event Engine
 
 - Six configurable event rules: wrong-way driving, illegal parking, danger zone
   intrusion, pedestrian in vehicle lane, congestion, and flow counting.
@@ -124,7 +130,7 @@ Video Upload / Camera Source
   evaluation traceability.
 - Supports `event_rules_only` rerun using existing trajectory/config data.
 
-### Alert / Review / Bad Case
+### 🔔 Alert, Review, and Bad Case Workflow
 
 - Alert Center manages alert status, while Review Center manages event review
   status.
@@ -133,7 +139,7 @@ Video Upload / Camera Source
 - Evaluation failed cases such as `id_switch` and `track_lost` can be linked
   through failed-case -> Bad Case workflows.
 
-### Evaluation Center
+### 🧪 Evaluation and Reporting
 
 - Local event metrics include `event_accuracy`, `false_alarm_rate`,
   `event_recall`, `event_f1`, and per-event metrics.
@@ -141,17 +147,17 @@ Video Upload / Camera Source
   are scoped to local / synthetic validation data.
 - Bad Case regression uses deterministic replay or stored rule replay, not full
   video-level retraining.
-
-### Report / Realtime / Docker
-
 - Report exports cover CSV, JSON, PDF, bundle metadata, keyframe summary, and
   annotated-video references.
+
+### 🐳 Local Delivery
+
 - Realtime is a preview metadata workflow for mock, upload, local file, and
   RTSP no-connect scenarios.
 - Docker Compose provides the local delivery path for backend, frontend,
   migrations, SQLite, and ignored artifact directories.
 
-## System Architecture
+## 🏗️ System Architecture
 
 ```text
 Frontend
@@ -175,7 +181,7 @@ Storage
   Docker-mounted Local Directories
 ```
 
-## Event Detection Logic
+## 🚨 Event Detection Logic
 
 SmartTraffic does not train a dedicated wrong-way, parking, congestion, or
 pedestrian-lane model. It detects objects, tracks them, derives trajectory
@@ -190,7 +196,7 @@ semantics, and applies configurable rules.
 | Congestion | Vehicle count + average speed + time window |
 | Flow counting | Track crossing configured counting line |
 
-## API Overview
+## 🔌 API Overview
 
 Full endpoint details are documented in [`docs/api_reference.md`](docs/api_reference.md).
 
@@ -205,7 +211,7 @@ Full endpoint details are documented in [`docs/api_reference.md`](docs/api_refer
 - Evaluation and reports: `/api/evaluation`, `/api/reports`
 - Camera and realtime preview: `/api/cameras`, `/api/realtime`
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Backend
 
@@ -249,7 +255,7 @@ Use `stop_smarttraffic.command` on macOS or `stop_smarttraffic.bat` on Windows
 to stop the local stack.
 The full beginner guide is in [`docs/one_click_start.md`](docs/one_click_start.md).
 
-## Demo Validation
+## 🧪 Demo Validation
 
 ```bash
 python3 scripts/seed_demo_data.py
@@ -261,55 +267,7 @@ expected event examples. It is synthetic / sample / local validation only. Real
 videos, model weights, generated reports, and runtime artifacts are not
 committed.
 
-## Final Showcase Validation
-
-The final local showcase was manually validated with:
-
-- Run ID: `run_50007c86fd60`
-- Event type: `danger_zone_intrusion`
-- Events: 14
-- Alerts: 14
-- Bad cases: 1
-- Evaluation results: 5 event metrics
-- Keyframes: 28
-- Annotated video: available
-
-This run validates:
-
-- Real YOLO detection
-- Tracking output
-- Trajectory output
-- Zone configuration
-- Event rule configuration
-- Alert generation
-- Review confirmation
-- Bad Case creation
-- Evaluation output
-- Report export
-
-## UI Showcase
-
-The frontend uses a Chinese-first Light SaaS Dashboard interface.
-
-Validated pages:
-
-- Dashboard
-- Camera Center
-- Video Center
-- Analysis Detail
-- Zone & Rules
-- Alert Center
-- Review Center
-- Bad Case Center
-- Evaluation Center
-- Report Center
-
-Advanced technical details are folded by default. Evaluation and Report pages
-hide raw JSON/path artifacts under advanced sections. Status badges use
-higher-contrast colors. Mobile smoke checks passed for `390x844` and
-`430x932`. Browser print layout support is included.
-
-## Validation Status
+## ✅ Validation Status
 
 Latest recorded validation:
 
@@ -327,28 +285,24 @@ Latest recorded validation:
 | Demo seed test | Passed |
 | Tracked forbidden-file scan | Passed |
 
-## Final Showcase Evidence
+The final manual validation used `run_50007c86fd60` and verified detection,
+tracking, trajectory, event generation, alert handling, review, Bad Case,
+evaluation, and report export.
 
-See:
-
-- [Final Showcase Report](docs/final_showcase_report.md)
-- [Final Manual Test Report](docs/final_manual_test_report.md)
-- [Final UI Showcase Checklist](docs/final_ui_showcase_checklist.md)
-
-## Milestones
+## 🏁 Milestones
 
 - `v1.0.0-smarttraffic-final-local-delivery`: first final local delivery
   baseline.
 - `v1.0.1-spec-completion`: spec-complete final local delivery
   baseline.
-- `v1.0.3-ui-showcase-polish`: final UI showcase polish tag with Chinese
-  Light SaaS Dashboard UI, mobile smoke checks, browser print layout support,
-  and final showcase evidence.
+- `v1.0.3-ui-showcase-polish`: final UI showcase polish tag.
+- `v1.0.4-final-showcase-docs`: final README and showcase documentation sync.
+- `v1.0.5-final-readme-showcase`: final README visual showcase cleanup.
 
 Earlier v0.9.x and v1.0.x tags are preserved as historical engineering
 milestones and are not moved.
 
-## Safety And Data Policy
+## 🔐 Safety and Data Policy
 
 Do not commit:
 
@@ -360,7 +314,7 @@ Do not commit:
 - local DB files such as `.db`, `.sqlite`, or `.sqlite3`
 - caches, `dist`, `node_modules`, or virtual environments
 
-## Known Boundaries
+## ⚠️ Known Boundaries
 
 - SmartTraffic is a local validation prototype.
 - It is not a formal traffic enforcement system.
@@ -375,13 +329,14 @@ Do not commit:
   video-level rerun.
 - SQLite and Docker Compose are for local prototype reproducibility.
 
-## Final Status
+## 🧾 Final Status
 
-SmartTraffic `v1.0.3-ui-showcase-polish` is the final UI showcase polish tag for the completed frontend showcase baseline.
-It captures the completed local traffic analysis workflow, Chinese Light SaaS
-Dashboard UI, final manual validation, and final showcase evidence.
+SmartTraffic has reached its final local showcase state.
 
-`main` may contain README/documentation updates after this tag. Earlier tags are
-preserved and should not be moved. Future work should move to separate
-enhancements such as real-video benchmarking, production deployment hardening,
+- `v1.0.3-ui-showcase-polish` marks the final UI showcase code baseline.
+- `v1.0.5-final-readme-showcase` marks the final README visual showcase cleanup.
+
+The project is suitable for GitHub, portfolio, resume, and interview
+demonstration as a local validation prototype. Future work should move to
+separate enhancements such as real-video benchmarking, deployment hardening,
 official metric adapters, and stronger realtime stream support.
