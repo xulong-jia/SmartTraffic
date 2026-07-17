@@ -1301,16 +1301,16 @@
 - 证据：能力成熟度矩阵。
 - 边界：不把“未来会做”算当前成果。
 
-### Q146 [行为] 你与团队对架构意见不一致怎么办
+### Q146 [行为] 你与团队对架构意见不一致或建议被拒绝怎么办
 
 - 30 秒：`【本人待补充】`；用具体约束、可逆性、数据和小实验比较，不把技术偏好当结论。
-- 深挖：按 STAR 讲分歧、本人行动、决策记录、结果和关系维护。
+- 深挖：按 STAR 讲分歧、本人行动、建议为何被拒绝、决策记录、结果和关系维护。
 - 证据：真实 ADR/PR/会议记录 `【本人待补充】`。
 - 边界：不要虚构冲突或把同事写成反派。
 
-### Q147 [行为] 讲一次你引入的缺陷
+### Q147 [行为] 讲一次你引入并定位的缺陷
 
-- 30 秒：`【本人待补充】`；主动说明影响、发现方式、止损、根因、测试和流程改进。
+- 30 秒：`【本人待补充】`；主动说明影响、是由测试还是用户发现、定位调用链、止损、根因、回归测试和流程改进。
 - 深挖：区分个人责任与系统原因，给可验证修复。
 - 证据：真实 commit/test/incident `【本人待补充】`。
 - 边界：不要用无关小错误逃避。
@@ -1322,7 +1322,7 @@
 - 证据：真实项目计划 `【本人待补充】`。
 - 边界：不能为赶时间砍安全与事实边界。
 
-### Q149 [行为] 你如何快速学会陌生模块或使用 AI
+### Q149 [行为] 你如何快速学会陌生模块或使用 Codex/AI
 
 - 30 秒：`【本人待补充】`；先画入口—核心—输出—调用方—测试，AI 只做检索/草案，结论回到代码和运行验证。
 - 深挖：讲一次 AI/资料给出错误答案后如何纠正。
@@ -1338,49 +1338,49 @@
 
 ## 第四部分：四轮模拟面试
 
-### 模拟面试 A：全栈项目面（45 分钟）
+### 模拟面试 A：项目介绍面（15 分钟）
 
 | 项目 | 内容 |
 |---|---|
-| 流程 | 5 分钟介绍 → 15 分钟主调用链 → 10 分钟数据/前端 → 10 分钟可靠性 → 5 分钟反问 |
-| 提问顺序 | Q001 → Q004 → Q007 → Q008 → Q027 → Q028 → Q102 → Q043 → Q044 |
-| 重点追问 | task 是否异步；DB/文件冲突；GET 副作用；前端 runtime type；失败恢复 |
-| 必须说 | run、三种 mode、同步执行、DB-first/fallback、十页面、测试边界 |
-| 不能说 | React Router、Celery、强一致、E2E 已覆盖、生产上线 |
-| 评分 | 定位 15；调用链 25；事实证据 20；取舍 20；边界与表达 20；低于 70 需重练 Q001/Q004/Q028 |
+| 流程 | 2 分钟项目定位 → 4 分钟业务流程 → 3 分钟亮点 → 4 分钟边界追问 → 2 分钟反问 |
+| 提问顺序 | Q001 → Q002 → Q004 → Q025 → Q040 → Q044 |
+| 重点追问 | 与 YOLO demo 的差异；run 价值；最大亮点；当前最薄弱部分 |
+| 必须说 | 本地验证平台、run、六类事件、质量闭环、487+90 测试及验证边界 |
+| 不能说 | 生产上线、实时 RTSP、自研 YOLO、准确率 100%、全部为个人贡献 |
+| 评分 | 定位 20；业务流程 20；亮点 20；证据 20；边界与表达 20；低于 70 需重练 Q001–Q005 |
 
-### 模拟面试 B：CV/算法工程面（50 分钟）
+### 模拟面试 B：计算机视觉与算法面（30 分钟）
 
 | 项目 | 内容 |
 |---|---|
-| 流程 | 5 分钟 pipeline → 15 分钟 detection/tracking → 15 分钟 trajectory/events → 10 分钟 evaluation → 5 分钟改进 |
-| 提问顺序 | Q010 → Q012 → Q013 → Q015 → Q016 → Q019 → Q023 → Q024 → Q033 → Q034 |
+| 流程 | 3 分钟 pipeline → 8 分钟 detection/tracking → 9 分钟 trajectory/events → 7 分钟 evaluation/故障 → 3 分钟改进 |
+| 提问顺序 | Q010 → Q012 → Q013 → Q015 → Q016 → Q019 → Q023 → Q024 → Q033 → Q034 → Q043 |
 | 重点追问 | NMS 责任；fallback 是否 DeepSORT；px/s；曲线逆行；滑窗；AP/HOTA 标准 |
 | 必须说 | Ultralytics 负责前后处理；fallback 无 ReID/Kalman/Hungarian；六类规则；指标为 MVP |
 | 不能说 | 自研 YOLO、ByteTrack、km/h、COCO mAP、官方 TrackEval、真实 benchmark 1.0 |
 | 评分 | 算法原理 25；代码对应 25；误差分析 20；评测严谨 20；诚信 10 |
 
-### 模拟面试 C：后端/系统设计面（55 分钟）
+### 模拟面试 C：后端与全栈面（45 分钟）
 
 | 项目 | 内容 |
 |---|---|
-| 流程 | 8 分钟现状架构 → 12 分钟任务系统 → 12 分钟存储一致性 → 10 分钟安全/观测 → 8 分钟迁移 → 5 分钟反问 |
-| 提问顺序 | Q003 → Q006 → Q047 → Q055 → Q028 → Q046 → Q093 → Q124 → Q133 → Q044 |
-| 重点追问 | at-least-once；幂等键；outbox；状态机；迁移回滚；OIDC；SLO |
-| 必须说 | 当前同步/SQLite/本地文件；文件不在 DB 事务；无 CI/queue/auth；按风险演进 |
-| 不能说 | exactly-once 已实现、Alembic 安全、strict auth 可信、readiness 完整 |
-| 评分 | 现状理解 20；系统设计 30；一致性 20；安全可靠性 20；落地顺序 10 |
+| 流程 | 6 分钟 FastAPI/调用链 → 8 分钟模型与迁移 → 8 分钟 artifact/API → 7 分钟 React → 8 分钟测试/Docker → 6 分钟一致性 → 2 分钟反问 |
+| 提问顺序 | Q003 → Q006 → Q007 → Q047 → Q048 → Q028 → Q050 → Q008 → Q102 → Q040 → Q039 |
+| 重点追问 | session/flush/commit；21 个 ORM；文件兼容；API runtime type；Compose 实际服务；一致性 |
+| 必须说 | 当前同步/SQLite/本地文件；87 endpoints；十页面；文件不在 DB 事务；本机验证状态 |
+| 不能说 | Celery/Redis、relationship/cascade、React Router、Nginx、CI/E2E 已完成 |
+| 评分 | 后端 25；数据/文件 20；API 15；前端 15；测试交付 15；一致性与边界 10 |
 
-### 模拟面试 D：压力与行为面（40 分钟）
+### 模拟面试 D：架构与压力面（60 分钟）
 
 | 项目 | 内容 |
 |---|---|
-| 流程 | 5 分钟电梯陈述 → 15 分钟连续质疑 → 15 分钟行为案例 → 5 分钟复盘 |
-| 提问顺序 | Q136 → Q139 → Q140 → Q138 → Q143 → Q145 → Q041 → Q146 → Q147 → Q150 |
-| 重点追问 | 为何不是包装；个人具体动作；失败证据；AI 使用；未完成能力如何表达 |
-| 必须说 | 先承认有效质疑，再给代码证据、当前价值和演进 gate；个人内容只讲真实经历 |
-| 不能说 | 防御性夸张、归咎他人、虚构数字、把规划算成果、用页面截图替代证据 |
-| 评分 | 压力稳定 20；事实诚信 25；个人所有权 25；复盘 15；沟通 15；任何虚构项直接不通过 |
+| 流程 | 5 分钟现状 → 10 分钟多摄像头实时化 → 8 分钟 GPU/队列 → 8 分钟对象存储/高可用 → 8 分钟隐私/SLO/成本 → 15 分钟连续压力题 → 6 分钟复盘 |
+| 提问顺序 | Q003 → Q037 → Q044 → Q064 → Q068 → Q122 → Q128 → Q133 → Q136 → Q139 → Q140 → Q143 → Q145 |
+| 重点追问 | 流 ingest/背压/重连；GPU 调度；at-least-once；对象存储一致性；RPO/RTO；隐私；容量成本 |
+| 必须说 | 当前不实时、无 queue/worker/GPU/HA；先定义 SLO，再按风险设计目标态；压力下仍给代码证据 |
+| 不能说 | 用技术名词堆砌、exactly-once 已有、支持多摄像头、生产安全、虚构成本与性能 |
+| 评分 | 现状 15；实时/GPU/队列 20；存储/HA 20；安全/SLO/成本 20；压力诚信 15；落地顺序 10 |
 
 ## 第五部分：知识点到题目映射
 
@@ -1434,3 +1434,113 @@
 - 知识映射：K01–K72 每项至少对应一道题，无孤立知识点。
 - 功能覆盖：视频、检测、跟踪、轨迹、Zone/Rule、六类事件、告警、Analysis、Review、Bad Case、Evaluation、Report、Realtime、Docker、安全、测试与生产化均有独立题目。
 - 术语边界：始终使用“YOLO adapter”“DeepSortTracker adapter / deterministic fallback”“像素速度”“连续帧拥堵 MVP”“realtime contract preview”“轻量评测”，不替换为未经证实的更强能力。
+
+## 第七部分：面试前最后自检清单
+
+### 1. 第一轮 45 道必会题
+
+| 题号 | 必会主题 | 题号 | 必会主题 | 题号 | 必会主题 |
+|---|---|---|---|---|---|
+| Q001 | 30 秒介绍 | Q016 | 方向与抗抖 | Q031 | Bad Case 回归资产 |
+| Q002 | 核心问题与价值 | Q017 | bottom-center / Zone | Q032 | Event Evaluation |
+| Q003 | 总体架构 | Q018 | Event Engine | Q033 | AP@0.5 边界 |
+| Q004 | 完整处理调用链 | Q019 | 逆行条件 | Q034 | Tracking 指标边界 |
+| Q005 | Analysis Run | Q020 | 违停与红灯 | Q035 | Regression 层级 |
+| Q006 | 同步处理取舍 | Q021 | 危险区入侵 | Q036 | 多格式报告一致性 |
+| Q007 | 87 个 API | Q022 | 行人入机动车道 | Q037 | Realtime 真相 |
+| Q008 | 前端原生路由 | Q023 | 拥堵非真滑窗 | Q038 | 鉴权边界 |
+| Q009 | 上传安全 | Q024 | 流量计数去重 | Q039 | Docker 真相 |
+| Q010 | YOLO adapter | Q025 | Event/Evidence/Execution | Q040 | 测试证据强度 |
+| Q011 | Dry-run 价值与风险 | Q026 | 事件与告警 | Q041 | 最难问题 STAR |
+| Q012 | DeepSORT 真相 | Q027 | DB-first / fallback | Q042 | 关键技术权衡 |
+| Q013 | Fallback tracker | Q028 | DB/文件一致性 | Q043 | 失败路径 |
+| Q014 | ByteTrack 边界 | Q029 | Review 人工真值 | Q044 | 两周生产化排序 |
+| Q015 | 像素速度 | Q030 | False Negative | Q045 | 个人贡献与 AI |
+
+首轮要求：每题能在 30 秒内给结论，90 秒内补调用链、证据、取舍和限制；Q041、Q042、Q045 的个人部分必须先填入真实经历。
+
+### 2. 最容易说错的 20 个事实
+
+1. 项目是本地验证平台，不是已上线交通执法平台。
+2. 材料事实基线是 `main@5616945`；文档提交发生在该审计基线之后。
+3. 检测是 Ultralytics YOLO adapter，默认 dry-run 返回空，不是自研 YOLO。
+4. `DeepSortTracker` 默认可复现路径是 deterministic fallback；真实 `deep-sort-realtime` 未进入 requirements。
+5. 当前没有 ByteTrack 运行路径。
+6. 速度是 `px/frame` 或 `px/s`，未标定为 km/h。
+7. 当前事件恰好六类：逆行、违停、危险区入侵、行人进入机动车道、拥堵、流量计数。
+8. 拥堵主要按连续帧数量与平均像素速度，不是真正 elapsed-time sliding window。
+9. 流量来自轨迹越线事件，不是每帧 bbox 数量相加。
+10. 视频处理在 HTTP 请求内同步执行；`ProcessingTask` 不是 Celery worker。
+11. 默认数据库是 SQLite，不是 PostgreSQL。
+12. 数据库与 run 文件双写不在同一事务，不能声称强一致。
+13. 顶层 `/api/detections` 是 `contract_only`；真实明细走 analysis-run 子资源。
+14. Realtime 对 RTSP 明确不连接；mock/file 只是 preview contract。
+15. 后端是 17 组路由、87 个端点；端点数不等于独立功能数。
+16. 前端是 10 个页面，使用 native History API，不是 React Router。
+17. 当前有 21 个 ORM、4 个迁移；模型无 `relationship()`，`0002` downgrade 使用 `drop_all`。
+18. 仓库不跟踪正式 evaluation result；本机 ignored JSONL 不能作为 HEAD 指标。
+19. Detection 是单 IoU=0.5 的轻量 AP；Tracking 不是官方 TrackEval/HOTA。
+20. Compose 只有 backend/frontend 两个服务，前端跑 Vite dev server；没有 Nginx、Redis、worker、GPU 或 HA。
+
+### 3. 10 条绝对不能夸大的表述
+
+1. 不能说“系统已实时接入多路 RTSP”。
+2. 不能说“项目自研/训练了 YOLOv8 并达到某准确率”。
+3. 不能说“默认使用完整 DeepSORT”或“使用了 ByteTrack”。
+4. 不能说“车辆速度已经换算为真实 km/h”。
+5. 不能说“toy 或本机 1.0 证明真实场景准确率 100%”。
+6. 不能说“AP 是 COCO mAP”或“IDF1/MOTA 来自官方 TrackEval”。
+7. 不能说“DB 与文件强一致、失败会全部自动回滚”。
+8. 不能说“strict header 权限就是完整认证与合规审计”。
+9. 不能说“Docker Compose 等于生产高可用部署”。
+10. 不能说“整个仓库均由本人独立完成”；个人贡献必须 `【本人待补充】`。
+
+### 4. 5 条必须能够手画的调用链
+
+1. 完整处理：Video Center → upload/process API → detector → tracker → trajectory → Event Engine → Alert → artifact/DB → Analysis Detail。
+2. 逆行证据：confirmed track → center history → speed/direction → vehicle lane → angle difference → Event/Evidence/RuleExecution。
+3. 复核闭环：Event → Alert → Review confirm/false-positive/false-negative → Bad Case → regression evaluation。
+4. 评测闭环：Dataset/expected + actual run artifacts → metric family → result/failed case → Evaluation Center → Report latest summary。
+5. 兼容读取：analysis-run API → DB query → empty/missing → artifact discovery/normalize → unified response；导入 CLI 可将旧 artifact 幂等写回 DB。
+
+手画要求：每条必须标注入口、核心类/服务、输出、调用方、持久化位置、测试证据和一个失败点。
+
+### 5. 5 个必须能够现场推导的算法
+
+1. IoU 与关联：`intersection / union`；说明 IoU threshold、贪心匹配为何非全局最优，以及 Hungarian 的替代价值。
+2. 速度与方向：`speed = sqrt(dx²+dy²) / Δt`，`angle = atan2(dy, dx)`；说明 stride、VFR、角度 wrap-around 和像素域边界。
+3. 点在多边形：ray casting 奇偶规则；说明边界点、bottom-center、迟滞与分辨率变化。
+4. 线段相交与越线方向：用叉积/orientation 判断相交，用点在线两侧的符号确定 positive/negative；说明触线 `none` 和去重。
+5. 评测指标：从 TP/FP/FN 推 precision、recall、F1；从计数推 MAE/MAPE；能解释 AP@0.5、MOTA/IDF1 与标准工具边界。
+
+### 6. 行为题覆盖索引
+
+| 必须准备的经历 | 对应题 | 个人准备要求 |
+|---|---|---|
+| 个人贡献 | Q045 | 模块、commit、验证、未负责边界 `【本人待补充】` |
+| 最大困难 | Q041 | STAR + 失败尝试 + 证据 `【本人待补充】` |
+| 一次错误判断 | Q147 | 影响、止损、根因、复盘 `【本人待补充】` |
+| 一次 bug 定位 | Q043、Q147 | 入口—核心—输出—测试定位链 `【本人待补充】` |
+| 一次架构取舍 | Q042 | 约束、替代、退出条件 `【本人待补充】` |
+| 一次测试发现问题 | Q040、Q147 | 失败测试、修复、回归 `【本人待补充】` |
+| 如何使用 Codex | Q045、Q149 | 使用阶段、人工判断、验证 `【本人待补充】` |
+| 如何验证 AI 代码 | Q045、Q149 | diff、测试、事实审计、安全边界 `【本人待补充】` |
+| 哪些建议被拒绝 | Q146 | 原因、数据、关系维护 `【本人待补充】` |
+| 如何与队友协作 | Q146 | 角色、接口、review、决策记录 `【本人待补充】` |
+| 如果重做会改什么 | Q042、Q044、Q145 | 先做什么、不做什么、验收 gate `【本人待补充】` |
+
+### 7. 个人经历待补充清单
+
+- 个人角色、负责模块、主导/参与边界：`【本人待补充】`
+- 团队规模、协作者角色、项目周期：`【本人待补充】`
+- 最难问题、本人采取的动作、对应 commit/PR/test：`【本人待补充】`
+- 一次错误判断、一次 bug 定位、一次测试发现问题：`【本人待补充】`
+- 一次架构取舍、被拒绝的建议、最终决策依据：`【本人待补充】`
+- 真实视频/标注数据来源、规模、使用授权：`【本人待补充】`
+- 真实模型、tracker、硬件、耗时和资源使用：`【本人待补充】`
+- 真实评测协议、结果、置信区间和数据泄漏防护：`【本人待补充】`
+- 真实用户、使用频次、业务反馈、收益或失败：`【本人待补充】`
+- Codex/AI 使用范围、人工复核方式、被纠正的错误：`【本人待补充】`
+- 如果重做的优先级、预计投入和可验证成功标准：`【本人待补充】`
+
+完成标准：以上所有 `【本人待补充】` 在正式面试前必须替换为本人可证明的真实内容；若没有相关经历，直接说明未参与或未验证，不编造替代故事。
