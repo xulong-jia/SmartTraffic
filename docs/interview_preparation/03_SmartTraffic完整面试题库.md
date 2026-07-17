@@ -1,6 +1,6 @@
 # SmartTraffic 完整面试题库
 
-> 审计基线：`main@5616945`。共 150 道不重复问题；Q001–Q045 为完整答题模板，Q046–Q150 为紧凑深挖模板。回答中的个人经历、团队、周期、数据规模和业务结果必须使用 `【本人待补充】` 后再按真实情况填写。
+> 事实修订基线：本轮修改前 `main@81a9730`。共 165 道不重复问题；Q001–Q045 为完整答题模板，Q046–Q165 为紧凑深挖模板。回答中的个人经历、团队、周期、数据规模和业务结果必须使用 `【本人待补充】` 后再按真实情况填写。
 
 ## 使用方法
 
@@ -10,6 +10,31 @@
 - 压力题不要防御，主动承认当前边界并给出验证或演进方案；
 - 不背路径清单，要能从入口讲到输出和测试。
 
+## 类别索引
+
+同一道题可以服务多个岗位，所以下列范围有意交叉；索引已按题目实际内容核对。
+
+| 类别 | 题号 |
+|---|---|
+| 项目介绍与定位 | Q001–Q006、Q136、Q145 |
+| 个人贡献与 AI 辅助 | Q041–Q045、Q146–Q150 |
+| Python、FastAPI 与后端架构 | Q003–Q007、Q046–Q055、Q091–Q101、Q125、Q130、Q141–Q142、Q151–Q153 |
+| 视频与 OpenCV | Q004、Q009、Q015–Q017、Q056–Q058、Q071–Q076、Q090、Q103、Q154 |
+| YOLO 检测 | Q010–Q011、Q059–Q064、Q116、Q136–Q138、Q144、Q155 |
+| 多目标跟踪 | Q012–Q014、Q065–Q070、Q117、Q139、Q156–Q158 |
+| 轨迹与几何 | Q015–Q017、Q071–Q076、Q118 |
+| Zone 与 Rule | Q018、Q077–Q080、Q088–Q089 |
+| 六类事件 | Q019–Q024、Q081–Q087 |
+| 告警、证据与复核 | Q025–Q031、Q090、Q106–Q110 |
+| 数据库与 Artifact | Q005、Q027–Q028、Q047、Q053–Q055、Q091–Q100、Q142、Q163–Q165 |
+| Evaluation | Q032–Q035、Q111–Q119、Q138、Q144、Q158、Q161 |
+| Reporting | Q036、Q105、Q119–Q123 |
+| React 与 TypeScript | Q008、Q102–Q105、Q159–Q160 |
+| 测试体系 | Q040、Q129–Q132、Q137–Q138、Q161 |
+| 安全、隐私与运维 | Q038–Q040、Q124–Q135、Q143、Q162–Q165 |
+| 压力面试 | Q136–Q145 |
+| 行为面试 | Q041–Q045、Q146–Q150 |
+
 ## 第一部分：核心题完整模板（Q001–Q045）
 
 ### Q001 请用 30 秒介绍 SmartTraffic
@@ -17,8 +42,8 @@
 - 类别：项目定位。
 - 问题：请用 30 秒介绍 SmartTraffic。
 - 考察点：能否快速讲清问题、方案、技术和边界。
-- 30 秒回答：SmartTraffic 是本地交通视频分析与质量闭环平台，以 analysis run 串起视频上传、YOLO 检测、跟踪、轨迹、六类规则事件、告警、复核、坏例、评测和报告。后端用 FastAPI/SQLAlchemy/OpenCV/Ultralytics，前端用 React/TypeScript。当前 487 个后端和 90 个前端测试通过，但默认模型与 tracker 是 dry-run/fallback，RTSP 预览也是占位，所以它是验证平台，不是生产执法系统。
-- 90 秒回答：补充 run 的 config snapshot、manifest、event/evidence/execution、DB-first/artifact fallback 与 Review→BadCase→Evaluation 闭环，并说明同步处理、SQLite、本地文件和弱认证是生产边界。
+- 30 秒回答：SmartTraffic 是一个面向交通视频的事件分析与质量闭环平台。它以 Analysis Run 为核心，把目标检测、多目标跟踪、轨迹分析、六类交通事件、证据生成、告警复核、坏例回归和报告导出串成完整链路。工程上通过 config snapshot、manifest 和 Event / Evidence / RuleExecution 让每次分析可追踪、事件判断可解释、错误能进入评测回归。当前定位是本地验证平台，尚未扩展为多摄像头实时生产系统。
+- 90 秒回答：补充本地视频输入，Detection → Track → Trajectory → Event/Evidence → Alert/Review → Bad Case/Evaluation → Report 的链路，以及 DB-first/artifact fallback；最后说明同步处理、SQLite/本地文件非原子、默认 dry-run/fallback、RTSP 占位和弱认证边界。
 - 深挖回答：真正差异不是 YOLO bbox，而是算法结果如何被解释、复核、再评测和报告；成熟度应分当前实现、测试覆盖、契约预留、未来能力。
 - 常见追问：目标用户是谁；与普通 YOLO demo 有什么不同；为什么不是生产系统。
 - 证据：`README.md`、`backend/app/api/videos.py`、`frontend/src/pages/`、测试目录。
@@ -82,7 +107,7 @@
 - 类别：后端架构。
 - 问题：为什么没有 Celery，当前同步方式能撑住吗？
 - 考察点：能否解释 MVP 取舍与生产改造。
-- 30 秒回答：同步实现让本地 MVP 的调用链、错误和测试更直接，但视频解码、推理、artifact 和重编码会占住 Uvicorn worker，缺超时、取消、重试和背压，不能按生产并发承诺。
+- 30 秒回答：当前任务在同步 HTTP 请求中执行；这种本地 MVP 实现让调用链、错误和测试更直接，但视频解码、推理、artifact 和重编码会占住 Uvicorn worker，缺超时、取消、重试和背压，不能按生产并发承诺。
 - 90 秒回答：说明 task 状态并非异步执行；给出任务表/outbox、队列、CPU/GPU worker、幂等键、heartbeat、cancel token、retry policy 的迁移顺序。
 - 深挖回答：DB 写入、对象存储发布与任务 ACK 需设计 at-least-once 下的幂等，而不是追求虚假的 exactly-once。
 - 常见追问：队列选型；重复任务；worker 崩溃；优先级。
@@ -95,8 +120,8 @@
 - 类别：API 设计。
 - 问题：接口很多，怎样保持边界一致？
 - 考察点：资源建模、契约成熟度和可维护性。
-- 30 秒回答：17 个 `APIRouter` 按 videos、analysis-runs、events、alerts、review、evaluation 等资源拆分，由应用工厂统一注册；run 结果主要作为 analysis-run 子资源读取。
-- 90 秒回答：解释 Pydantic schema、repository/service、统一 error/request ID；指出顶层 detections 返回 contract-only，不能把所有端点看成同等成熟。
+- 30 秒回答：后端按 videos、analysis-runs、events、alerts、review、evaluation 等资源拆成 `APIRouter`，由应用工厂统一注册；run 结果主要作为 analysis-run 子资源读取。
+- 90 秒回答：当前版本快照为 17 组路由、87 个端点；解释 Pydantic schema、repository/service、统一 error/request ID，并指出顶层 detections 返回 contract-only，不能把所有端点看成同等成熟。
 - 深挖回答：未来应增加 API versioning、OpenAPI generated client、runtime schema、pagination 和兼容性测试。
 - 常见追问：为什么不是 GraphQL；如何处理 breaking change；错误码。
 - 证据：`backend/app/main.py`、`backend/app/api/`、`schemas/`。
@@ -519,12 +544,12 @@
 - 易错点：说用了 Nginx/K8s/GPU。
 - 事实边界：本次只验证 `docker compose config -q`，未做完整容器启动验收。
 
-### Q040 测试覆盖证明了什么
+### Q040 自动化测试覆盖证明了什么
 
 - 类别：验证。
-- 问题：487+90 个测试能否证明系统可靠？
+- 问题：当前自动化测试体系能否证明系统可靠？
 - 考察点：证据强度判断。
-- 30 秒回答：它证明当前 HEAD 的规则、几何、API、artifact、评测和前端契约在隔离环境下通过；后端 487/487、前端 90/90、build/Compose/danger check 通过。但不证明真实模型精度、浏览器 E2E、RTSP、性能和生产可靠性。
+- 30 秒回答：自动化验证覆盖规则、几何、API、artifact、评测、错误路径和前端契约，证明这些行为在隔离环境下可重复；当前版本快照为后端 487/487、前端 90/90，build/Compose/danger check 通过。但它不证明真实模型精度、浏览器 E2E、RTSP、性能和生产可靠性。
 - 90 秒回答：说明 tmp SQLite fixture、无 pytest cache、4 个 Starlette deprecation warning、仓库无 CI。
 - 深挖回答：建立 CI 后按 unit/API/E2E/model benchmark/load/chaos 分层，分别定义 gate。
 - 常见追问：最重要测试；flaky；为什么无 E2E。
@@ -1019,7 +1044,7 @@
 - 证据：reports endpoints/frontend Report page。
 - 边界：当前 bundle 只是 metadata，不是大文件 zip。
 
-## 第三部分：质量、评测、交付与压力面（Q106–Q150）
+## 第三部分：质量、评测、交付与压力面（Q106–Q165）
 
 ### Q106 [Review] Review status 与 Alert status 是否重复
 
@@ -1336,7 +1361,130 @@
 - 证据：当前 tests/artifacts；外部指标 `【本人待补充】`。
 - 边界：不拿代码量、页面数或 toy F1 代替业务成功。
 
-## 第四部分：四轮模拟面试
+### Q151 [Python] 类型注解、dataclass、Literal 与 Pydantic 分别解决什么
+
+- 30 秒：注解、`Literal` 和 dataclass 主要表达契约与减少样板；FastAPI/Pydantic 在请求边界做运行时解析，但 polygon 语义、外键、权限、状态转换和文件安全仍由业务层/数据库/安全层负责。
+- 深挖：结合 `Settings` frozen dataclass、review/bad-case `Literal` 和 schema → service → ORM 链路说明；注解默认不会阻止错误对象被直接传入函数。
+- 证据：`backend/app/core/config.py`、`backend/app/schemas/review.py`、`event_rule.py`、zone/rule services。
+- 边界：不能说类型注解等于运行时验证，或 Pydantic 能阻止所有坏输入。
+
+### Q152 [FastAPI] Depends 怎样管理 Session，谁负责 commit/rollback
+
+- 30 秒：`get_db()` 创建 Session、`yield` 给请求并在 `finally` close；Depends 只管生命周期，repository 常做 `flush/refresh`，commit/rollback 仍由 route 或 CLI 的事务边界决定。
+- 深挖：解释 request scope、dependency override、为什么 DB rollback 不能撤销已发布 artifact，以及 Unit of Work/outbox 的演进方向。
+- 证据：`backend/app/db/session.py`、repositories、`backend/app/api/videos.py`、`backend/tests/conftest.py`。
+- 边界：`yield` 不自动提交；`flush` 不等于 commit；当前使用同步 SQLAlchemy + SQLite。
+
+### Q153 [Python/并发] Generator 和 async 能否解决视频任务阻塞
+
+- 30 秒：`iter_frames()` generator 惰性逐帧读取，降低帧集合内存占用；把 route 改成 `async def` 不会让 OpenCV、YOLO 或同步 SQLAlchemy 非阻塞，长任务仍需要 durable queue 和 worker。
+- 深挖：区分 lazy iteration、event-loop cooperative I/O、thread/process pool、GPU service 和任务取消/重试；说明 generator 仍在消费者线程执行。
+- 证据：`backend/app/cv/frame_reader.py`、detection/tracking services、同步 process route。
+- 边界：当前没有 queue/worker/backpressure，不能把 generator 叫流式生产系统。
+
+### Q154 [OpenCV] RGB/BGR 错了会怎样，当前链路在哪里转换
+
+- 30 秒：OpenCV frame 默认 BGR，若按 RGB 显示会红蓝互换；SmartTraffic 后端主链保持 OpenCV BGR，frame 直接给 Ultralytics/绘制/VideoWriter，浏览器独立解码视频并叠加坐标，不直接消费 NumPy frame。
+- 深挖：说明接入 Pillow/Canvas 原始帧时应在边界 `cvtColor`，颜色顺序与 bbox 坐标错误是两类问题；补充没有跨库像素 golden test。
+- 证据：`backend/app/cv/frame_reader.py`、`yolo_detector.py`、`video_writer.py`、`VideoPlayerWithOverlay.tsx`。
+- 边界：不要声称文件“本身是 BGR”，也不要把颜色转换当坐标还原。
+
+### Q155 [YOLO] 为什么 YOLO 是 one-stage，confidence、IoU 和 NMS 如何配合
+
+- 30 秒：YOLO 在一次 dense prediction 流程中直接输出框和类别，区别于先 proposal 再分类的 two-stage；confidence 是排序分数，IoU 衡量框重叠，NMS 用分数和 IoU 抑制重复框。
+- 深挖：SmartTraffic 把 `conf/iou/imgsz` 交给 Ultralytics，接收 post-NMS 原图 `xyxy`；部署阈值是 PR 曲线上的工作点，不能替代 AP/mAP 评测。
+- 证据：`backend/app/cv/yolo_detector.py`、detection metrics/tests。
+- 边界：项目没有自研 letterbox/NMS/YOLO 训练；当前 AP 是单 IoU=0.5 VOC-style，不是 COCO mAP。
+
+### Q156 [Tracker] Kalman Filter 在 DeepSORT 中做什么，fallback 为什么没有
+
+- 30 秒：标准 DeepSORT 用 Kalman predict/update 建模目标运动并配合 gating；当前 deterministic fallback 只保存最后 bbox，以 IoU/中心分数贪心匹配，所以没有 Kalman 状态、协方差或运动预测。
+- 深挖：解释遮挡时 predict 的价值、process/measurement noise，以及类名 `DeepSortTracker` 只是 adapter 边界；真实 provider 需额外依赖。
+- 证据：`backend/app/cv/deepsort_tracker.py`、`backend/requirements.txt`。
+- 边界：不能把标准 DeepSORT 原理写成当前默认 fallback 的实现。
+
+### Q157 [Tracker] Hungarian 与 ReID 如何参与关联，当前用了没有
+
+- 30 秒：Hungarian 在 track×detection cost matrix 上求全局一对一最优；ReID embedding 提供外观距离。当前 fallback 是按 detection 顺序选最佳 IoU/中心分数的贪心，没有 Hungarian，也不计算或保存 embedding。
+- 深挖：讨论 motion/IoU/appearance cost、gating、cost normalization，以及 ReID 的域偏移、算力、隐私和跨摄像头误关联风险。
+- 证据：`DeepSortTracker._match_detection_to_track`、`_load_real_tracker`、tracking artifacts。
+- 边界：真实 DeepSORT 可选路径不能证明当前仓库默认可复现，也不能声称已有跨摄像头 ReID。
+
+### Q158 [Tracker/Evaluation] DeepSORT、ByteTrack、BoT-SORT 应如何公平比较
+
+- 30 秒：固定 detector 输出、数据、阈值、硬件和 TrackEval 协议，再比较 MOTA、IDF1、HOTA、ID switch、fragmentation、延迟与资源；不能只看单一分数。
+- 深挖：DeepSORT 偏运动+外观，ByteTrack 利用高低分检测，BoT-SORT 进一步组合运动/外观/相机运动等；当前只有 adapter/fallback，ByteTrack/BoT-SORT 未实现。
+- 证据：`backend/app/analysis/tracking_metrics.py`、tracker adapter、migration docs。
+- 边界：当前 tracking evaluation 是轻量近似，不是官方 TrackEval/HOTA；理论比较不等于项目集成。
+
+### Q159 [React] Effect 轮询怎样避免 stale response 和卸载后更新
+
+- 30 秒：effect 中为每次 run 请求绑定 `AbortController` 或 sequence token，cleanup 取消请求/timer；轮询遇到 completed/failed/cancelled 停止，并对错误退避，避免旧响应覆盖新 run。
+- 深挖：比较 polling、SSE/WebSocket、React Query/SWR；说明 dependency key、并发子资源和请求去重。
+- 证据：当前 `AnalysisDetailPage.tsx` 的 effects、`frontend/src/api/client.ts`。
+- 边界：当前处理同步且没有通用 polling、abort 或 stale guard；这是演进方案，不是现状。
+
+### Q160 [前端] Empty 为什么不是 Error，`as T` 为什么不安全
+
+- 30 秒：dry-run 合法返回空 detections，empty 应解释无数据；HTTP/parse/contract 失败才是 error。`response.json() as T` 只让编译器相信类型，不在运行时检查字段。
+- 深挖：用 loading/error/empty/success 状态机与 OpenAPI generated client + Zod/其他 schema parser 设计边界，并保留局部 artifact 降级。
+- 证据：Dashboard/Analysis pages、`frontend/src/api/client.ts`、Q102/Q104 对应代码。
+- 边界：当前没有统一运行时响应校验、error boundary 或真实浏览器 E2E。
+
+### Q161 [Test] 怎样设计 Golden Video 与 real-model acceptance
+
+- 30 秒：固定 commit/容器、权重 checksum、授权视频、config，并分别准备 detection GT、MOT GT、event GT；运行完整链路后用 COCO/TrackEval 和事件协议验收，归档环境与结果。
+- 深挖：隔离 train/validation/final test，防 benchmark leakage；mock/toy 继续验证契约但不能替代 provider acceptance，按场景报告误差而非只报总分。
+- 证据：当前 `evals/expected/`、`.gitignore`、metrics/tests；仓库尚无 real-model golden set。
+- 边界：本机 ignored 视频/权重/result 和 toy F1=1 不能作为正式 benchmark。
+
+### Q162 [Realtime] 单路 RTSP 为什么要 FFmpeg/GStreamer，而不只用 VideoCapture
+
+- 30 秒：真实 RTSP 需要协议重连、jitter buffer、PTS、codec 变化、超时和有界缓存；FFmpeg/GStreamer 更适合把 ingest 与分析解耦，并明确丢帧/降采样策略。
+- 深挖：设计 RTSP → decode → bounded buffer → worker，讨论 TCP/UDP、断线重连、密钥、backpressure 与 soak test。
+- 证据：当前 realtime worker/service、`docs/realtime.md`。
+- 边界：当前 RTSP 明确不连接、不解码、不推理；Camera 页面只验证 preview contract。
+
+### Q163 [可靠性] Durable Job 的 heartbeat、retry、cancel、idempotency 怎样协作
+
+- 30 秒：API 先持久化 job/outbox，worker 用 lease+heartbeat 领取；失败按策略 retry，cancel 由 worker 检查 token；幂等键和 staged artifact publish 处理 at-least-once 重复。
+- 深挖：说明 poison job、指数退避、状态转换、孤儿 artifact、DB pointer 更新与 reconciliation，避免宣称 exactly-once。
+- 证据：当前同步 `ProcessingTask`/process route 与 Compose 无 worker 的反证。
+- 边界：这些是生产目标态；当前没有 durable queue、heartbeat、retry 或 cancel。
+
+### Q164 [容量] GPU pool、backpressure、对象存储和多摄像头怎样组合
+
+- 30 秒：按模型/显存建 GPU worker pool，入口用有界队列和 admission control；PostgreSQL 保存元数据与对象 version/checksum，对象存储保存视频/artifact；边缘负责 ingest，中心做调度和质量闭环。
+- 深挖：先 benchmark 单 worker 容量，再定 batching、公平调度、降级/丢帧、数据驻留和 reconciliation；不能从技术名词直接推摄像头路数。
+- 证据：当前 CPU/SQLite/local artifact/两服务 Compose 与 K94 目标态对比。
+- 边界：当前没有 GPU pool、backpressure、对象存储或多摄像头实时能力，也没有容量数据。
+
+### Q165 [运维] SLO、RPO、RTO 如何决定监控和灾备
+
+- 30 秒：SLO 定义用户可感知的可用性/延迟/正确性目标，RPO 定义最多丢多少数据，RTO 定义多久恢复；据此设计 metrics、告警、备份、复制和恢复顺序。
+- 深挖：为 job completion、event freshness、artifact availability 选 SLI/error budget，并通过 DB+object version 一致性恢复演练验证，不以 readiness 代替系统健康。
+- 证据：当前 request ID/log/readiness 与 SQLite/local artifact 边界；`docs/security_ops.md`。
+- 边界：仓库没有正式 SLO、RPO/RTO 数值、on-call 或灾备演练证据。
+
+## 第四部分：岗位复习路径
+
+### CV 算法岗
+
+重点题：Q010–Q024、Q033–Q035、Q056–Q076、Q081–Q087、Q113–Q118、Q136–Q140、Q144、Q154–Q158、Q161。必须能解释 YOLO、tracking、trajectory、six events、evaluation 与 failure propagation，并守住真实 provider/指标边界。
+
+### Python 后端岗
+
+重点题：Q003–Q007、Q028、Q046–Q055、Q091–Q101、Q119–Q135、Q141–Q142、Q151–Q153、Q163–Q165。重点覆盖 FastAPI、Session、transaction、API、file/DB consistency、worker、reliability 与 Docker。
+
+### 全栈岗
+
+重点题：Q003–Q009、Q027–Q031、Q036、Q047–Q055、Q090、Q095–Q105、Q130–Q132、Q151–Q154、Q159–Q160。重点覆盖 architecture、API contract、React、polling、overlay、download、error state 与 test。
+
+### AI 应用/Agent/RAG 相关岗位
+
+SmartTraffic 不是 Agent 或 RAG 项目。可重点准备 Q002、Q005、Q018、Q025、Q029–Q035、Q042、Q045、Q063、Q078–Q080、Q088–Q090、Q109–Q119、Q136–Q145、Q149、Q161、Q163：用 AI 系统工程、deterministic rules、evidence、evaluation、human-in-the-loop、Bad Case、model/provider boundary 与 productionization 说明可迁移能力，不把项目改名为 Agent/RAG。
+
+## 第五部分：四轮模拟面试
 
 ### 模拟面试 A：项目介绍面（15 分钟）
 
@@ -1345,7 +1493,7 @@
 | 流程 | 2 分钟项目定位 → 4 分钟业务流程 → 3 分钟亮点 → 4 分钟边界追问 → 2 分钟反问 |
 | 提问顺序 | Q001 → Q002 → Q004 → Q025 → Q040 → Q044 |
 | 重点追问 | 与 YOLO demo 的差异；run 价值；最大亮点；当前最薄弱部分 |
-| 必须说 | 本地验证平台、run、六类事件、质量闭环、487+90 测试及验证边界 |
+| 必须说 | 本地验证平台、run、六类事件、质量闭环、测试层级与验证边界；精确数量只作版本快照 |
 | 不能说 | 生产上线、实时 RTSP、自研 YOLO、准确率 100%、全部为个人贡献 |
 | 评分 | 定位 20；业务流程 20；亮点 20；证据 20；边界与表达 20；低于 70 需重练 Q001–Q005 |
 
@@ -1354,8 +1502,8 @@
 | 项目 | 内容 |
 |---|---|
 | 流程 | 3 分钟 pipeline → 8 分钟 detection/tracking → 9 分钟 trajectory/events → 7 分钟 evaluation/故障 → 3 分钟改进 |
-| 提问顺序 | Q010 → Q012 → Q013 → Q015 → Q016 → Q019 → Q023 → Q024 → Q033 → Q034 → Q043 |
-| 重点追问 | NMS 责任；fallback 是否 DeepSORT；px/s；曲线逆行；滑窗；AP/HOTA 标准 |
+| 提问顺序 | Q010 → Q155 → Q012 → Q156 → Q157 → Q015 → Q019 → Q023 → Q033 → Q158 → Q161 |
+| 重点追问 | NMS 责任；fallback 是否有 Kalman/Hungarian/ReID；px/s；滑窗；误差传播；AP/HOTA 标准 |
 | 必须说 | Ultralytics 负责前后处理；fallback 无 ReID/Kalman/Hungarian；六类规则；指标为 MVP |
 | 不能说 | 自研 YOLO、ByteTrack、km/h、COCO mAP、官方 TrackEval、真实 benchmark 1.0 |
 | 评分 | 算法原理 25；代码对应 25；误差分析 20；评测严谨 20；诚信 10 |
@@ -1365,9 +1513,9 @@
 | 项目 | 内容 |
 |---|---|
 | 流程 | 6 分钟 FastAPI/调用链 → 8 分钟模型与迁移 → 8 分钟 artifact/API → 7 分钟 React → 8 分钟测试/Docker → 6 分钟一致性 → 2 分钟反问 |
-| 提问顺序 | Q003 → Q006 → Q007 → Q047 → Q048 → Q028 → Q050 → Q008 → Q102 → Q040 → Q039 |
-| 重点追问 | session/flush/commit；21 个 ORM；文件兼容；API runtime type；Compose 实际服务；一致性 |
-| 必须说 | 当前同步/SQLite/本地文件；87 endpoints；十页面；文件不在 DB 事务；本机验证状态 |
+| 提问顺序 | Q003 → Q151 → Q152 → Q153 → Q047 → Q028 → Q008 → Q159 → Q160 → Q040 → Q039 |
+| 重点追问 | Depends/session/flush/commit；async 阻塞；文件兼容；polling/stale response；runtime type；一致性 |
+| 必须说 | 当前同步/SQLite/本地文件；API 与页面按资源组织；文件不在 DB 事务；本机验证状态 |
 | 不能说 | Celery/Redis、relationship/cascade、React Router、Nginx、CI/E2E 已完成 |
 | 评分 | 后端 25；数据/文件 20；API 15；前端 15；测试交付 15；一致性与边界 10 |
 
@@ -1376,13 +1524,13 @@
 | 项目 | 内容 |
 |---|---|
 | 流程 | 5 分钟现状 → 10 分钟多摄像头实时化 → 8 分钟 GPU/队列 → 8 分钟对象存储/高可用 → 8 分钟隐私/SLO/成本 → 15 分钟连续压力题 → 6 分钟复盘 |
-| 提问顺序 | Q003 → Q037 → Q044 → Q064 → Q068 → Q122 → Q128 → Q133 → Q136 → Q139 → Q140 → Q143 → Q145 |
-| 重点追问 | 流 ingest/背压/重连；GPU 调度；at-least-once；对象存储一致性；RPO/RTO；隐私；容量成本 |
+| 提问顺序 | Q003 → Q037 → Q162 → Q163 → Q164 → Q165 → Q128 → Q136 → Q139 → Q140 → Q143 → Q145 |
+| 重点追问 | 流 ingest/背压/重连；GPU 调度；at-least-once；对象存储一致性；SLO/RPO/RTO；隐私；容量成本 |
 | 必须说 | 当前不实时、无 queue/worker/GPU/HA；先定义 SLO，再按风险设计目标态；压力下仍给代码证据 |
 | 不能说 | 用技术名词堆砌、exactly-once 已有、支持多摄像头、生产安全、虚构成本与性能 |
 | 评分 | 现状 15；实时/GPU/队列 20；存储/HA 20；安全/SLO/成本 20；压力诚信 15；落地顺序 10 |
 
-## 第五部分：知识点到题目映射
+## 第六部分：知识点到题目映射
 
 | 知识点 | 对应题目 | 知识点 | 对应题目 |
 |---|---|---|---|
@@ -1422,20 +1570,32 @@
 | K34 | Q024、Q080 | K70 | Q038、Q124、Q126–Q128、Q143 |
 | K35 | Q018、Q079、Q087 | K71 | Q006、Q059、Q064、Q099、Q133、Q141 |
 | K36 | Q019、Q081 | K72 | Q044、Q045、Q136、Q145–Q150 |
+| K73 | Q101、Q151 | K85 | Q012、Q013、Q156 |
+| K74 | Q007、Q048 | K86 | Q070、Q157 |
+| K75 | Q047、Q094、Q152 | K87 | Q034、Q069、Q117、Q144、Q158 |
+| K76 | Q006、Q057、Q141、Q153 | K88 | Q008、Q159 |
+| K77 | Q010–Q012、Q065、Q137、Q139–Q140 | K89 | Q102、Q104、Q160 |
+| K78 | Q090、Q154 | K90 | Q040、Q130、Q132 |
+| K79 | Q015、Q057、Q103 | K91 | Q116、Q132、Q138、Q161 |
+| K80 | Q009、Q056、Q090 | K92 | Q037、Q127、Q140、Q162 |
+| K81 | Q010、Q017、Q071、Q076、Q103 | K93 | Q006、Q044、Q125、Q141、Q163 |
+| K82 | Q010、Q155 | K94 | Q064、Q068、Q099、Q133、Q164 |
+| K83 | Q010、Q062、Q144、Q155 | K95 | Q128、Q133、Q135、Q165 |
+| K84 | Q033、Q062、Q116、Q136、Q138、Q155 |  |  |
 
-## 第六部分：覆盖与自检
+## 第七部分：覆盖与自检
 
-- 题目总数：150，连续编号 Q001–Q150。
+- 题目总数：165，连续编号 Q001–Q165。
 - 完整模板：Q001–Q045，共 45 题；均包含类别、问题、考察点、30 秒、90 秒、深挖、追问、证据、易错点、事实边界。
-- 紧凑深挖：Q046–Q150，共 105 题；均包含短答、深挖、证据和边界。
+- 紧凑深挖：Q046–Q165，共 120 题；均包含短答、深挖、证据和边界。
 - 压力题：Q136–Q145 共 10 题；此外 Q023、Q028、Q033、Q034、Q037、Q038 也可作压力追问。
 - 行为/个人题：Q041、Q042、Q045、Q146–Q150；所有不可由仓库证明的内容均使用 `【本人待补充】`。
 - 模拟面试：全栈、CV、后端系统设计、压力行为共 4 轮，均含流程、顺序、追问、必说、禁说和评分。
-- 知识映射：K01–K72 每项至少对应一道题，无孤立知识点。
+- 知识映射：K01–K95 每项至少对应一道真实存在的题，无孤立知识点。
 - 功能覆盖：视频、检测、跟踪、轨迹、Zone/Rule、六类事件、告警、Analysis、Review、Bad Case、Evaluation、Report、Realtime、Docker、安全、测试与生产化均有独立题目。
 - 术语边界：始终使用“YOLO adapter”“DeepSortTracker adapter / deterministic fallback”“像素速度”“连续帧拥堵 MVP”“realtime contract preview”“轻量评测”，不替换为未经证实的更强能力。
 
-## 第七部分：面试前最后自检清单
+## 第八部分：面试前最后自检清单
 
 ### 1. 第一轮 45 道必会题
 
@@ -1462,7 +1622,7 @@
 ### 2. 最容易说错的 20 个事实
 
 1. 项目是本地验证平台，不是已上线交通执法平台。
-2. 材料事实基线是 `main@5616945`；文档提交发生在该审计基线之后。
+2. 材料事实修订基线是本轮修改前的 `main@81a9730`；文档提交发生在该基线之后。
 3. 检测是 Ultralytics YOLO adapter，默认 dry-run 返回空，不是自研 YOLO。
 4. `DeepSortTracker` 默认可复现路径是 deterministic fallback；真实 `deep-sort-realtime` 未进入 requirements。
 5. 当前没有 ByteTrack 运行路径。

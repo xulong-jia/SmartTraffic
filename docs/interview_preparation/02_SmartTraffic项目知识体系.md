@@ -1,6 +1,6 @@
 # SmartTraffic 项目知识体系
 
-> 基于 `main@5616945` 的 72 个面试知识点。每个结论都区分代码事实、测试事实和生产边界；编号与《03_SmartTraffic完整面试题库.md》末尾映射表一一对应。
+> 基于本轮修改前 `main@81a9730` 的 95 个面试知识点。每个结论都区分代码事实、测试事实和生产边界；编号与《03_SmartTraffic完整面试题库.md》末尾映射表一一对应。
 
 ## 目录
 
@@ -22,6 +22,13 @@
 16. Realtime Preview：K67
 17. 交付、验证与安全：K68–K70
 18. 性能与生产化：K71–K72
+19. Python 与 FastAPI 基础：K73–K77
+20. OpenCV 与视频基础：K78–K81
+21. YOLO 原理：K82–K84
+22. 多目标跟踪基础：K85–K87
+23. React 与前端工程：K88–K89
+24. 测试体系：K90–K91
+25. 生产系统设计：K92–K95
 
 ## 第一章：项目定位与证据方法
 
@@ -46,7 +53,7 @@
 - 概念：用固定 Git HEAD 建立事实快照，并设定证据优先级。
 - 为什么重要：文档、标签、本机结果可能滞后或超前于代码。
 - 原理：代码/配置/迁移/测试优先于 README，再优先于历史文档和忽略产物。
-- SmartTraffic 实现：本材料冻结 `5616945`，本机结果只标记为运行快照。
+- SmartTraffic 实现：本材料以本轮修改前 `81a9730` 为事实修订基线，本机结果只标记为运行快照。
 - 证据：`git ls-files`、`git status --ignored`、`git log`、当前测试输出。
 - 真实调用链：结论 → 定位到入口 → 核心实现 → 输出 → 调用方 → 测试。
 - 优点：可复核，避免过度包装。
@@ -824,7 +831,7 @@
 - 优点：文件便于调试/交换，DB 便于查询。
 - 缺点：没有原子事务与自动 reconciliation。
 - 替代方案：DB 为唯一真相后异步导出；对象存储 + metadata DB + outbox。
-- 当前限制：失败可能留残余文件，读路径需 fallback。
+- 当前限制：SQLite 与本地 artifact 非原子；失败可能留残余文件，读路径需 fallback。
 - 常见误区：路由 commit 成功就证明文件与 DB 完全一致。
 - 面试表达：“这是兼容性取舍，生产化要明确单一权威源和补偿机制。”
 - 追问方向：写入顺序；幂等导入；孤儿清理；checksum。
@@ -1088,7 +1095,7 @@
 - 优点：无额外 PDF 依赖，导出覆盖常用场景。
 - 缺点：PDF Latin-1/英文为主；bundle 不含实际文件且不是 zip。
 - 替代方案：WeasyPrint/ReportLab、HTML print、真正 zip manifest package。
-- 当前限制：Web/PDF 只共享关键摘要，不是逐字内容一致。
+- 当前限制：Web/PDF 只共享核心 summary，不是逐字内容一致。
 - 常见误区：把 bundle endpoint 说成完整归档下载。
 - 面试表达：“bundle 是元数据清单；PDF 是轻量摘要。”
 - 追问方向：中文字体；大数据 CSV；公式注入；签名。
@@ -1210,3 +1217,407 @@
 - 常见误区：把未来架构说成当前已实现，或用“大模型/微服务”掩盖基础缺口。
 - 面试表达：“我先讲 Verified 的当前能力，再讲按风险排序的生产化方案。”
 - 追问方向：第一阶段交付；数据迁移；回滚；成本；团队协作。
+
+## 第十九章：Python 与 FastAPI 基础
+
+### K73 类型注解、dataclass、Enum/Literal 与验证边界
+
+- 概念：类型注解描述预期类型，`dataclass` 生成数据容器样板，`Enum`/`Literal` 收窄允许值；Pydantic 才会在 API 边界执行运行时解析与部分校验。
+- 为什么重要：静态可读性、编辑器检查和运行时信任边界不能混为一谈。
+- 原理：Python 注解默认不阻止错误对象进入函数；`Literal` 主要服务静态检查，FastAPI 通过 Pydantic 才把 schema 应用于请求。
+- SmartTraffic 实现：`Settings` 和多个 service config 使用 frozen dataclass；schema 用 `Literal` 限制 review、bad-case、evaluation 等状态，ORM 仍以字符串保存。
+- 证据：`backend/app/core/config.py`、`backend/app/services/processing_service.py`、`backend/app/schemas/review.py`、`bad_case.py`。
+- 真实调用链：JSON request → Pydantic schema → typed route argument → service/dataclass → ORM/JSON artifact。
+- 优点：契约清晰、补全友好、状态拼写错误更早暴露。
+- 缺点：注解可被绕过；`Literal` 不等于数据库约束；dataclass 不自动验证业务语义。
+- 替代方案：运行时 `Enum`、Pydantic model、数据库 CHECK constraint、mypy/pyright。
+- 当前限制：前端 `as T` 没有运行时 schema；后端部分复杂 JSON 仍由服务层手工解释。
+- 常见误区：看到 `str | None` 或 `Literal` 就认为任意调用路径都会自动拒绝坏值。
+- 面试表达：“注解负责表达，Pydantic 负责 API 解析，业务规则和持久化约束还要在各自边界验证。”
+- 追问方向：dataclass vs Pydantic；Enum vs Literal；静态检查；DB constraint。
+
+### K74 FastAPI 应用工厂与 APIRouter
+
+- 概念：应用工厂集中创建 FastAPI 实例、middleware、异常处理和路由；`APIRouter` 按资源拆分端点。
+- 为什么重要：启动配置与业务路由解耦后，测试、替换依赖和模块演进更可控。
+- 原理：`create_app()` 每次可构造独立应用对象，`include_router()` 将模块路由注册到统一 ASGI app。
+- SmartTraffic 实现：`create_app()` 安装 request logging、exception handlers、CORS，并注册 health、videos、analysis、review、evaluation 等 17 组 router。
+- 证据：`backend/app/main.py`、`backend/app/core/errors.py`、`backend/app/api/`。
+- 真实调用链：Uvicorn import → `create_app()` → middleware/handlers/router registration → request route。
+- 优点：入口清楚，路由按领域拆分，`TestClient` 可复用同一契约。
+- 缺点：当前模块导入仍共享部分缓存/全局对象，不是完全隔离容器。
+- 替代方案：单文件 app、class-based container、其他 ASGI framework。
+- 当前限制：没有 lifespan 资源治理、API versioning 和自动生成 client 的发布流程。
+- 常见误区：把应用工厂等同于微服务，或认为 router 数量代表功能质量。
+- 面试表达：“工厂负责装配，router 负责 HTTP 资源边界，service 承担业务编排。”
+- 追问方向：lifespan；middleware 顺序；dependency override；OpenAPI 分组。
+
+### K75 Depends 与 Session 生命周期
+
+- 概念：FastAPI `Depends` 在请求范围解析依赖；yield dependency 可在响应后执行清理。
+- 为什么重要：数据库 Session 若泄漏、跨请求共享或事务归属不清，会造成连接与一致性问题。
+- 原理：`get_db()` 创建 Session，`yield` 给 route，`finally` 关闭；关闭资源不等于自动 commit 或 rollback 业务事务。
+- SmartTraffic 实现：`get_db` 使用 `SessionLocal()`；repository 多做 `flush/refresh`，route/CLI 决定 commit，失败路径显式 rollback 或状态提交。
+- 证据：`backend/app/db/session.py`、`backend/app/repositories/`、`backend/app/api/videos.py`。
+- 真实调用链：request → `Depends(get_db)` → Session → repository/service → route commit/rollback → dependency close。
+- 优点：每请求独立 Session，测试可以 dependency override。
+- 缺点：事务分散在 route；文件写入不受 Session rollback 控制。
+- 替代方案：Unit of Work、transaction middleware、async SQLAlchemy session。
+- 当前限制：SQLite + sync Session；没有跨 worker 的事务协调或 outbox。
+- 常见误区：认为 `yield db` 会在请求成功时自动提交，或 `flush` 等于 commit。
+- 面试表达：“Depends 管生命周期，不替业务决定事务；commit/rollback 仍是调用方责任。”
+- 追问方向：request scope；streaming response；nested transaction；测试 override。
+
+### K76 同步、异步、阻塞 I/O 与 Generator
+
+- 概念：`async def` 只有在等待可让出控制权的 async I/O 时才提升并发；generator 用 `yield` 惰性地产生元素。
+- 为什么重要：视频解码、模型推理、同步 SQLAlchemy 和编码都可能阻塞事件循环或占住 worker。
+- 原理：把同步函数改名为 `async def` 不会自动把 OpenCV/YOLO 变成非阻塞；generator 降低一次性内存占用，但计算仍在消费者线程执行。
+- SmartTraffic 实现：`iter_frames()` 逐帧 `yield` frame/timestamp，process route 仍同步消费并执行 OpenCV、Ultralytics 与 sync DB。
+- 证据：`backend/app/cv/frame_reader.py`、`backend/app/services/detection_service.py`、`backend/app/api/videos.py`。
+- 真实调用链：HTTP worker → `iter_frames` lazy decode → detector/tracker → artifact/DB → response。
+- 优点：逐帧读取避免把完整解码帧集装入内存；同步链易调试。
+- 缺点：长任务仍占 worker；generator 不提供队列、重试、取消或背压。
+- 替代方案：durable queue + worker、process pool、GPU inference service、受控 async streaming。
+- 当前限制：没有独立 worker；请求断开与任务执行生命周期未解耦。
+- 常见误区：把 generator 当并行处理，或认为加 `async` 就解决 GPU/OpenCV 阻塞。
+- 面试表达：“generator 解决内存遍历方式，worker 解决任务执行与可靠性，两者不是同一问题。”
+- 追问方向：event loop；thread/process pool；GIL；取消传播；backpressure。
+
+### K77 Adapter、Mock、Fake、Dry-run、Fallback 与真实 Backend
+
+- 概念：adapter 统一第三方接口；mock 验证交互；fake 是可运行简化实现；dry-run 跳过真实副作用；fallback 在主路径不可用时降级；真实 backend 执行正式能力。
+- 为什么重要：这些词决定测试证据与算法能力的强弱，混用会直接导致项目夸大。
+- 原理：adapter 不保证背后 provider 存在；fallback 应可观察且受策略约束；mock/fake 的通过不能替代真实模型验收。
+- SmartTraffic 实现：`YoloDetector` 是 Ultralytics adapter，默认 dry-run 返回空；`DeepSortTracker` 是 adapter，默认 deterministic fallback；realtime mock 返回固定三帧。
+- 证据：`backend/app/cv/yolo_detector.py`、`backend/app/cv/deepsort_tracker.py`、`backend/app/realtime/worker.py`、requirements。
+- 真实调用链：config → adapter → real provider（条件满足）或 explicit dry-run/fallback → standardized output。
+- 优点：无权重/可选依赖环境也能验证 API、artifact 和状态机。
+- 缺点：若生产静默降级，可能返回“成功”却没有真实算法含义。
+- 替代方案：启动时强校验 provider、feature flag、依赖注入的 test double、生产 fail-closed。
+- 当前限制：真实 DeepSORT 依赖未入 requirements；仓库无正式权重；ByteTrack/BoT-SORT 未实现。
+- 常见误区：把 fallback 叫 mock、把 adapter 叫已集成、把 dry-run 测试叫真实准确率测试。
+- 面试表达：“当前默认可复现的是 dry-run/fallback 编排，不是正式模型效果；生产应禁止静默降级。”
+- 追问方向：contract test；provider health；fail-open/fail-closed；测试金字塔。
+
+## 第二十章：OpenCV 与视频基础
+
+### K78 RGB、BGR 与图像显示
+
+- 概念：RGB 与 BGR 是颜色通道顺序；OpenCV 默认 NumPy frame 为 BGR，浏览器 Canvas/常见图像接口通常按 RGB/RGBA 解释。
+- 为什么重要：通道顺序错误不会改变 bbox 坐标，却会让颜色、模型输入或保存结果异常。
+- 原理：同一三个通道若按不同顺序解释，红蓝互换；转换常用 `cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)`。
+- SmartTraffic 实现：OpenCV frame 直接传给 Ultralytics adapter和绘制函数，annotated video 由 OpenCV 写出；前端展示视频/overlay，不直接传原始 NumPy frame。
+- 证据：`backend/app/cv/frame_reader.py`、`yolo_detector.py`、`video_writer.py`、`frontend/src/components/VideoPlayerWithOverlay.tsx`。
+- 真实调用链：VideoCapture BGR frame → YOLO/draw → VideoWriter；浏览器解码 video → Canvas/SVG overlay。
+- 优点：保持 OpenCV 原生 BGR 可少一次后端拷贝。
+- 缺点：接入 Pillow、Matplotlib 或自定义前端帧接口时容易产生隐式错色。
+- 替代方案：在模块边界统一 RGB，并在 adapter 内转换回 provider 需要的格式。
+- 当前限制：仓库没有跨库颜色一致性的像素级 golden test。
+- 常见误区：认为 JPG/MP4 文件“本身就是 BGR”，或对坐标问题盲目做颜色转换。
+- 面试表达：“先确认解码库与消费方的通道约定；SmartTraffic 当前后端主链保持 OpenCV BGR。”
+- 追问方向：RGBA；颜色空间；复制成本；模型预处理。
+
+### K79 Frame、FPS、Timestamp 与 Timebase
+
+- 概念：frame index 是离散序号，FPS 是帧率，PTS 是 presentation timestamp；CFR 固定帧间隔，VFR 的真实间隔会变化。
+- 为什么重要：驻留、速度、事件容差和前端 seek 都依赖“时间从哪里来”。
+- 原理：CFR 可近似 `t = frame_index / FPS`；VFR 应优先使用容器/解码器提供的 timestamp/PTS，而不是假定等间隔。
+- SmartTraffic 实现：`iter_frames()` 读取 `CAP_PROP_POS_MSEC`；轨迹优先用 timestamp/FPS 计算 `px/s`，同时保留 frame index 和 `px/frame`。
+- 证据：`backend/app/cv/frame_reader.py`、`backend/app/trajectory/engine.py`、`frontend/src/utils/eventTimeline.ts`。
+- 真实调用链：VideoCapture → frame index + timestamp_ms → trajectory/event artifact → API → video seek/overlay。
+- 优点：同时保存帧和时间便于调试与兼容。
+- 缺点：OpenCV 的 timestamp 精度依赖 backend/codec；stride 会改变观测间隔。
+- 替代方案：FFmpeg/PyAV 直接读取 stream time_base 与 PTS，规范化为单调时钟。
+- 当前限制：没有对 VFR、丢帧、非单调 PTS 的系统验收；拥堵仍主要按连续帧。
+- 常见误区：把 FPS 当每帧真实时间，或抽帧后仍用相邻处理帧当 1 frame 时间。
+- 面试表达：“帧号适合索引，PTS 适合真实时长；速度和 dwell 应优先使用可靠 timestamp。”
+- 追问方向：CFR/VFR；time_base；seek；stride；RTSP jitter。
+
+### K80 Container、Codec、FourCC 与 VideoCapture/VideoWriter
+
+- 概念：MP4/MKV 是 container，H.264/HEVC/MPEG-4 是 codec；FourCC 是 codec/像素格式标识；Capture 解封装解码，Writer 编码封装。
+- 为什么重要：扩展名只说明容器候选，不保证内容安全、codec 可用或本机能编码。
+- 原理：container 存多路 stream 与时间信息，codec 定义压缩；OpenCV 实际能力取决于其 FFmpeg/GStreamer build。
+- SmartTraffic 实现：上传扩展名 allowlist 后由 `VideoCapture` 探测 FPS、尺寸、帧数和 FourCC；`AnnotatedVideoWriter` 默认 `mp4v`。
+- 证据：`backend/app/cv/frame_reader.py`、`video_writer.py`、`backend/app/api/videos.py`、视频测试。
+- 真实调用链：uploaded bytes → extension/size checks → VideoCapture probe/decode → processing → VideoWriter annotated MP4。
+- 优点：OpenCV API 简单，适合本地 MVP 和测试小视频。
+- 缺点：metadata 可能不可靠；codec 缺失、损坏帧、尺寸变化或 writer backend 均可失败。
+- 替代方案：ffprobe 校验 + FFmpeg transcoding sandbox；对象存储隔离原始与规范化视频。
+- 当前限制：没有 MIME/恶意媒体扫描、分块上传、codec 矩阵或跨平台编码验收。
+- 常见误区：“文件名是 `.mp4` 所以一定是 H.264 且可安全解码。”
+- 面试表达：“扩展名是第一层过滤，真正兼容性要看容器、codec、backend 和实际 probe/decode。”
+- 追问方向：FourCC；关键帧；损坏帧；硬件解码；转码策略。
+
+### K81 Resize、Letterbox 与坐标还原
+
+- 概念：resize 直接缩放，letterbox 保持宽高比并填充；模型坐标必须还原到原图，前端还要映射到显示尺寸。
+- 为什么重要：任一层忽略 scale/padding，bbox、轨迹、Zone 和点击 seek 都会错位。
+- 原理：直接缩放用独立 `scale_x/scale_y`；letterbox 先减 padding 再除统一 scale；overlay 再按视频原尺寸到 DOM 尺寸缩放。
+- SmartTraffic 实现：YOLO 前处理、NMS 和结果坐标恢复由 Ultralytics 完成，项目解析 post-NMS `xyxy` 原图坐标；前端 `inferOverlaySize`/mapping 负责显示映射。
+- 证据：`backend/app/cv/yolo_detector.py`、`frontend/src/utils/analysisDetailMapping.ts`、`VideoPlayerWithOverlay.tsx`。
+- 真实调用链：OpenCV original frame → Ultralytics letterbox/inference/NMS → original-space bbox → artifact/API → display-space overlay。
+- 优点：复用成熟 provider，项目不重复实现易错预后处理。
+- 缺点：adapter 依赖第三方坐标契约；前端若缺原始尺寸会使用推断值。
+- 替代方案：项目显式保存 transform matrix；统一 normalized coordinates。
+- 当前限制：没有自研 letterbox/NMS，也没有覆盖所有响应式布局的真实浏览器视觉回归。
+- 常见误区：声称 SmartTraffic 自己实现 letterbox/NMS，或把原图坐标直接当 CSS 像素。
+- 面试表达：“模型层还原到原图坐标，UI 层再做一次显示坐标映射，两层责任分开。”
+- 追问方向：padding；normalized bbox；DPR；object-fit；旋转元数据。
+
+## 第二十一章：YOLO 原理
+
+### K82 One-stage Detection、Bounding Box 与 Confidence
+
+- 概念：YOLO 是 one-stage detector，在密集特征上直接预测类别与框；two-stage 方法先生成 proposal 再分类/回归。bbox 常用 `xyxy`/`xywh`，confidence 是模型排序分数，不是真实世界概率保证。
+- 为什么重要：理解输出含义才能正确设阈值、解释误差并避免把分数当确定性事实。
+- 原理：单阶段通常延迟低、端到端；最终 score 由具体模型头和训练定义，需校准后才可讨论概率语义。
+- SmartTraffic 实现：Ultralytics 返回 post-NMS `xyxy`、class id/name 与 confidence，adapter 再按六类目标过滤。
+- 证据：`backend/app/cv/yolo_detector.py::_format_result`、Ultralytics `predict` 调用。
+- 真实调用链：frame → Ultralytics YOLO → boxes/conf/classes → target-class filter → detection artifact。
+- 优点：适合视频逐帧目标检测，provider 生态成熟。
+- 缺点：小目标、遮挡、域偏移和阈值选择会造成漏检/误检。
+- 替代方案：Faster R-CNN 等 two-stage、DETR 系列或任务专用 detector。
+- 当前限制：仓库无训练代码、正式权重、概率校准或真实场景 benchmark。
+- 常见误区：confidence 0.9 等于“90% 一定正确”，或 one-stage 等于“一次只看一帧”。
+- 面试表达：“confidence 是用于排序和阈值决策的模型分数，效果必须在目标数据集上校准。”
+- 追问方向：one/two-stage；anchor；calibration；class imbalance；small object。
+
+### K83 IoU、NMS 与阈值责任
+
+- 概念：IoU 是两框交并比；NMS 按分数保留框并抑制高重叠候选。
+- 为什么重要：confidence threshold 控制候选质量，NMS IoU threshold 控制重复框，两者对 downstream tracking/event 影响不同。
+- 原理：`IoU = intersection / union`；经典 NMS 迭代选择最高分框，移除与它 IoU 超阈值的同类候选。
+- SmartTraffic 实现：adapter 将 `conf` 与 `iou` 传给 `model.predict`；NMS 由 Ultralytics 执行，项目只解析 post-NMS 结果。
+- 证据：`backend/app/cv/yolo_detector.py::detect_frame`、`get_model_info`。
+- 真实调用链：raw model candidates → Ultralytics confidence filter/NMS → adapter formatting → tracker。
+- 优点：减少重复检测并暴露部署阈值。
+- 缺点：拥挤遮挡场景可能互相抑制；过低 threshold 增加 FP 与跟踪负担。
+- 替代方案：Soft-NMS、class-agnostic NMS、WBF、end-to-end NMS-free detector。
+- 当前限制：项目不保存 raw pre-NMS predictions，无法从 artifact 重放 NMS 策略。
+- 常见误区：把 detection IoU threshold 与 tracker matching IoU、evaluation IoU 当成同一个参数。
+- 面试表达：“NMS 是 Ultralytics 的责任；项目配置阈值但没有自研该算法。”
+- 追问方向：Soft-NMS；拥挤场景；class-aware；threshold sweep。
+
+### K84 Precision、Recall、AP/mAP 与检测误差级联
+
+- 概念：precision 衡量预测中有多少正确，recall 衡量 GT 中找回多少；AP 是 PR 曲线下的面积，mAP 对类别或 IoU 阈值聚合。
+- 为什么重要：部署 confidence threshold 的单点结果不能替代整条 PR 曲线，也不能把 AP@0.5 叫 COCO mAP@[.5:.95]。
+- 原理：按 score 排序并在指定 IoU matching 下累计 TP/FP 得到 PR；不同评测协议的插值、类别和 IoU 集合不同。
+- SmartTraffic 实现：detection evaluation 使用单 IoU=0.5 的轻量 VOC-style AP；漏检会导致断轨/不完整轨迹/事件漏报，误检会生成假 track/假事件/告警误报。
+- 证据：`backend/app/analysis/detection_metrics.py`、`backend/tests/test_detection_metrics.py`、tracking/event pipeline。
+- 真实调用链：detection scores + GT → AP@0.5；detections → tracker → trajectory → event → alert/evaluation。
+- 优点：轻量指标便于验证协议和失败样本格式。
+- 缺点：单 IoU、toy data 与自写 evaluator 不足以代表正式模型质量。
+- 替代方案：COCO evaluator、分场景 PR/calibration、end-to-end event attribution。
+- 当前限制：仓库没有正式 detection GT、权重与可复现 benchmark result。
+- 常见误区：toy F1/AP=1 就说准确率 100%，或只优化 detector 而忽略级联影响。
+- 面试表达：“先说明评测协议，再报指标；当前只能称 AP@0.5 轻量验证，不能称 COCO mAP。”
+- 追问方向：PR tradeoff；AP interpolation；error propagation；threshold calibration。
+
+## 第二十二章：多目标跟踪基础
+
+### K85 Tracking-by-detection 与 Kalman Filter
+
+- 概念：tracking-by-detection 先逐帧检测，再通过运动/外观关联维持 ID；Kalman Filter 用状态转移和观测更新估计位置与速度。
+- 为什么重要：检测间歇缺失时，运动预测可维持短期轨迹并缩小关联候选。
+- 原理：predict 根据运动模型外推状态与协方差，update 用检测修正；噪声假设和状态设计影响遮挡恢复。
+- SmartTraffic 实现：整个跟踪链属于 tracking-by-detection；可选真实 DeepSORT backend 内部可使用 Kalman，但当前 deterministic fallback 只保留最后 bbox 并做贪心匹配，没有 Kalman。
+- 证据：`backend/app/cv/deepsort_tracker.py`、`backend/app/services/tracking_service.py`、requirements。
+- 真实调用链：detections per frame → real DeepSORT（可选）或 fallback → track states → trajectory。
+- 优点：检测器与 tracker 解耦，适配器可替换 backend。
+- 缺点：性能上限受 detector 影响；当前 fallback 对遮挡与交叉运动脆弱。
+- 替代方案：ByteTrack、BoT-SORT、joint detection and tracking、optical flow 辅助。
+- 当前限制：真实 DeepSORT 未形成仓库可复现默认能力；没有保存 motion state/covariance。
+- 常见误区：看到类名 `DeepSortTracker` 就断言当前默认路径用了 Kalman。
+- 面试表达：“标准 DeepSORT 有 Kalman；当前 fallback 没有，不能把理论原理冒充实现事实。”
+- 追问方向：state vector；process noise；gating；occlusion；detector recall。
+
+### K86 Hungarian Algorithm、Cost Matrix 与 ReID
+
+- 概念：Hungarian algorithm 在二分图 cost matrix 上求全局最优一对一匹配；ReID embedding 用外观特征衡量目标身份相似度。
+- 为什么重要：局部贪心可能抢占最佳匹配，纯运动匹配又难处理交叉与长遮挡，外观信息可补充但带来偏差和隐私风险。
+- 原理：cost 可组合 motion、IoU 与 appearance distance，并用 gating 排除不可能配对；Hungarian 最小化全局总 cost。
+- SmartTraffic 实现：可选 `deep-sort-realtime` provider 负责标准关联；当前 fallback 遍历 detection/track 取最佳 IoU/center score，是贪心，不是 Hungarian，也不保存 ReID embedding。
+- 证据：`backend/app/cv/deepsort_tracker.py::_match_detection_to_track`、`_load_real_tracker`。
+- 真实调用链：tracks × detections → cost/gating（理论真实 backend）或 greedy score（当前 fallback）→ assignment → ID update。
+- 优点：Hungarian 避免部分局部冲突；ReID 提升遮挡后身份恢复候选。
+- 缺点：全局最优只相对于 cost 定义；ReID 存在域偏移、计算成本、隐私和跨摄像头误关联风险。
+- 替代方案：greedy、min-cost flow、learned association、IoU-only tracker。
+- 当前限制：artifact 不含 embedding；没有跨摄像头 ID 或 ReID 质量评测。
+- 常见误区：Hungarian 自动保证正确 ID，或把 appearance embedding 当人脸识别同义词。
+- 面试表达：“关联质量取决于 cost 与 gating；当前 fallback 是确定性贪心，没有 Hungarian/ReID。”
+- 追问方向：cost normalization；gating；privacy；cross-camera；complexity。
+
+### K87 ID Switch、Fragmentation、MOTA/IDF1/HOTA 与 Tracker 比较
+
+- 概念：ID switch 是同一 GT 身份的预测 ID 改变，fragmentation 是轨迹中断；MOTA 偏检测错误聚合，IDF1 偏身份一致性，HOTA 平衡 detection/association。
+- 为什么重要：一个 tracker 可能框得准却 ID 不稳，不同指标和场景会给出不同结论。
+- 原理：标准 MOT 评测需要跨帧 GT association 与严格匹配；DeepSORT 强调 Kalman+appearance，ByteTrack 利用高低分检测，BoT-SORT 融合运动、外观及相机运动补偿等策略。
+- SmartTraffic 实现：tracking evaluation 是帧内贪心 IoU 的轻量 IDF1/MOTA/ID switch/lost-segment 近似；当前代码没有 ByteTrack 或 BoT-SORT，比较仅属知识与未来选型。
+- 证据：`backend/app/analysis/tracking_metrics.py`、`backend/tests/test_tracking_metrics.py`、CV tracker 文件。
+- 真实调用链：tracking expected + actual → lightweight matcher → approximate metrics；生产候选需统一 TrackEval protocol 对比。
+- 优点：当前实现可验证数据契约并暴露部分失败类型。
+- 缺点：不是官方 TrackEval/HOTA，无法公平证明 tracker 优劣。
+- 替代方案：MOTChallenge 格式 + TrackEval，同一 detector/数据/阈值/硬件下比较 DeepSORT、ByteTrack、BoT-SORT。
+- 当前限制：无正式 MOT GT、真实 backend 锁定或 HOTA 结果。
+- 常见误区：把理论比较写成已实现三种 tracker，或只看 MOTA 忽略 IDF1/HOTA。
+- 面试表达：“当前只做轻量契约评测；tracker 选型必须在同一检测输入与官方协议下比较。”
+- 追问方向：metric tradeoff；low-score association；camera motion；fair benchmark。
+
+## 第二十三章：React 与前端工程
+
+### K88 React State、Effect、Polling 与 Stale Response
+
+- 概念：state 驱动渲染，effect 同步外部系统；polling 周期请求状态，stale response 是旧请求晚到后覆盖新状态。
+- 为什么重要：run 切换、组件卸载和网络延迟会产生竞态、重复请求与内存泄漏式更新。
+- 原理：effect cleanup 取消 timer/请求；`AbortController` 或 request token 防止过期响应提交；polling 要有 completed/failed/cancelled 停止条件和退避。
+- SmartTraffic 实现：页面用 `useState/useEffect` 加载 run、事件、评测等数据；当前处理同步返回，未实现通用 polling、AbortController 或 stale-response guard。
+- 证据：`frontend/src/pages/AnalysisDetailPage.tsx`、`VideoCenterPage.tsx`、`frontend/src/api/client.ts`。
+- 真实调用链：selected run state → effect → API promises → state update → render；目标态才是 task polling。
+- 优点：当前数据流直接，适合本地同步 MVP。
+- 缺点：快速切换 run 时旧响应可能覆盖新选择；长期任务没有自动状态刷新。
+- 替代方案：SWR/React Query、AbortController、sequence id、SSE/WebSocket。
+- 当前限制：不能声称已有稳健 polling 或实时 push；API client 也没有 retry/abort。
+- 常见误区：依赖数组为空就一定安全，或 `async` response 一定按发出顺序返回。
+- 面试表达：“当前是 effect 驱动的一次加载；异步任务化后必须补取消、过期响应保护和停止条件。”
+- 追问方向：cleanup；race condition；SSE vs polling；cache key；backoff。
+
+### K89 Loading/Error/Empty 与编译时/运行时类型
+
+- 概念：loading、error、empty 是不同 UI 状态；TypeScript 类型在编译后消失，`as T` 不会验证 JSON。
+- 为什么重要：dry-run 的合法空数组不能显示成系统错误，后端错误也不能伪装成“暂无数据”；坏响应必须在运行时被识别。
+- 原理：用显式状态机或 discriminated union 表达请求状态；在信任边界用 schema parser 校验 unknown JSON。
+- SmartTraffic 实现：多个页面分别渲染 loading/error/empty；`apiGet<T>` 等直接将 `response.json()` cast 为 `T`，没有 Zod/OpenAPI runtime validation。
+- 证据：`frontend/src/pages/DashboardPage.tsx`、`AnalysisDetailPage.tsx`、`frontend/src/api/client.ts`。
+- 真实调用链：fetch → HTTP status check → unchecked JSON cast → page state → loading/error/empty/result branch。
+- 优点：已有基本三态，dry-run 空结果可被解释。
+- 缺点：状态变量分散；响应字段变化可能在深层渲染才暴露。
+- 替代方案：OpenAPI generated client + runtime schema、Zod、React Query state machine。
+- 当前限制：没有统一 error boundary、运行时响应 schema 或浏览器 E2E。
+- 常见误区：empty 就是失败，或 TypeScript interface 能阻止服务端返回坏 JSON。
+- 面试表达：“空是有效业务状态，错是契约/请求失败；`as T` 只让编译器相信，不会校验运行时。”
+- 追问方向：unknown vs any；schema evolution；error boundary；accessibility live region。
+
+## 第二十四章：测试体系
+
+### K90 Pytest Fixture、隔离与测试层级
+
+- 概念：fixture 提供可复用前置/清理；unit 隔离函数，API integration 穿过路由/依赖/DB，browser E2E 验证真实浏览器与系统协作。
+- 为什么重要：不同层证明不同强度，数量不能替代真实边界覆盖。
+- 原理：测试应隔离状态与副作用，依赖覆盖把生产 DB 替换为临时实例；越接近真实系统越慢但能发现更多集成问题。
+- SmartTraffic 实现：autouse fixture 用 `tmp_path` SQLite 创建 schema并 override `get_db`；现有测试以 unit、API、artifact/源码契约为主。
+- 证据：`backend/tests/conftest.py`、`backend/tests/test_db_foundation.py`、`frontend/tests/`。
+- 真实调用链：pytest fixture → temp SQLite/dependency override → TestClient/service → assertion → cleanup。
+- 优点：避免污染真实 `smarttraffic.db`，测试可重复且失败定位快。
+- 缺点：SQLite 测试不能代表 PostgreSQL、并发、浏览器、GPU 或 RTSP。
+- 替代方案：Testcontainers、Playwright/Cypress、真实 provider integration environment。
+- 当前限制：没有真实浏览器系统 E2E、CI、GPU/真实 YOLO/DeepSORT 或流媒体验收。
+- 常见误区：把 TestClient API 测试叫端到端，或把 487/90 数量当质量结论。
+- 面试表达：“我先说测试层级和隔离范围，再说它没证明什么。”
+- 追问方向：fixture scope；transaction rollback；parallel tests；contract/E2E pyramid。
+
+### K91 Golden Video、Real-model Acceptance 与 Benchmark Leakage
+
+- 概念：golden acceptance 固定代码/容器、权重、输入与期望；benchmark leakage 是 test 信息泄漏进训练、调参或选择过程；toy dataset 只验证逻辑。
+- 为什么重要：mock/dry-run 可以证明编排，却不能证明真实 detector/tracker/event 效果。
+- 原理：可复现验收需版本化输入与 GT、隔离 final test、记录 checksum/环境，并对 detection/tracking/event 分层归因。
+- SmartTraffic 实现：仓库跟踪少量 toy expected JSON，权重、真实视频和结果被忽略；本机 ignored 结果不能作为正式 benchmark。
+- 证据：`evals/expected/`、`.gitignore`、`backend/app/analysis/*_metrics.py`、现有评测测试。
+- 真实调用链：fixed container + checksumed weights/video → full pipeline → detection/MOT/event GT → standard evaluator → archived result。
+- 优点：golden 集能发现 provider、codec、阈值和级联回归。
+- 缺点：维护成本高；场景过窄会过拟合；含隐私视频需授权治理。
+- 替代方案：分层 synthetic/unit fixtures + 独立真实 acceptance set + shadow production monitoring。
+- 当前限制：没有仓库可复现的 real-model golden video acceptance。
+- 常见误区：toy F1=1 或本机一次成功等于生产准确率，或用 mock 取代 provider 验收。
+- 面试表达：“toy 验证 evaluator，golden 验证固定真实链路，独立 test set 才能支持泛化结论。”
+- 追问方向：data split；checksum；flaky tolerance；privacy；leakage detection。
+
+## 第二十五章：生产系统设计
+
+### K92 RTSP Ingest 与 FFmpeg/GStreamer
+
+- 概念：RTSP 是会话/传输控制协议，FFmpeg/GStreamer 提供解封装、解码、buffer、重连和 pipeline 能力。
+- 为什么重要：真实流会出现断线、抖动、时间戳异常、codec 变化和读取速度与处理速度不匹配。
+- 原理：ingest 独立维护连接与 jitter buffer，把解码帧通过有界队列交给分析；超载时必须定义丢帧、降采样或拒绝策略。
+- SmartTraffic 实现：当前 realtime worker 对 RTSP 明确返回未连接，只有 mock 三帧和 file 路径检查；以下均为生产演进知识。
+- 证据：`backend/app/realtime/worker.py`、`backend/app/services/realtime_service.py`、`docs/realtime.md`。
+- 真实调用链：当前 camera preview contract → RTSP not connected；目标态 RTSP → FFmpeg/GStreamer → bounded buffer → worker。
+- 优点：专用媒体工具比同步 `VideoCapture` 更适合协议、重连和 timestamp 治理。
+- 缺点：部署、codec、硬件解码、网络和安全运维复杂。
+- 替代方案：边缘 NVR 拉流、WebRTC gateway、托管媒体服务。
+- 当前限制：无真实 RTSP 连接、持续推理、soak test 或密钥轮换。
+- 常见误区：有 Camera 页面和 RTSP URL 字段就等于已实时拉流。
+- 面试表达：“当前只验证 preview contract；生产第一步是单路 RTSP 稳定 ingest，而不是直接承诺多路实时。”
+- 追问方向：TCP/UDP；reconnect；jitter；PTS；frame dropping；secret manager。
+
+### K93 Durable Job、Queue、Worker 与任务生命周期
+
+- 概念：durable job 持久化任务意图，queue 分发，worker 执行；heartbeat/lease 检测失联，retry/cancel/idempotency 管理失败与重复。
+- 为什么重要：视频任务长、昂贵且会部分写入，不能依赖 HTTP 连接或进程内状态保证完成。
+- 原理：API 先提交 job/outbox，再由 worker at-least-once 消费；幂等键、状态机与 artifact publish/reconciliation 处理重复和部分失败。
+- SmartTraffic 实现：当前 `ProcessingTask` 只是同步请求内的状态记录，没有 durable worker、queue、retry、cancel 或 heartbeat；本知识点是目标态设计。
+- 证据：`backend/app/api/videos.py`、processing schemas/models、`docker-compose.yml` 无 queue/worker service。
+- 真实调用链：当前 request → processing inline；目标态 API → job/outbox → queue → worker lease/heartbeat → staged artifact → commit/publish。
+- 优点：请求与执行解耦，可恢复、扩容、限流和观测。
+- 缺点：引入重复投递、状态竞争、补偿和运维复杂度。
+- 替代方案：数据库任务表轮询、云任务服务、workflow engine。
+- 当前限制：不能声称已有 Celery/Redis/worker 或 exactly-once。
+- 常见误区：数据库有 `ProcessingTask` 就是异步系统，或 retry 可以不做幂等。
+- 面试表达：“目标是 at-least-once + idempotency + reconciliation，不追求口头上的 exactly-once。”
+- 追问方向：lease；poison job；retry policy；cancel token；outbox；artifact atomic publish。
+
+### K94 GPU Worker Pool、Backpressure、存储与多摄像头拓扑
+
+- 概念：GPU pool 管理显存与模型实例；backpressure 在输入超过处理能力时限制、排队或降级；生产存储通常以 PostgreSQL 管元数据、对象存储管大文件，并可采用边缘 ingest/中心编排。
+- 为什么重要：多路摄像头如果无容量保护会造成队列无限增长、OOM、延迟失控和本地盘不一致。
+- 原理：按模型/显存调度 worker，设置有界队列和 admission control；元数据保存对象 version/checksum，边缘处理网络敏感帧，中心汇总事件与治理。
+- SmartTraffic 实现：当前默认 CPU、SQLite、本地 artifacts、单机同步请求；没有 GPU pool、对象存储、多摄像头调度，以下为生产目标态。
+- 证据：`docker-compose.yml`、`backend/app/core/config.py`、本地 path 与 DB 配置。
+- 真实调用链：目标态 cameras/edge → ingest buffer → scheduler → GPU workers → object storage + PostgreSQL → events/review。
+- 优点：资源可控、artifact 可扩展、故障域与数据流更清晰。
+- 缺点：成本、调度、网络、数据驻留和跨源一致性显著增加。
+- 替代方案：每摄像头边缘盒、共享推理服务、serverless batch inference。
+- 当前限制：没有容量数据，不能承诺摄像头路数、QPS、P95 或 GPU 利用率。
+- 常见误区：加 GPU 就自动实时，或把 DB 与对象存储双写称为强一致单一真相。
+- 面试表达：“先用 benchmark 定义单 worker 容量，再用有界队列、准入和降级保护 SLO。”
+- 追问方向：batching；model warmup；fair scheduling；edge/cloud；object version；reconciliation。
+
+### K95 SLO、RPO、RTO、监控与灾备
+
+- 概念：SLO 定义可用性/延迟/正确性目标；RPO 是可容忍数据丢失窗口，RTO 是可容忍恢复时间。
+- 为什么重要：没有目标就无法决定队列、备份、冗余、监控和恢复演练投入。
+- 原理：从用户旅程定义 SLI 与 error budget；按 RPO/RTO 设计备份、复制、恢复顺序，并通过演练验证而非只写文档。
+- SmartTraffic 实现：当前只有 request ID、日志、readiness `SELECT 1` 和本地文件/SQLite；无正式 SLO、metrics、灾备或恢复演练。
+- 证据：`backend/app/core/logging.py`、health API、`docs/security_ops.md`、Compose。
+- 真实调用链：当前 request/log/readiness；目标态 metrics/traces/logs → alerts/runbook → backup/restore/reconciliation exercise。
+- 优点：把“高可用”转成可测指标与响应流程。
+- 缺点：指标、冗余和演练有持续成本，错误 SLO 会驱动错误架构。
+- 替代方案：若继续作为本地工具，明确较低 SLO 并优先可靠导出/备份而非 HA。
+- 当前限制：没有生产流量、on-call、RPO/RTO 数值或灾备证据。
+- 常见误区：readiness 通过等于服务健康，备份存在等于能够恢复。
+- 面试表达：“先定义 SLO/RPO/RTO，再用监控和恢复演练证明，而不是先堆 HA 名词。”
+- 追问方向：SLI；error budget；backup consistency；restore order；chaos exercise。
+
+## 岗位复习路线
+
+### 第一轮必学
+
+K01–K12、K17–K42、K52、K55–K66，以及新增基础中的 K73–K77、K79、K82–K87、K90–K95。第一轮目标是能同时讲清当前调用链、证据强度和生产边界。
+
+### CV 岗专项
+
+K14–K30、K35–K42、K59–K63、K78–K87。重点覆盖 YOLO、tracking、trajectory、geometry、six events、evaluation 和 detection → tracking → event 的误差传播。
+
+### 后端专项
+
+K03、K05–K12、K46–K52、K64–K72、K73–K77、K90、K93–K95。重点覆盖 FastAPI、Session、API、artifact、transaction、worker、consistency 与 reporting。
+
+### 全栈专项
+
+K05–K08、K52–K54、K64–K66、K74、K78–K81、K88–K90。重点覆盖 React、API client、overlay、polling、download、runtime validation 与 error states。
+
+### 系统设计专项
+
+K06、K12、K49–K51、K67–K72、K77、K91–K95。重点覆盖 RTSP、queue、GPU worker、storage、multi-camera、SLO、security、RPO/RTO 与灾备。
